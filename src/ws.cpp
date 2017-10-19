@@ -1,6 +1,8 @@
 #include "ws.h"
 
 #include <EGL/egl.h>
+#include <EGL/eglext.h>
+#include <EGL/eglmesaext.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -178,6 +180,16 @@ Instance::Instance()
     g_source_attach(m_source, g_main_context_get_thread_default());
     fprintf(stderr, "Instance::Instance() GMainContext %p\n",
         g_main_context_get_thread_default());
+
+    EGLDisplay eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    fprintf(stderr, "eglDisplay %p\n", eglDisplay);
+
+    eglInitialize(eglDisplay, nullptr, nullptr);
+
+    PFNEGLBINDWAYLANDDISPLAYWL bindWaylandDisplayWL =
+        reinterpret_cast<PFNEGLBINDWAYLANDDISPLAYWL>(eglGetProcAddress("eglBindWaylandDisplayWL"));
+    fprintf(stderr, "bindWaylandDisplayWL %p\n", bindWaylandDisplayWL);
+    bindWaylandDisplayWL(eglDisplay, m_display);
 }
 
 Instance::~Instance()
