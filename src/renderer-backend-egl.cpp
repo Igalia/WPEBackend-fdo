@@ -129,9 +129,6 @@ public:
         m_window = wl_egl_window_create(m_surface, width, height);
         wl_display_roundtrip(backend.display());
 
-        fprintf(stderr, "Target::initialize() %p (%u,%u) m_window %p\n",
-            this, width, height, m_window);
-
         uint32_t message[] = { 0x42, wl_proxy_get_id(reinterpret_cast<struct wl_proxy*>(m_surface)) };
         if (m_socket)
             g_socket_send(m_socket, reinterpret_cast<gchar*>(message), 2 * sizeof(uint32_t),
@@ -221,13 +218,11 @@ struct wpe_renderer_backend_egl_target_interface fdo_renderer_backend_egl_target
     // frame_will_render
     [](void* data)
     {
-        fprintf(stderr, "fdo_renderer_backend_egl_target::frame_will_render()\n");
         auto& target = *reinterpret_cast<Target*>(data);
         target.requestFrame();
     },
     // frame_rendered
     [](void* data)
     {
-        fprintf(stderr, "fdo_renderer_backend_egl_target::frame_rendered()\n");
     },
 };

@@ -78,8 +78,6 @@ public:
 
     void exportBufferResource(struct wl_resource* bufferResource) override
     {
-        fprintf(stderr, "exportBufferResource() m_clientBundle %p client %p bufferResource %p\n",
-            m_clientBundle, m_clientBundle->client, bufferResource);
         m_clientBundle->client->export_buffer_resource(m_clientBundle->data, bufferResource);
     }
 
@@ -110,8 +108,6 @@ private:
 
 gboolean ViewBackend::s_socketCallback(GSocket* socket, GIOCondition condition, gpointer data)
 {
-    fprintf(stderr, "ViewBackend::s_socketCallback() condition %d data %p\n",
-        condition, data);
     if (!(condition & G_IO_IN))
         return TRUE;
 
@@ -122,14 +118,9 @@ gboolean ViewBackend::s_socketCallback(GSocket* socket, GIOCondition condition, 
         return FALSE;
 
     if (len == sizeof(uint32_t) * 2 && message[0] == 0x42) {
-        fprintf(stderr, "ViewBackend: registered to surface id %u\n", message[1]);
-
         auto& viewBackend = *static_cast<ViewBackend*>(data);
         WS::Instance::singleton().registerViewBackend(message[1], viewBackend);
     }
-
-    fprintf(stderr, "ViewBackend::s_socketCallback() read %d bytes: { %u, %u }\n",
-        len, message[0], message[1]);
 
     return TRUE;
 }

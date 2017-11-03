@@ -28,11 +28,13 @@ set(WPEBACKEND_FDO_LIBRARIES
 )
 
 set(WPEBACKEND_FDO_PUBLIC_HEADERS
+    include/wpe-fdo/initialize-egl.h
     include/wpe-fdo/view-backend-exportable.h
 )
 
 set(WPEBACKEND_FDO_SOURCES
     src/fdo.cpp
+    src/initialize-egl.cpp
     src/renderer-backend-egl.cpp
     src/renderer-host.cpp
     src/view-backend-exportable-fdo.cpp

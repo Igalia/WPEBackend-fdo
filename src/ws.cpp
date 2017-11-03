@@ -84,10 +84,6 @@ static const struct wl_surface_interface s_surfaceInterface = {
     [](struct wl_client* client, struct wl_resource* surfaceResource, uint32_t callback)
     {
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
-        fprintf(stderr, "frame() client %p surfaceResource %p callback %u\n",
-            client, surfaceResource, callback);
-        fprintf(stderr, "\tsurface %p exportableClient %p\n",
-            &surface, surface.exportableClient);
 
         struct wl_resource* callbackResource = wl_resource_create(client, &wl_callback_interface, 1, callback);
         if (!callbackResource) {
@@ -178,18 +174,6 @@ Instance::Instance()
     g_source_set_priority(m_source, -70);
     g_source_set_can_recurse(m_source, TRUE);
     g_source_attach(m_source, g_main_context_get_thread_default());
-    fprintf(stderr, "Instance::Instance() GMainContext %p\n",
-        g_main_context_get_thread_default());
-
-    EGLDisplay eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    fprintf(stderr, "eglDisplay %p\n", eglDisplay);
-
-    eglInitialize(eglDisplay, nullptr, nullptr);
-
-    PFNEGLBINDWAYLANDDISPLAYWL bindWaylandDisplayWL =
-        reinterpret_cast<PFNEGLBINDWAYLANDDISPLAYWL>(eglGetProcAddress("eglBindWaylandDisplayWL"));
-    fprintf(stderr, "bindWaylandDisplayWL %p\n", bindWaylandDisplayWL);
-    bindWaylandDisplayWL(eglDisplay, m_display);
 }
 
 Instance::~Instance()
