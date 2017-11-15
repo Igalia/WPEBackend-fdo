@@ -9,6 +9,10 @@ find_package(Wayland REQUIRED)
 find_package(WaylandEGL REQUIRED)
 find_package(WPEBackend REQUIRED)
 
+if (EGL_DEFINITIONS)
+	add_definitions(${EGL_DEFINITIONS})
+endif ()
+
 set(WPEBACKEND_FDO_INCLUDE_DIRECTORIES
     "include"
     ${EGL_INCLUDE_DIRS}
