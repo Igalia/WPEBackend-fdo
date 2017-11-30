@@ -77,8 +77,10 @@ public:
 
     ~Backend()
     {
-        if (m_source)
+        if (m_source) {
             g_source_destroy(m_source);
+            g_source_unref(m_source);
+        }
     }
 
     struct wl_display* display() const { return m_display; }
@@ -121,8 +123,10 @@ public:
     {
         if (m_socket)
             g_object_unref(m_socket);
-        if (m_source)
+        if (m_source) {
             g_source_destroy(m_source);
+            g_source_unref(m_source);
+        }
     }
 
     void initialize(Backend& backend, uint32_t width, uint32_t height)
