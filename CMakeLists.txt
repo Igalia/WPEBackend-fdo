@@ -68,3 +68,9 @@ install(
     FILES ${WPEBACKEND_FDO_PUBLIC_HEADERS}
     DESTINATION include/wpe-fdo
 )
+
+configure_file(wpebackend-fdo.pc.in wpebackend-fdo.pc @ONLY)
+install(
+    FILES "${CMAKE_CURRENT_BINARY_DIR}/wpebackend-fdo.pc"
+    DESTINATION lib/pkgconfig
+)
