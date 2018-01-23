@@ -5,6 +5,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-exceptions -fno-rtti")
 
 find_package(EGL REQUIRED)
 find_package(GLIB REQUIRED COMPONENTS gio)
+find_package(Libxkbcommon 0.4.0 REQUIRED)
 find_package(Wayland REQUIRED)
 find_package(WaylandEGL REQUIRED)
 find_package(WPEBackend REQUIRED)
@@ -15,8 +16,10 @@ endif ()
 
 set(WPEBACKEND_FDO_INCLUDE_DIRECTORIES
     "include"
+    "src/external"
     ${EGL_INCLUDE_DIRS}
     ${GLIB_INCLUDE_DIRS}
+    ${LIBXKBCOMMON_INCLUDE_DIRS}
     ${WAYLAND_INCLUDE_DIRS}
     ${WAYLAND_EGL_INCLUDE_DIRS}
     ${WPEBACKEND_INCLUDE_DIRS}
@@ -26,6 +29,7 @@ set(WPEBACKEND_FDO_LIBRARIES
     ${EGL_LIBRARIES}
     ${GLIB_GIO_LIBRARIES}
     ${GLIB_LIBRARIES}
+    ${LIBXKBCOMMON_LIBRARIES}
     ${WAYLAND_LIBRARIES}
     ${WAYLAND_EGL_LIBRARIES}
     ${WPEBACKEND_LIBRARIES}
@@ -39,6 +43,7 @@ set(WPEBACKEND_FDO_PUBLIC_HEADERS
 set(WPEBACKEND_FDO_SOURCES
     src/fdo.cpp
     src/initialize-egl.cpp
+    src/input-key-mapper-libxkbcommon.cpp
     src/renderer-backend-egl.cpp
     src/renderer-host.cpp
     src/view-backend-exportable-fdo.cpp

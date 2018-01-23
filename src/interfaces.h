@@ -2,9 +2,12 @@
 
 #include <wayland-egl.h>
 
+#include <wpe/input.h>
 #include <wpe/renderer-backend-egl.h>
 #include <wpe/renderer-host.h>
 #include <wpe/view-backend.h>
+
+extern struct wpe_input_key_mapper_interface libxkbcommon_input_key_mapper_interface;
 
 extern struct wpe_renderer_host_interface fdo_renderer_host;
 
