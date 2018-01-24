@@ -29,6 +29,8 @@ public:
 
     ~ViewBackend()
     {
+        WS::Instance::singleton().unregisterViewBackend(m_id);
+
         if (m_clientFd != -1)
             close(m_clientFd);
 
