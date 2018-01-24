@@ -121,6 +121,9 @@ public:
 
     ~Target()
     {
+        if (m_frameCallback)
+            wl_callback_destroy(m_frameCallback);
+
         if (m_socket)
             g_object_unref(m_socket);
         if (m_source) {
@@ -136,6 +139,10 @@ public:
         g_source_set_name(m_source, "WPEBackend-fdo::Target");
         g_source_set_callback(m_source, [](gpointer userData) -> gboolean {
             auto* target = static_cast<Target*>(userData);
+
+            wl_callback_destroy(target->m_frameCallback);
+            target->m_frameCallback = nullptr;
+
             wpe_renderer_backend_egl_target_dispatch_frame_complete(target->m_target);
             return G_SOURCE_CONTINUE;
         }, this, nullptr);
@@ -153,8 +160,11 @@ public:
 
     void requestFrame()
     {
-        struct wl_callback* callback = wl_surface_frame(m_surface);
-        wl_callback_add_listener(callback, &s_callbackListener, this);
+        if (m_frameCallback)
+            std::abort();
+
+        m_frameCallback = wl_surface_frame(m_surface);
+        wl_callback_add_listener(m_frameCallback, &s_callbackListener, this);
     }
 
     void dispatchFrameComplete()
@@ -174,15 +184,14 @@ private:
 
     struct wl_surface* m_surface { nullptr };
     struct wl_egl_window* m_window { nullptr };
+    struct wl_callback* m_frameCallback { nullptr };
 };
 
 const struct wl_callback_listener Target::s_callbackListener = {
     // done
-    [](void* data, struct wl_callback* callback, uint32_t time)
+    [](void* data, struct wl_callback*, uint32_t time)
     {
         static_cast<Target*>(data)->dispatchFrameComplete();
-
-        wl_callback_destroy(callback);
     },
 };
 
