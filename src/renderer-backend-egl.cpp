@@ -5,6 +5,7 @@
 #include <glib.h>
 
 #include <cstdio>
+#include <cstdlib>
 
 namespace {
 
