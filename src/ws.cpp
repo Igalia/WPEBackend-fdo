@@ -127,7 +127,12 @@ static const struct wl_compositor_interface s_compositorInterface = {
         auto* surface = new Surface;
         surface->id = id;
         Instance::singleton().createSurface(id, surface);
-        wl_resource_set_implementation(surfaceResource, &s_surfaceInterface, surface, nullptr);
+        wl_resource_set_implementation(surfaceResource, &s_surfaceInterface, surface,
+            [](struct wl_resource* resource)
+            {
+                auto* surface = static_cast<Surface*>(wl_resource_get_user_data(resource));
+                delete surface;
+            });
     },
     // create_region
     [](struct wl_client*, struct wl_resource*, uint32_t) { },
