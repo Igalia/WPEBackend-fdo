@@ -101,6 +101,7 @@ private:
     ClientBundle* m_clientBundle;
     struct wpe_view_backend* m_backend;
 
+    uint32_t m_id { 0 };
     std::vector<struct wl_resource*> m_callbackResources;
 
     GSocket* m_socket;
@@ -121,7 +122,8 @@ gboolean ViewBackend::s_socketCallback(GSocket* socket, GIOCondition condition, 
 
     if (len == sizeof(uint32_t) * 2 && message[0] == 0x42) {
         auto& viewBackend = *static_cast<ViewBackend*>(data);
-        WS::Instance::singleton().registerViewBackend(message[1], viewBackend);
+        viewBackend.m_id = message[1];
+        WS::Instance::singleton().registerViewBackend(viewBackend.m_id, viewBackend);
     }
 
     return TRUE;
