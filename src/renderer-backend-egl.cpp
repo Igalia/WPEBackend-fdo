@@ -123,6 +123,10 @@ public:
     {
         if (m_frameCallback)
             wl_callback_destroy(m_frameCallback);
+        if (m_window)
+            wl_egl_window_destroy(m_window);
+        if (m_surface)
+            wl_surface_destroy(m_surface);
 
         if (m_socket)
             g_object_unref(m_socket);
