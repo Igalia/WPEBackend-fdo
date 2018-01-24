@@ -65,7 +65,7 @@ public:
         source.display = m_display;
 
         g_source_add_poll(m_source, &source.pfd);
-        g_source_set_name(m_source, "WPEBackend-shm::Backend");
+        g_source_set_name(m_source, "WPEBackend-fdo::Backend");
         g_source_set_priority(m_source, -70);
         g_source_set_can_recurse(m_source, TRUE);
         g_source_attach(m_source, g_main_context_get_thread_default());
