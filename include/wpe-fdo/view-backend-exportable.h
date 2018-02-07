@@ -1,12 +1,13 @@
 #pragma once
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <wpe/view-backend.h>
-
 struct wl_resource;
+struct wpe_view_backend;
 struct wpe_view_backend_exportable_fdo;
 
 struct wpe_view_backend_exportable_fdo_client {

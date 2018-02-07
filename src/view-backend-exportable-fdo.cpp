@@ -1,6 +1,8 @@
 #include <wpe-fdo/view-backend-exportable.h>
 
 #include "ws.h"
+#include <wpe-spi/WPE.view_backend.h>
+#include <wpe-spi/WPE.view_backend_interface.h>
 #include <gio/gio.h>
 #include <sys/types.h>
 #include <sys/socket.h>

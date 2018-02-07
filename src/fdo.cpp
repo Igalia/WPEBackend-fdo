@@ -1,9 +1,8 @@
-#include <wpe/loader.h>
+#include "interfaces.h"
 
 #include <cstdio>
 #include <cstring>
-
-#include "interfaces.h"
+#include <wpe-spi/WPE.loader_interface.h>
 
 extern "C" {
 

@@ -1,4 +1,5 @@
-#include "interfaces.h"
+#include <wpe-spi/WPE.input.h>
+#include <wpe-spi/WPE.input_key_mapper_interface.h>
 
 #include "WindowsKeyboardCodes.h"
 #include <xkbcommon/xkbcommon-keysyms.h>

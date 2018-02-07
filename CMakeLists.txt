@@ -8,7 +8,6 @@ find_package(GLIB REQUIRED COMPONENTS gio)
 find_package(Libxkbcommon 0.4.0 REQUIRED)
 find_package(Wayland REQUIRED)
 find_package(WaylandEGL REQUIRED)
-find_package(WPEBackend REQUIRED)
 
 if (EGL_DEFINITIONS)
 	add_definitions(${EGL_DEFINITIONS})
@@ -16,13 +15,13 @@ endif ()
 
 set(WPEBACKEND_FDO_INCLUDE_DIRECTORIES
     "include"
+    "src"
     "src/external"
     ${EGL_INCLUDE_DIRS}
     ${GLIB_INCLUDE_DIRS}
     ${LIBXKBCOMMON_INCLUDE_DIRS}
     ${WAYLAND_INCLUDE_DIRS}
     ${WAYLAND_EGL_INCLUDE_DIRS}
-    ${WPEBACKEND_INCLUDE_DIRS}
 )
 
 set(WPEBACKEND_FDO_LIBRARIES
@@ -32,7 +31,6 @@ set(WPEBACKEND_FDO_LIBRARIES
     ${LIBXKBCOMMON_LIBRARIES}
     ${WAYLAND_LIBRARIES}
     ${WAYLAND_EGL_LIBRARIES}
-    ${WPEBACKEND_LIBRARIES}
 )
 
 set(WPEBACKEND_FDO_PUBLIC_HEADERS
@@ -48,6 +46,8 @@ set(WPEBACKEND_FDO_SOURCES
     src/renderer-host.cpp
     src/view-backend-exportable-fdo.cpp
     src/ws.cpp
+
+    src/wpe-spi/WPE.spi_integration.c
 )
 
 add_library(WPEBackend-fdo SHARED ${WPEBACKEND_FDO_SOURCES})

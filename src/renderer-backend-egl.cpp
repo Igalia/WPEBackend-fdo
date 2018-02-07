@@ -1,5 +1,8 @@
-#include "interfaces.h"
+#include <wayland-egl.h>
+#include <EGL/eglplatform.h>
 
+#include <wpe-spi/WPE.renderer_backend_egl.h>
+#include <wpe-spi/WPE.renderer_backend_egl_interface.h>
 #include <cstring>
 #include <gio/gio.h>
 #include <glib.h>
