@@ -252,6 +252,7 @@ struct wpe_renderer_backend_egl_target_interface fdo_renderer_backend_egl_target
     // resize
     [](void* data, uint32_t width, uint32_t height)
     {
+        wl_egl_window_resize(static_cast<Target*>(data)->window(), width, height, 0, 0);
     },
     // frame_will_render
     [](void* data)
