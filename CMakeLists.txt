@@ -42,6 +42,7 @@ set(WPEBACKEND_FDO_SOURCES
     src/renderer-backend-egl.cpp
     src/renderer-host.cpp
     src/view-backend-exportable-fdo.cpp
+    src/input-libxkbcommon.cpp
     src/ws.cpp
 )
 
