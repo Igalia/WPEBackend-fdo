@@ -2,7 +2,6 @@
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#include <EGL/eglmesaext.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
