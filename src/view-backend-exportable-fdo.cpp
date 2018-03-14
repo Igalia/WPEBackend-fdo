@@ -83,6 +83,17 @@ public:
         m_clientBundle->client->export_buffer_resource(m_clientBundle->data, bufferResource);
     }
 
+    void exportLinuxDmabuf(uint32_t width, uint32_t height, uint32_t format,
+                           uint32_t flags, uint32_t num_planes, const int32_t* fds,
+                           const uint32_t* strides, const uint32_t* offsets,
+                           const uint64_t* modifiers) override
+    {
+        m_clientBundle->client->export_linux_dmabuf(m_clientBundle->data,
+                                                    width, height, format, flags,
+                                                    num_planes, fds, strides, offsets,
+                                                    modifiers);
+    }
+
     void dispatchFrameCallback()
     {
         for (auto* resource : m_callbackResources)
