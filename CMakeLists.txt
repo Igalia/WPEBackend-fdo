@@ -44,6 +44,7 @@ set(WPEBACKEND_FDO_SOURCES
     src/view-backend-exportable-fdo.cpp
     src/input-libxkbcommon.cpp
     src/ws.cpp
+    src/linux-dmabuf/linux-dmabuf.c
 )
 
 add_library(WPEBackend-fdo SHARED ${WPEBACKEND_FDO_SOURCES})
