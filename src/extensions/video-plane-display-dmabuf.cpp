@@ -25,8 +25,8 @@
 
 #include "wpe-fdo/extensions/video-plane-display-dmabuf.h"
 
-#include "video-plane-display-dmabuf/wpe-video-plane-display-dmabuf-client-protocol.h"
-#include "ws-client.h"
+#include "wpe-video-plane-display-dmabuf-client-protocol.h"
+#include "../ws-client.h"
 #include <wpe/wpe-egl.h>
 #include <cstring>
 

@@ -25,8 +25,8 @@
 
 #include "ws.h"
 
-#include "bridge/wpe-bridge-server-protocol.h"
-#include "video-plane-display-dmabuf/wpe-video-plane-display-dmabuf-server-protocol.h"
+#include "wpe-bridge-server-protocol.h"
+#include "wpe-video-plane-display-dmabuf-server-protocol.h"
 #include <cassert>
 #include <sys/socket.h>
 #include <unistd.h>

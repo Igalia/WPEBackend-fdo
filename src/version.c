@@ -23,7 +23,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "wpe-fdo/version.h"
+#include "version.h"
 
 __attribute__((visibility("default")))
 unsigned
