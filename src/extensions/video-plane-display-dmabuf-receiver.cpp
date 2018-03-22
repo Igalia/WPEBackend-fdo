@@ -25,7 +25,7 @@
 
 #include "wpe-fdo/extensions/video-plane-display-dmabuf.h"
 
-#include "ws.h"
+#include "../ws.h"
 #include <unistd.h>
 
 static struct {

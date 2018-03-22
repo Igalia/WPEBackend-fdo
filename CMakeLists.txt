@@ -47,7 +47,7 @@ find_package(WPE 1.5.90 REQUIRED)
 
 add_definitions(-DWPE_FDO_COMPILATION -DG_LOG_DOMAIN=\"WPE-FDO\")
 
-configure_file(include/wpe-fdo/version.h.cmake "${CMAKE_BINARY_DIR}/wpe-fdo/version.h" @ONLY)
+configure_file(include/wpe-fdo/version.h.cmake "${CMAKE_BINARY_DIR}/version.h" @ONLY)
 
 set(WPEBACKEND_FDO_INCLUDE_DIRECTORIES
     "include"
@@ -68,7 +68,7 @@ set(WPEBACKEND_FDO_LIBRARIES
 )
 
 set(WPEBACKEND_FDO_PUBLIC_HEADERS
-    ${CMAKE_BINARY_DIR}/wpe-fdo/version.h
+    ${CMAKE_BINARY_DIR}/version.h
     include/wpe-fdo/exported-image-egl.h
     include/wpe-fdo/exported-buffer-shm.h
     include/wpe-fdo/initialize-egl.h
@@ -86,8 +86,8 @@ set(WPEBACKEND_FDO_EXTENSIONS_PUBLIC_HEADERS
 )
 
 set(WPEBACKEND_FDO_GENERATED_SOURCES
-    ${CMAKE_BINARY_DIR}/bridge/wpe-bridge-protocol.c
-    ${CMAKE_BINARY_DIR}/video-plane-display-dmabuf/wpe-video-plane-display-dmabuf-protocol.c
+    ${CMAKE_BINARY_DIR}/wpe-bridge-protocol.c
+    ${CMAKE_BINARY_DIR}/wpe-video-plane-display-dmabuf-protocol.c
 )
 
 set(WPEBACKEND_FDO_SOURCES
@@ -116,27 +116,25 @@ set(WPEBACKEND_FDO_SOURCES
     src/linux-dmabuf/linux-dmabuf-protocol.c
 )
 
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bridge)
 add_custom_command(
-    OUTPUT ${CMAKE_BINARY_DIR}/bridge/wpe-bridge-protocol.c
-           ${CMAKE_BINARY_DIR}/bridge/wpe-bridge-client-protocol.h
-           ${CMAKE_BINARY_DIR}/bridge/wpe-bridge-server-protocol.h
+    OUTPUT ${CMAKE_BINARY_DIR}/wpe-bridge-protocol.c
+    OUTPUT ${CMAKE_BINARY_DIR}/wpe-bridge-client-protocol.h
+    OUTPUT ${CMAKE_BINARY_DIR}/wpe-bridge-server-protocol.h
     DEPENDS ${CMAKE_SOURCE_DIR}/src/bridge/wpe-bridge.xml
-    COMMAND ${WAYLAND_SCANNER} ${WAYLAND_SCANNER_CODE_ARG} < ${CMAKE_SOURCE_DIR}/src/bridge/wpe-bridge.xml > ${CMAKE_BINARY_DIR}/bridge/wpe-bridge-protocol.c
-    COMMAND ${WAYLAND_SCANNER} client-header < ${CMAKE_SOURCE_DIR}/src/bridge/wpe-bridge.xml > ${CMAKE_BINARY_DIR}/bridge/wpe-bridge-client-protocol.h
-    COMMAND ${WAYLAND_SCANNER} server-header < ${CMAKE_SOURCE_DIR}/src/bridge/wpe-bridge.xml > ${CMAKE_BINARY_DIR}/bridge/wpe-bridge-server-protocol.h
+    COMMAND ${WAYLAND_SCANNER} ${WAYLAND_SCANNER_CODE_ARG} < ${CMAKE_SOURCE_DIR}/src/bridge/wpe-bridge.xml > ${CMAKE_BINARY_DIR}/wpe-bridge-protocol.c
+    COMMAND ${WAYLAND_SCANNER} client-header < ${CMAKE_SOURCE_DIR}/src/bridge/wpe-bridge.xml > ${CMAKE_BINARY_DIR}/wpe-bridge-client-protocol.h
+    COMMAND ${WAYLAND_SCANNER} server-header < ${CMAKE_SOURCE_DIR}/src/bridge/wpe-bridge.xml > ${CMAKE_BINARY_DIR}/wpe-bridge-server-protocol.h
     VERBATIM
 )
 
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/video-plane-display-dmabuf)
 add_custom_command(
-    OUTPUT ${CMAKE_BINARY_DIR}/video-plane-display-dmabuf/wpe-video-plane-display-dmabuf-protocol.c
-    OUTPUT ${CMAKE_BINARY_DIR}/video-plane-display-dmabuf/wpe-video-plane-display-dmabuf-client-protocol.h
-    OUTPUT ${CMAKE_BINARY_DIR}/video-plane-display-dmabuf/wpe-video-plane-display-dmabuf-server-protocol.h
+    OUTPUT ${CMAKE_BINARY_DIR}/wpe-video-plane-display-dmabuf-protocol.c
+    OUTPUT ${CMAKE_BINARY_DIR}/wpe-video-plane-display-dmabuf-client-protocol.h
+    OUTPUT ${CMAKE_BINARY_DIR}/wpe-video-plane-display-dmabuf-server-protocol.h
     DEPENDS ${CMAKE_SOURCE_DIR}/src/extensions/wpe-video-plane-display-dmabuf.xml
-    COMMAND ${WAYLAND_SCANNER} ${WAYLAND_SCANNER_CODE_ARG} < ${CMAKE_SOURCE_DIR}/src/extensions/wpe-video-plane-display-dmabuf.xml > ${CMAKE_BINARY_DIR}/video-plane-display-dmabuf/wpe-video-plane-display-dmabuf-protocol.c
-    COMMAND ${WAYLAND_SCANNER} client-header < ${CMAKE_SOURCE_DIR}/src/extensions/wpe-video-plane-display-dmabuf.xml > ${CMAKE_BINARY_DIR}/video-plane-display-dmabuf/wpe-video-plane-display-dmabuf-client-protocol.h
-    COMMAND ${WAYLAND_SCANNER} server-header < ${CMAKE_SOURCE_DIR}/src/extensions/wpe-video-plane-display-dmabuf.xml > ${CMAKE_BINARY_DIR}/video-plane-display-dmabuf/wpe-video-plane-display-dmabuf-server-protocol.h
+    COMMAND ${WAYLAND_SCANNER} ${WAYLAND_SCANNER_CODE_ARG} < ${CMAKE_SOURCE_DIR}/src/extensions/wpe-video-plane-display-dmabuf.xml > ${CMAKE_BINARY_DIR}/wpe-video-plane-display-dmabuf-protocol.c
+    COMMAND ${WAYLAND_SCANNER} client-header < ${CMAKE_SOURCE_DIR}/src/extensions/wpe-video-plane-display-dmabuf.xml > ${CMAKE_BINARY_DIR}/wpe-video-plane-display-dmabuf-client-protocol.h
+    COMMAND ${WAYLAND_SCANNER} server-header < ${CMAKE_SOURCE_DIR}/src/extensions/wpe-video-plane-display-dmabuf.xml > ${CMAKE_BINARY_DIR}/wpe-video-plane-display-dmabuf-server-protocol.h
     VERBATIM
 )
 

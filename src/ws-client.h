@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include "bridge/wpe-bridge-client-protocol.h"
+#include "wpe-bridge-client-protocol.h"
 #include "ipc.h"
 #include <glib.h>
 #include <wayland-client.h>
