@@ -29,6 +29,8 @@ public:
 
     ~ViewBackend()
     {
+        WS::Instance::singleton().unregisterViewBackend(m_id);
+
         if (m_clientFd != -1)
             close(m_clientFd);
 
@@ -98,6 +100,8 @@ public:
 private:
     static gboolean s_socketCallback(GSocket*, GIOCondition, gpointer);
 
+    uint32_t m_id { 0 };
+
     ClientBundle* m_clientBundle;
     struct wpe_view_backend* m_backend;
 
@@ -121,7 +125,8 @@ gboolean ViewBackend::s_socketCallback(GSocket* socket, GIOCondition condition, 
 
     if (len == sizeof(uint32_t) * 2 && message[0] == 0x42) {
         auto& viewBackend = *static_cast<ViewBackend*>(data);
-        WS::Instance::singleton().registerViewBackend(message[1], viewBackend);
+        viewBackend.m_id = message[1];
+        WS::Instance::singleton().registerViewBackend(viewBackend.m_id, viewBackend);
     }
 
     return TRUE;
