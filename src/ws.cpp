@@ -76,9 +76,7 @@ static const struct wl_surface_interface s_surfaceInterface = {
         surface.bufferResource = bufferResource;
     },
     // damage
-    [](struct wl_client*, struct wl_resource*, int32_t, int32_t, int32_t, int32_t)
-    {
-    },
+    [](struct wl_client*, struct wl_resource*, int32_t, int32_t, int32_t, int32_t) { },
     // frame
     [](struct wl_client* client, struct wl_resource* surfaceResource, uint32_t callback)
     {
@@ -153,7 +151,6 @@ Instance& Instance::singleton()
 
 Instance::Instance()
 {
-
     m_display = wl_display_create();
 
     m_compositor = wl_global_create(m_display, &wl_compositor_interface, 3, this,
