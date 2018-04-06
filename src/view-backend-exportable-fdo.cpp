@@ -29,6 +29,9 @@ public:
 
     ~ViewBackend()
     {
+        for (auto* resource : m_callbackResources)
+            wl_resource_destroy(resource);
+
         WS::Instance::singleton().unregisterViewBackend(m_id);
 
         if (m_clientFd != -1)
