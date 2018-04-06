@@ -32,6 +32,7 @@ public:
 
     void createSurface(uint32_t, Surface*);
     void registerViewBackend(uint32_t, ExportableClient&);
+    void unregisterViewBackend(uint32_t);
 
 private:
     Instance();
