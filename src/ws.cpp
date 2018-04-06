@@ -83,6 +83,8 @@ static const struct wl_surface_interface s_surfaceInterface = {
     [](struct wl_client* client, struct wl_resource* surfaceResource, uint32_t callback)
     {
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
+        if (!surface.exportableClient)
+            return;
 
         struct wl_resource* callbackResource = wl_resource_create(client, &wl_callback_interface, 1, callback);
         if (!callbackResource) {
@@ -101,6 +103,8 @@ static const struct wl_surface_interface s_surfaceInterface = {
     [](struct wl_client*, struct wl_resource* surfaceResource)
     {
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
+        if (!surface.exportableClient)
+            return;
 
         struct wl_resource* bufferResource = surface.bufferResource;
         surface.bufferResource = nullptr;
