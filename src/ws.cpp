@@ -229,11 +229,10 @@ void Instance::registerViewBackend(uint32_t id, ExportableClient& exportableClie
 void Instance::unregisterViewBackend(uint32_t id)
 {
     auto it = m_viewBackendMap.find(id);
-    if (it == m_viewBackendMap.end())
-        std::abort();
-
-    it->second->exportableClient = nullptr;
-    m_viewBackendMap.erase(id);
+    if (it != m_viewBackendMap.end()) {
+        it->second->exportableClient = nullptr;
+        m_viewBackendMap.erase(it);
+    }
 }
 
 } // namespace WS
