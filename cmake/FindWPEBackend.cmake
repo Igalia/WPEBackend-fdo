@@ -29,7 +29,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 find_package(PkgConfig)
-pkg_check_modules(PC_WPE QUIET wpe)
+pkg_check_modules(PC_WPE QUIET wpe-0.1)
 
 find_path(WPEBACKEND_INCLUDE_DIRS
     NAMES wpe/loader.h
@@ -37,7 +37,7 @@ find_path(WPEBACKEND_INCLUDE_DIRS
 )
 
 find_library(WPEBACKEND_LIBRARIES
-    NAMES WPEBackend
+    NAMES WPEBackend-0.1
     HINTS ${PC_WPE_LIBDIR} ${PC_WPE_LIBRARY_DIRS}
 )
 
