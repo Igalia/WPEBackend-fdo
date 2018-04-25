@@ -3,9 +3,9 @@ exec_prefix=${prefix}
 includedir=${prefix}/include
 libdir=${exec_prefix}/lib
 
-Name: wpebackend-fdo
+Name: wpebackend-fdo-@WPEBACKEND_FDO_API_VERSION@
 Description: The WPEBackend-fdo library
 Version: @WPEBACKEND_FDO_VERSION@
 Requires: wpe-0.1
-Cflags: -I${includedir}/wpe-fdo
-Libs: -L${libdir} -lWPEBackend-fdo
+Cflags: -I${includedir}/wpe-fdo-@WPEBACKEND_FDO_API_VERSION@
+Libs: -L${libdir} -lWPEBackend-fdo-@WPEBACKEND_FDO_API_VERSION@
