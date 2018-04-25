@@ -1,4 +1,4 @@
-#include <wpe/loader.h>
+#include <wpe/wpe.h>
 
 #include <cstdio>
 #include <cstring>

@@ -2,9 +2,8 @@
 
 #include <wayland-egl.h>
 
-#include <wpe/renderer-backend-egl.h>
-#include <wpe/renderer-host.h>
-#include <wpe/view-backend.h>
+#include <wpe/wpe-egl.h>
+#include <wpe/wpe.h>
 
 extern struct wpe_renderer_host_interface fdo_renderer_host;
 

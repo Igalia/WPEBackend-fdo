@@ -13,6 +13,8 @@ if (EGL_DEFINITIONS)
 	add_definitions(${EGL_DEFINITIONS})
 endif ()
 
+add_definitions(-DWPE_FDO_COMPILATION)
+
 set(WPEBACKEND_FDO_INCLUDE_DIRECTORIES
     "include"
     ${EGL_INCLUDE_DIRS}
@@ -34,6 +36,8 @@ set(WPEBACKEND_FDO_LIBRARIES
 set(WPEBACKEND_FDO_PUBLIC_HEADERS
     include/wpe-fdo/initialize-egl.h
     include/wpe-fdo/view-backend-exportable.h
+    include/wpe-fdo/fdo-egl.h
+    include/wpe-fdo/fdo.h
 )
 
 set(WPEBACKEND_FDO_SOURCES
@@ -68,7 +72,7 @@ install(
 )
 install(
     FILES ${WPEBACKEND_FDO_PUBLIC_HEADERS}
-    DESTINATION include/wpe-fdo
+    DESTINATION include/wpe-fdo/wpe
 )
 
 configure_file(wpebackend-fdo.pc.in wpebackend-fdo.pc @ONLY)

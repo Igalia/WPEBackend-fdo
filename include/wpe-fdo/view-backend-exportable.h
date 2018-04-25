@@ -1,10 +1,15 @@
-#pragma once
+#if !defined(__WPE_FDO_H_INSIDE__) && !defined(WPE_FDO_COMPILATION)
+#error "Only <wpe/fdo.h> can be included directly."
+#endif
+
+#ifndef __view_backend_exportable_h__
+#define __view_backend_exportable_h__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <wpe/view-backend.h>
+#include <wpe/wpe.h>
 
 struct wl_resource;
 struct wpe_view_backend_exportable_fdo;
@@ -36,3 +41,5 @@ wpe_view_backend_exportable_fdo_dispatch_release_buffer(struct wpe_view_backend_
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* __view_backend_exportable_h___ */
