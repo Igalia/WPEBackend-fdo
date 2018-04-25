@@ -21,6 +21,10 @@ struct wpe_view_backend_exportable_fdo_client {
                                 uint32_t num_planes, const int32_t* fds,
                                 const uint32_t* strides, const uint32_t* offsets,
                                 const uint64_t* modifiers);
+    void (*_wpe_reserved0)(void);
+    void (*_wpe_reserved1)(void);
+    void (*_wpe_reserved2)(void);
+    void (*_wpe_reserved3)(void);
 };
 
 struct wpe_view_backend_exportable_fdo*
