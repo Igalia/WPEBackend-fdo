@@ -27,6 +27,7 @@
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#include "linux-dmabuf/linux-dmabuf.h"
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -86,6 +87,7 @@ struct Surface {
     ExportableClient* exportableClient { nullptr };
 
     struct wl_resource* bufferResource { nullptr };
+    const struct linux_dmabuf_buffer* dmabufBuffer { nullptr };
 };
 
 static const struct wl_surface_interface s_surfaceInterface = {
@@ -95,6 +97,8 @@ static const struct wl_surface_interface s_surfaceInterface = {
     [](struct wl_client*, struct wl_resource* surfaceResource, struct wl_resource* bufferResource, int32_t, int32_t)
     {
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
+
+        surface.dmabufBuffer = linux_dmabuf_get_buffer(bufferResource);
 
         if (surface.bufferResource)
             wl_buffer_send_release(surface.bufferResource);
@@ -129,9 +133,20 @@ static const struct wl_surface_interface s_surfaceInterface = {
         if (!surface.exportableClient)
             return;
 
-        struct wl_resource* bufferResource = surface.bufferResource;
-        surface.bufferResource = nullptr;
-        surface.exportableClient->exportBufferResource(bufferResource);
+        if (surface.dmabufBuffer) {
+            const struct linux_dmabuf_attributes *attribs =
+                linux_dmabuf_get_buffer_attributes(surface.dmabufBuffer);
+
+            surface.exportableClient->exportLinuxDmabuf(attribs->width, attribs->height,
+                                                        attribs->format, attribs->flags,
+                                                        attribs->n_planes,
+                                                        attribs->fd, attribs->stride,
+                                                        attribs->offset, attribs->modifier);
+        } else {
+            struct wl_resource* bufferResource = surface.bufferResource;
+            surface.bufferResource = nullptr;
+            surface.exportableClient->exportBufferResource(bufferResource);
+        }
     },
     // set_buffer_transform
     [](struct wl_client*, struct wl_resource*, int32_t) { },
@@ -208,6 +223,8 @@ Instance::Instance()
 
 Instance::~Instance()
 {
+    linux_dmabuf_teardown();
+
     if (m_source) {
         g_source_destroy(m_source);
         g_source_unref(m_source);
@@ -222,6 +239,9 @@ void Instance::initialize(EGLDisplay eglDisplay)
     PFNEGLBINDWAYLANDDISPLAYWL bindWaylandDisplayWL =
         reinterpret_cast<PFNEGLBINDWAYLANDDISPLAYWL>(eglGetProcAddress("eglBindWaylandDisplayWL"));
     bindWaylandDisplayWL(eglDisplay, m_display);
+
+    /* Initialize Linux dmabuf subsystem. */
+    linux_dmabuf_setup(m_display, eglDisplay);
 }
 
 int Instance::createClient()
