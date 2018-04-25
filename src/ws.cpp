@@ -1,8 +1,32 @@
+/*
+ * Copyright (C) 2017, 2018 Igalia S.L.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+ * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "ws.h"
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#include "linux-dmabuf/linux-dmabuf.h"
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -62,7 +86,6 @@ struct Surface {
     ExportableClient* exportableClient { nullptr };
 
     struct wl_resource* bufferResource { nullptr };
-    const struct linux_dmabuf_buffer* dmabufBuffer { nullptr };
 };
 
 static const struct wl_surface_interface s_surfaceInterface = {
@@ -73,20 +96,18 @@ static const struct wl_surface_interface s_surfaceInterface = {
     {
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
 
-        surface.dmabufBuffer = linux_dmabuf_get_buffer(bufferResource);
-
         if (surface.bufferResource)
             wl_buffer_send_release(surface.bufferResource);
         surface.bufferResource = bufferResource;
     },
     // damage
-    [](struct wl_client*, struct wl_resource*, int32_t, int32_t, int32_t, int32_t)
-    {
-    },
+    [](struct wl_client*, struct wl_resource*, int32_t, int32_t, int32_t, int32_t) { },
     // frame
     [](struct wl_client* client, struct wl_resource* surfaceResource, uint32_t callback)
     {
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
+        if (!surface.exportableClient)
+            return;
 
         struct wl_resource* callbackResource = wl_resource_create(client, &wl_callback_interface, 1, callback);
         if (!callbackResource) {
@@ -105,21 +126,12 @@ static const struct wl_surface_interface s_surfaceInterface = {
     [](struct wl_client*, struct wl_resource* surfaceResource)
     {
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
+        if (!surface.exportableClient)
+            return;
 
-        if (surface.dmabufBuffer) {
-            const struct linux_dmabuf_attributes *attribs =
-                linux_dmabuf_get_buffer_attributes(surface.dmabufBuffer);
-
-            surface.exportableClient->exportLinuxDmabuf(attribs->width, attribs->height,
-                                                        attribs->format, attribs->flags,
-                                                        attribs->n_planes,
-                                                        attribs->fd, attribs->stride,
-                                                        attribs->offset, attribs->modifier);
-        } else {
-            struct wl_resource* bufferResource = surface.bufferResource;
-            surface.bufferResource = nullptr;
-            surface.exportableClient->exportBufferResource(bufferResource);
-        }
+        struct wl_resource* bufferResource = surface.bufferResource;
+        surface.bufferResource = nullptr;
+        surface.exportableClient->exportBufferResource(bufferResource);
     },
     // set_buffer_transform
     [](struct wl_client*, struct wl_resource*, int32_t) { },
@@ -143,7 +155,12 @@ static const struct wl_compositor_interface s_compositorInterface = {
         auto* surface = new Surface;
         surface->id = id;
         Instance::singleton().createSurface(id, surface);
-        wl_resource_set_implementation(surfaceResource, &s_surfaceInterface, surface, nullptr);
+        wl_resource_set_implementation(surfaceResource, &s_surfaceInterface, surface,
+            [](struct wl_resource* resource)
+            {
+                auto* surface = static_cast<Surface*>(wl_resource_get_user_data(resource));
+                delete surface;
+            });
     },
     // create_region
     [](struct wl_client*, struct wl_resource*, uint32_t) { },
@@ -159,7 +176,6 @@ Instance& Instance::singleton()
 
 Instance::Instance()
 {
-
     m_display = wl_display_create();
 
     m_compositor = wl_global_create(m_display, &wl_compositor_interface, 3, this,
@@ -192,8 +208,6 @@ Instance::Instance()
 
 Instance::~Instance()
 {
-    linux_dmabuf_teardown();
-
     if (m_source) {
         g_source_destroy(m_source);
         g_source_unref(m_source);
@@ -208,9 +222,6 @@ void Instance::initialize(EGLDisplay eglDisplay)
     PFNEGLBINDWAYLANDDISPLAYWL bindWaylandDisplayWL =
         reinterpret_cast<PFNEGLBINDWAYLANDDISPLAYWL>(eglGetProcAddress("eglBindWaylandDisplayWL"));
     bindWaylandDisplayWL(eglDisplay, m_display);
-
-    /* Initialize Linux dmabuf subsystem. */
-    linux_dmabuf_setup(m_display, eglDisplay);
 }
 
 int Instance::createClient()
@@ -238,6 +249,15 @@ void Instance::registerViewBackend(uint32_t id, ExportableClient& exportableClie
         std::abort();
 
     it->second->exportableClient = &exportableClient;
+}
+
+void Instance::unregisterViewBackend(uint32_t id)
+{
+    auto it = m_viewBackendMap.find(id);
+    if (it != m_viewBackendMap.end()) {
+        it->second->exportableClient = nullptr;
+        m_viewBackendMap.erase(it);
+    }
 }
 
 } // namespace WS

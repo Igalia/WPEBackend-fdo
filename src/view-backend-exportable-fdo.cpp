@@ -1,4 +1,29 @@
-#include <wpe-fdo/view-backend-exportable.h>
+/*
+ * Copyright (C) 2017, 2018 Igalia S.L.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+ * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "wpe-fdo/view-backend-exportable.h"
 
 #include "ws.h"
 #include <gio/gio.h>
@@ -29,6 +54,11 @@ public:
 
     ~ViewBackend()
     {
+        for (auto* resource : m_callbackResources)
+            wl_resource_destroy(resource);
+
+        WS::Instance::singleton().unregisterViewBackend(m_id);
+
         if (m_clientFd != -1)
             close(m_clientFd);
 
@@ -83,17 +113,6 @@ public:
         m_clientBundle->client->export_buffer_resource(m_clientBundle->data, bufferResource);
     }
 
-    void exportLinuxDmabuf(uint32_t width, uint32_t height, uint32_t format,
-                           uint32_t flags, uint32_t num_planes, const int32_t* fds,
-                           const uint32_t* strides, const uint32_t* offsets,
-                           const uint64_t* modifiers) override
-    {
-        m_clientBundle->client->export_linux_dmabuf(m_clientBundle->data,
-                                                    width, height, format, flags,
-                                                    num_planes, fds, strides, offsets,
-                                                    modifiers);
-    }
-
     void dispatchFrameCallback()
     {
         for (auto* resource : m_callbackResources)
@@ -108,6 +127,8 @@ public:
 
 private:
     static gboolean s_socketCallback(GSocket*, GIOCondition, gpointer);
+
+    uint32_t m_id { 0 };
 
     ClientBundle* m_clientBundle;
     struct wpe_view_backend* m_backend;
@@ -132,7 +153,8 @@ gboolean ViewBackend::s_socketCallback(GSocket* socket, GIOCondition condition, 
 
     if (len == sizeof(uint32_t) * 2 && message[0] == 0x42) {
         auto& viewBackend = *static_cast<ViewBackend*>(data);
-        WS::Instance::singleton().registerViewBackend(message[1], viewBackend);
+        viewBackend.m_id = message[1];
+        WS::Instance::singleton().registerViewBackend(viewBackend.m_id, viewBackend);
     }
 
     return TRUE;

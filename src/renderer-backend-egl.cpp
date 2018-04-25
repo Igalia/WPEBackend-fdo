@@ -1,3 +1,28 @@
+/*
+ * Copyright (C) 2017, 2018 Igalia S.L.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+ * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "interfaces.h"
 
 #include <cstring>
@@ -5,6 +30,7 @@
 #include <glib.h>
 
 #include <cstdio>
+#include <cstdlib>
 
 namespace {
 
@@ -65,7 +91,7 @@ public:
         source.display = m_display;
 
         g_source_add_poll(m_source, &source.pfd);
-        g_source_set_name(m_source, "WPEBackend-shm::Backend");
+        g_source_set_name(m_source, "WPEBackend-fdo::Backend");
         g_source_set_priority(m_source, -70);
         g_source_set_can_recurse(m_source, TRUE);
         g_source_attach(m_source, g_main_context_get_thread_default());
@@ -121,6 +147,13 @@ public:
 
     ~Target()
     {
+        if (m_frameCallback)
+            wl_callback_destroy(m_frameCallback);
+        if (m_window)
+            wl_egl_window_destroy(m_window);
+        if (m_surface)
+            wl_surface_destroy(m_surface);
+
         if (m_socket)
             g_object_unref(m_socket);
         if (m_source) {
@@ -136,6 +169,10 @@ public:
         g_source_set_name(m_source, "WPEBackend-fdo::Target");
         g_source_set_callback(m_source, [](gpointer userData) -> gboolean {
             auto* target = static_cast<Target*>(userData);
+
+            wl_callback_destroy(target->m_frameCallback);
+            target->m_frameCallback = nullptr;
+
             wpe_renderer_backend_egl_target_dispatch_frame_complete(target->m_target);
             return G_SOURCE_CONTINUE;
         }, this, nullptr);
@@ -153,8 +190,11 @@ public:
 
     void requestFrame()
     {
-        struct wl_callback* callback = wl_surface_frame(m_surface);
-        wl_callback_add_listener(callback, &s_callbackListener, this);
+        if (m_frameCallback)
+            std::abort();
+
+        m_frameCallback = wl_surface_frame(m_surface);
+        wl_callback_add_listener(m_frameCallback, &s_callbackListener, this);
     }
 
     void dispatchFrameComplete()
@@ -174,15 +214,14 @@ private:
 
     struct wl_surface* m_surface { nullptr };
     struct wl_egl_window* m_window { nullptr };
+    struct wl_callback* m_frameCallback { nullptr };
 };
 
 const struct wl_callback_listener Target::s_callbackListener = {
     // done
-    [](void* data, struct wl_callback* callback, uint32_t time)
+    [](void* data, struct wl_callback*, uint32_t time)
     {
         static_cast<Target*>(data)->dispatchFrameComplete();
-
-        wl_callback_destroy(callback);
     },
 };
 

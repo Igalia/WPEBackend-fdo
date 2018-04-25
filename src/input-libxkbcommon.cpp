@@ -27,7 +27,7 @@
 #include "WindowsKeyboardCodes.h"
 #include <xkbcommon/xkbcommon-keysyms.h>
 
-#include <wpe/input.h>
+#include <wpe/wpe.h>
 
 extern "C" {
 
