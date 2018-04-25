@@ -36,12 +36,6 @@ namespace WS {
 struct ExportableClient {
     virtual void frameCallback(struct wl_resource*) = 0;
     virtual void exportBufferResource(struct wl_resource*) = 0;
-    virtual void exportLinuxDmabuf(uint32_t width, uint32_t height,
-                                   uint32_t format, uint32_t flags,
-                                   uint32_t num_planes,
-                                   const int32_t* fds, const uint32_t* strides,
-                                   const uint32_t* offsets,
-                                   const uint64_t* modifiers) = 0;
 };
 
 struct Surface;
