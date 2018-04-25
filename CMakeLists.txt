@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
+include(GNUInstallDirs)
+
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-exceptions -fno-rtti")
 
@@ -70,15 +72,15 @@ set_target_properties(WPEBackend-fdo
 
 install(
     TARGETS WPEBackend-fdo
-    LIBRARY DESTINATION lib
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 install(
     FILES ${WPEBACKEND_FDO_PUBLIC_HEADERS}
-    DESTINATION include/wpe-fdo-${WPEBACKEND_FDO_API_VERSION}/wpe
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wpe-fdo-${WPEBACKEND_FDO_API_VERSION}/wpe
 )
 
 configure_file(wpebackend-fdo.pc.in wpebackend-fdo-${WPEBACKEND_FDO_API_VERSION}.pc @ONLY)
 install(
     FILES "${CMAKE_CURRENT_BINARY_DIR}/wpebackend-fdo-${WPEBACKEND_FDO_API_VERSION}.pc"
-    DESTINATION lib/pkgconfig
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )
