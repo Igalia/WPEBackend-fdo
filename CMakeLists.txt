@@ -67,7 +67,6 @@ set_target_properties(WPEBackend-fdo
 
 install(
     TARGETS WPEBackend-fdo
-    EXPORT WPEBackend-fdoTargets
     LIBRARY DESTINATION lib
 )
 install(
