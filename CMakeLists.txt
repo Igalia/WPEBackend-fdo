@@ -1,12 +1,15 @@
 cmake_minimum_required(VERSION 3.0)
 cmake_policy(VERSION 3.0)
 
-set(WPEBACKEND_FDO_API_VERSION 0.1)
+project(WPEBackend-fdo VERSION 0.1)
 
-include(GNUInstallDirs)
+set(WPEBACKEND_FDO_API_VERSION 0.1)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-exceptions -fno-rtti")
+
+include(DistTargets)
+include(GNUInstallDirs)
 
 find_package(EGL REQUIRED)
 find_package(GLIB REQUIRED COMPONENTS gio)
