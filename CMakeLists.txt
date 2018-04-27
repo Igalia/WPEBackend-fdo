@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 cmake_policy(VERSION 3.0)
 
-project(WPEBackend-fdo VERSION 0.1)
+project(wpebackend-fdo VERSION 0.1)
 
 set(WPEBACKEND_FDO_API_VERSION 0.1)
 
