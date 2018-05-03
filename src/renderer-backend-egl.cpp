@@ -48,7 +48,11 @@ GSourceFuncs Source::s_sourceFuncs = {
     {
         auto& source = *reinterpret_cast<Source*>(base);
         *timeout = -1;
-        wl_display_dispatch_pending(source.display);
+
+        while (wl_display_prepare_read(source.display) != 0) {
+            if (wl_display_dispatch_pending(source.display) < 0)
+                return FALSE;
+        }
         wl_display_flush(source.display);
         return FALSE;
     },
@@ -56,15 +60,25 @@ GSourceFuncs Source::s_sourceFuncs = {
     [](GSource* base) -> gboolean
     {
         auto& source = *reinterpret_cast<Source*>(base);
-        return !!source.pfd.revents;
+
+        if (source.pfd.revents & G_IO_IN) {
+            if (wl_display_read_events(source.display) < 0)
+                return FALSE;
+            return TRUE;
+        } else {
+            wl_display_cancel_read(source.display);
+            return FALSE;
+        }
     },
     // dispatch
     [](GSource* base, GSourceFunc, gpointer) -> gboolean
     {
         auto& source = *reinterpret_cast<Source*>(base);
 
-        if (source.pfd.revents & G_IO_IN)
-            wl_display_dispatch(source.display);
+        if (source.pfd.revents & G_IO_IN) {
+            if (wl_display_dispatch_pending(source.display) < 0)
+                return FALSE;
+        }
 
         if (source.pfd.revents & (G_IO_ERR | G_IO_HUP))
             return FALSE;
