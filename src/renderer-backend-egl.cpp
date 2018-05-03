@@ -97,29 +97,30 @@ public:
     {
         m_display = wl_display_connect_to_fd(hostFd);
 
-        m_source = g_source_new(&Source::s_sourceFuncs, sizeof(Source));
-        auto& source = *reinterpret_cast<Source*>(m_source);
-        source.pfd.fd = wl_display_get_fd(m_display);
-        source.pfd.events = G_IO_IN | G_IO_ERR | G_IO_HUP;
-        source.pfd.revents = 0;
-        source.display = m_display;
+        g_mutex_init(&m_threading.mutex);
+        g_cond_init(&m_threading.cond);
+        {
+            g_mutex_lock(&m_threading.mutex);
 
-        g_source_add_poll(m_source, &source.pfd);
-        g_source_set_name(m_source, "WPEBackend-fdo::Backend");
-        g_source_set_priority(m_source, -70);
-        g_source_set_can_recurse(m_source, TRUE);
-        g_source_attach(m_source, g_main_context_get_thread_default());
+            m_threading.thread = g_thread_new("WPEBackend-fdo::Wayland",
+                &s_threadFunc, this);
 
-        m_registry = wl_display_get_registry(m_display);
-        wl_registry_add_listener(m_registry, &s_registryListener, this);
-        wl_display_roundtrip(m_display);
+            g_cond_wait(&m_threading.cond, &m_threading.mutex);
+            g_mutex_unlock(&m_threading.mutex);
+        }
     }
 
     ~Backend()
     {
-        if (m_source) {
-            g_source_destroy(m_source);
-            g_source_unref(m_source);
+        {
+            g_mutex_lock(&m_threading.mutex);
+
+            g_main_loop_quit(m_threading.loop);
+
+            g_cond_wait(&m_threading.cond, &m_threading.mutex);
+            g_thread_join(m_threading.thread);
+
+            g_mutex_unlock(&m_threading.mutex);
         }
     }
 
@@ -128,12 +129,21 @@ public:
 
 private:
     static const struct wl_registry_listener s_registryListener;
+    static gpointer s_threadFunc(gpointer);
 
     struct wl_display* m_display;
     struct wl_registry* m_registry;
     struct wl_compositor* m_compositor;
 
-    GSource* m_source;
+    struct {
+        GMutex mutex;
+        GCond cond;
+
+        GThread* thread { nullptr };
+        GMainContext* context { nullptr };
+        GMainLoop* loop { nullptr };
+        GSource* source { nullptr };
+    } m_threading;
 };
 
 const struct wl_registry_listener Backend::s_registryListener = {
@@ -148,6 +158,54 @@ const struct wl_registry_listener Backend::s_registryListener = {
     // global_remove
     [](void*, struct wl_registry*, uint32_t) { },
 };
+
+gpointer Backend::s_threadFunc(gpointer data)
+{
+    auto& backend = *static_cast<Backend*>(data);
+    {
+        g_mutex_lock(&backend.m_threading.mutex);
+
+        backend.m_threading.context = g_main_context_new();
+        g_main_context_push_thread_default(backend.m_threading.context);
+        backend.m_threading.loop = g_main_loop_new(backend.m_threading.context, FALSE);
+
+        backend.m_threading.source = g_source_new(&Source::s_sourceFuncs, sizeof(Source));
+        auto& source = *reinterpret_cast<Source*>(backend.m_threading.source);
+        source.pfd.fd = wl_display_get_fd(backend.m_display);
+        source.pfd.events = G_IO_IN | G_IO_ERR | G_IO_HUP;
+        source.pfd.revents = 0;
+        source.display = backend.m_display;
+
+        g_source_add_poll(backend.m_threading.source, &source.pfd);
+        g_source_set_name(backend.m_threading.source, "WPEBackend-fdo::Backend");
+        g_source_set_priority(backend.m_threading.source, -70);
+        g_source_set_can_recurse(backend.m_threading.source, TRUE);
+        g_source_attach(backend.m_threading.source, backend.m_threading.context);
+
+        backend.m_registry = wl_display_get_registry(backend.m_display);
+        wl_registry_add_listener(backend.m_registry, &s_registryListener, &backend);
+        wl_display_roundtrip(backend.m_display);
+
+        g_cond_signal(&backend.m_threading.cond);
+        g_mutex_unlock(&backend.m_threading.mutex);
+    }
+
+    g_main_loop_run(backend.m_threading.loop);
+
+    {
+        g_mutex_lock(&backend.m_threading.mutex);
+
+        g_source_destroy(backend.m_threading.source);
+        g_source_unref(backend.m_threading.source);
+        g_main_loop_unref(backend.m_threading.loop);
+        g_main_context_unref(backend.m_threading.context);
+
+        g_cond_signal(&backend.m_threading.cond);
+        g_mutex_unlock(&backend.m_threading.mutex);
+    }
+
+    return nullptr;
+}
 
 class Target {
 public:
