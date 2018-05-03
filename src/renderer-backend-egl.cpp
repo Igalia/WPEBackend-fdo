@@ -122,6 +122,8 @@ public:
 
             g_mutex_unlock(&m_threading.mutex);
         }
+
+        wl_display_disconnect(m_display);
     }
 
     struct wl_display* display() const { return m_display; }
