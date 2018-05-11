@@ -139,8 +139,6 @@ static const struct wl_surface_interface s_surfaceInterface = {
     [](struct wl_client*, struct wl_resource*, int32_t) { },
     // set_buffer_scale
     [](struct wl_client*, struct wl_resource*, int32_t) { },
-    // damage_buffer
-    [](struct wl_client*, struct wl_resource*, int32_t, int32_t, int32_t, int32_t) { },
 };
 
 static const struct wl_compositor_interface s_compositorInterface = {
