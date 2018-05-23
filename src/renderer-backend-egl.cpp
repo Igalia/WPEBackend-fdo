@@ -29,6 +29,7 @@
 #include <gio/gio.h>
 #include <glib.h>
 
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 
@@ -40,6 +41,7 @@ struct Source {
     GSource source;
     GPollFD pfd;
     struct wl_display* display;
+    struct wl_event_queue* queue;
 };
 
 GSourceFuncs Source::s_sourceFuncs = {
@@ -49,8 +51,8 @@ GSourceFuncs Source::s_sourceFuncs = {
         auto& source = *reinterpret_cast<Source*>(base);
         *timeout = -1;
 
-        while (wl_display_prepare_read(source.display) != 0) {
-            if (wl_display_dispatch_pending(source.display) < 0)
+        while (wl_display_prepare_read_queue(source.display, source.queue) != 0) {
+            if (wl_display_dispatch_queue_pending(source.display, source.queue) < 0)
                 return FALSE;
         }
         wl_display_flush(source.display);
@@ -76,7 +78,7 @@ GSourceFuncs Source::s_sourceFuncs = {
         auto& source = *reinterpret_cast<Source*>(base);
 
         if (source.pfd.revents & G_IO_IN) {
-            if (wl_display_dispatch_pending(source.display) < 0)
+            if (wl_display_dispatch_queue_pending(source.display, source.queue) < 0)
                 return FALSE;
         }
 
@@ -96,10 +98,15 @@ public:
     Backend(int hostFd)
     {
         m_display = wl_display_connect_to_fd(hostFd);
+        m_queue = wl_display_create_queue(m_display);
 
         m_registry = wl_display_get_registry(m_display);
+        wl_proxy_set_queue((struct wl_proxy*)m_registry, m_queue);
         wl_registry_add_listener(m_registry, &s_registryListener, this);
-        wl_display_roundtrip(m_display);
+        wl_display_roundtrip_queue(m_display, m_queue);
+
+        assert(!!m_compositor);
+        wl_proxy_set_queue((struct wl_proxy*)m_compositor, m_queue);
 
         g_mutex_init(&m_threading.mutex);
         g_cond_init(&m_threading.cond);
@@ -129,10 +136,12 @@ public:
 
         wl_compositor_destroy(m_compositor);
         wl_registry_destroy(m_registry);
+        wl_event_queue_destroy(m_queue);
         wl_display_disconnect(m_display);
     }
 
     struct wl_display* display() const { return m_display; }
+    struct wl_event_queue* queue() const { return m_queue; }
     struct wl_compositor* compositor() const { return m_compositor; }
 
 private:
@@ -140,6 +149,7 @@ private:
     static gpointer s_threadFunc(gpointer);
 
     struct wl_display* m_display;
+    struct wl_event_queue* m_queue;
     struct wl_registry* m_registry;
     struct wl_compositor* m_compositor;
 
@@ -183,6 +193,7 @@ gpointer Backend::s_threadFunc(gpointer data)
         source.pfd.events = G_IO_IN | G_IO_ERR | G_IO_HUP;
         source.pfd.revents = 0;
         source.display = backend.m_display;
+        source.queue = backend.m_queue;
 
         g_source_add_poll(backend.m_threading.source, &source.pfd);
         g_source_set_name(backend.m_threading.source, "WPEBackend-fdo::Backend");
@@ -255,8 +266,10 @@ public:
         g_source_attach(m_source, g_main_context_get_thread_default());
 
         m_surface = wl_compositor_create_surface(backend.compositor());
+        wl_proxy_set_queue((struct wl_proxy*)m_surface, backend.queue());
+        wl_display_roundtrip_queue(backend.display(), backend.queue());
+
         m_window = wl_egl_window_create(m_surface, width, height);
-        wl_display_roundtrip(backend.display());
 
         uint32_t message[] = { 0x42, wl_proxy_get_id(reinterpret_cast<struct wl_proxy*>(m_surface)) };
         if (m_socket)
