@@ -118,17 +118,20 @@ public:
         for (auto* resource : m_callbackResources)
             wl_callback_send_done(resource, 0);
         m_callbackResources.clear();
+        wl_client_flush(m_client);
     }
 
     void releaseBuffer(struct wl_resource* buffer_resource)
     {
         wl_buffer_send_release(buffer_resource);
+        wl_client_flush(m_client);
     }
 
 private:
     static gboolean s_socketCallback(GSocket*, GIOCondition, gpointer);
 
     uint32_t m_id { 0 };
+    struct wl_client* m_client { nullptr };
 
     ClientBundle* m_clientBundle;
     struct wpe_view_backend* m_backend;
@@ -154,7 +157,7 @@ gboolean ViewBackend::s_socketCallback(GSocket* socket, GIOCondition condition, 
     if (len == sizeof(uint32_t) * 2 && message[0] == 0x42) {
         auto& viewBackend = *static_cast<ViewBackend*>(data);
         viewBackend.m_id = message[1];
-        WS::Instance::singleton().registerViewBackend(viewBackend.m_id, viewBackend);
+        viewBackend.m_client = WS::Instance::singleton().registerViewBackend(viewBackend.m_id, viewBackend);
     }
 
     return TRUE;
