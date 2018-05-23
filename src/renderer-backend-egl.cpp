@@ -97,6 +97,10 @@ public:
     {
         m_display = wl_display_connect_to_fd(hostFd);
 
+        m_registry = wl_display_get_registry(m_display);
+        wl_registry_add_listener(m_registry, &s_registryListener, this);
+        wl_display_roundtrip(m_display);
+
         g_mutex_init(&m_threading.mutex);
         g_cond_init(&m_threading.cond);
         {
@@ -183,10 +187,6 @@ gpointer Backend::s_threadFunc(gpointer data)
         g_source_set_priority(backend.m_threading.source, -70);
         g_source_set_can_recurse(backend.m_threading.source, TRUE);
         g_source_attach(backend.m_threading.source, backend.m_threading.context);
-
-        backend.m_registry = wl_display_get_registry(backend.m_display);
-        wl_registry_add_listener(backend.m_registry, &s_registryListener, &backend);
-        wl_display_roundtrip(backend.m_display);
 
         g_cond_signal(&backend.m_threading.cond);
         g_mutex_unlock(&backend.m_threading.mutex);
