@@ -57,6 +57,7 @@ set(WPEBACKEND_FDO_SOURCES
     src/input-libxkbcommon.cpp
     src/ws.cpp
     src/linux-dmabuf/linux-dmabuf.c
+    src/linux-dmabuf/linux-dmabuf-protocol.c
 )
 
 add_library(WPEBackend-fdo SHARED ${WPEBACKEND_FDO_SOURCES})
