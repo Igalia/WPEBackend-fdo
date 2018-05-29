@@ -171,7 +171,7 @@ __attribute__((visibility("default")))
 struct wpe_view_backend_exportable_fdo*
 wpe_view_backend_exportable_fdo_create(struct wpe_view_backend_exportable_fdo_client* client, void* data, uint32_t width, uint32_t height)
 {
-    auto* clientBundle = new ClientBundle{ client, data, nullptr, width, height };
+    auto* clientBundle = new ClientBundle(client, data, nullptr, width, height);
 
     struct wpe_view_backend* backend = wpe_view_backend_create_with_backend_interface(&view_backend_exportable_fdo_interface, clientBundle);
 

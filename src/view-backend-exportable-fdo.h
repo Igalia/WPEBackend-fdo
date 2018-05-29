@@ -33,12 +33,32 @@ namespace {
 
 class ViewBackend;
 
-struct ClientBundle {
-    struct wpe_view_backend_exportable_fdo_client* client;
+class ClientBundleBase {
+public:
+    ClientBundleBase(void* _data, ViewBackend* _viewBackend, uint32_t _initialWidth, uint32_t _initialHeight)
+        : data(_data)
+        , viewBackend(_viewBackend)
+        , initialWidth(_initialWidth)
+        , initialHeight(_initialHeight)
+    {
+    }
+
     void* data;
     ViewBackend* viewBackend;
     uint32_t initialWidth;
     uint32_t initialHeight;
+};
+
+class ClientBundle : public ClientBundleBase {
+public:
+    ClientBundle(struct wpe_view_backend_exportable_fdo_client* _client, void* data, ViewBackend* viewBackend,
+                 uint32_t initialWidth, uint32_t initialHeight)
+        : ClientBundleBase(data, viewBackend, initialWidth, initialHeight)
+        , client(_client)
+    {
+    }
+
+    struct wpe_view_backend_exportable_fdo_client* client;
 };
 
 
