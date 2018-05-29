@@ -23,122 +23,93 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "wpe-fdo/view-backend-exportable.h"
-
 #include "ws.h"
-#include <gio/gio.h>
+#include "view-backend-exportable-fdo.h"
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <vector>
 
 namespace {
 
-class ViewBackend;
+ViewBackend::ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* backend)
+    : m_clientBundle(clientBundle)
+    , m_backend(backend)
+{
+    m_clientBundle->viewBackend = this;
+}
 
-struct ClientBundle {
-    struct wpe_view_backend_exportable_fdo_client* client;
-    void* data;
-    ViewBackend* viewBackend;
-    uint32_t initialWidth;
-    uint32_t initialHeight;
-};
+ViewBackend::~ViewBackend()
+{
+    for (auto* resource : m_callbackResources)
+        wl_resource_destroy(resource);
 
-class ViewBackend : public WS::ExportableClient {
-public:
-    ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* backend)
-        : m_clientBundle(clientBundle)
-        , m_backend(backend)
-    {
-        m_clientBundle->viewBackend = this;
+    WS::Instance::singleton().unregisterViewBackend(m_id);
+
+    if (m_clientFd != -1)
+        close(m_clientFd);
+
+    if (m_source) {
+        g_source_destroy(m_source);
+        g_source_unref(m_source);
+    }
+    if (m_socket)
+        g_object_unref(m_socket);
+}
+
+void ViewBackend::initialize()
+{
+    int sockets[2];
+    int ret = socketpair(AF_UNIX, SOCK_STREAM, 0, sockets);
+    if (ret == -1)
+        return;
+
+    m_socket = g_socket_new_from_fd(sockets[0], nullptr);
+    if (!m_socket) {
+        close(sockets[0]);
+        close(sockets[1]);
+        return;
     }
 
-    ~ViewBackend()
-    {
-        for (auto* resource : m_callbackResources)
-            wl_resource_destroy(resource);
+    g_socket_set_blocking(m_socket, FALSE);
 
-        WS::Instance::singleton().unregisterViewBackend(m_id);
+    m_source = g_socket_create_source(m_socket, G_IO_IN, nullptr);
+    g_source_set_callback(m_source, reinterpret_cast<GSourceFunc>(s_socketCallback), this, nullptr);
+    g_source_set_priority(m_source, -70);
+    g_source_set_can_recurse(m_source, TRUE);
+    g_source_attach(m_source, g_main_context_get_thread_default());
 
-        if (m_clientFd != -1)
-            close(m_clientFd);
+    m_clientFd = sockets[1];
 
-        if (m_source) {
-            g_source_destroy(m_source);
-            g_source_unref(m_source);
-        }
-        if (m_socket)
-            g_object_unref(m_socket);
-    }
+    wpe_view_backend_dispatch_set_size(m_backend,
+                                       m_clientBundle->initialWidth,
+                                       m_clientBundle->initialHeight);
+}
 
-    void initialize()
-    {
-        int sockets[2];
-        int ret = socketpair(AF_UNIX, SOCK_STREAM, 0, sockets);
-        if (ret == -1)
-            return;
+int ViewBackend::clientFd()
+{
+    return dup(m_clientFd);
+}
 
-        m_socket = g_socket_new_from_fd(sockets[0], nullptr);
-        if (!m_socket) {
-            close(sockets[0]);
-            close(sockets[1]);
-            return;
-        }
+void ViewBackend::frameCallback(struct wl_resource* callbackResource)
+{
+    m_callbackResources.push_back(callbackResource);
+}
 
-        g_socket_set_blocking(m_socket, FALSE);
+void ViewBackend::exportBufferResource(struct wl_resource* bufferResource)
+{
+    m_clientBundle->client->export_buffer_resource(m_clientBundle->data, bufferResource);
+}
 
-        m_source = g_socket_create_source(m_socket, G_IO_IN, nullptr);
-        g_source_set_callback(m_source, reinterpret_cast<GSourceFunc>(s_socketCallback), this, nullptr);
-        g_source_set_priority(m_source, -70);
-        g_source_set_can_recurse(m_source, TRUE);
-        g_source_attach(m_source, g_main_context_get_thread_default());
+void ViewBackend::dispatchFrameCallback()
+{
+    for (auto* resource : m_callbackResources)
+        wl_callback_send_done(resource, 0);
+    m_callbackResources.clear();
+}
 
-        m_clientFd = sockets[1];
-
-        wpe_view_backend_dispatch_set_size(m_backend,
-            m_clientBundle->initialWidth, m_clientBundle->initialHeight);
-    }
-
-    int clientFd()
-    {
-        return dup(m_clientFd);
-    }
-
-    void frameCallback(struct wl_resource* callbackResource) override
-    {
-        m_callbackResources.push_back(callbackResource);
-    }
-
-    void exportBufferResource(struct wl_resource* bufferResource) override
-    {
-        m_clientBundle->client->export_buffer_resource(m_clientBundle->data, bufferResource);
-    }
-
-    void dispatchFrameCallback()
-    {
-        for (auto* resource : m_callbackResources)
-            wl_callback_send_done(resource, 0);
-        m_callbackResources.clear();
-    }
-
-    void releaseBuffer(struct wl_resource* buffer_resource)
-    {
-        wl_buffer_send_release(buffer_resource);
-    }
-
-private:
-    static gboolean s_socketCallback(GSocket*, GIOCondition, gpointer);
-
-    uint32_t m_id { 0 };
-
-    ClientBundle* m_clientBundle;
-    struct wpe_view_backend* m_backend;
-
-    std::vector<struct wl_resource*> m_callbackResources;
-
-    GSocket* m_socket;
-    GSource* m_source;
-    int m_clientFd { -1 };
-};
+void ViewBackend::releaseBuffer(struct wl_resource* buffer_resource)
+{
+    wl_buffer_send_release(buffer_resource);
+}
 
 gboolean ViewBackend::s_socketCallback(GSocket* socket, GIOCondition condition, gpointer data)
 {
