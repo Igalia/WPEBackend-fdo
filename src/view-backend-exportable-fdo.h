@@ -71,7 +71,7 @@ public:
 
 class ViewBackend : public WS::ExportableClient {
 public:
-    ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* backend);
+    ViewBackend(ClientBundleBase* clientBundle, struct wpe_view_backend* backend);
     ~ViewBackend();
 
     void initialize();
@@ -86,7 +86,7 @@ private:
 
     uint32_t m_id { 0 };
 
-    ClientBundle* m_clientBundle;
+    ClientBundleBase* m_clientBundle;
     struct wpe_view_backend* m_backend;
 
     std::vector<struct wl_resource*> m_callbackResources;

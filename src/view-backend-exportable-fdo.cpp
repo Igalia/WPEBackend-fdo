@@ -30,7 +30,7 @@
 
 namespace {
 
-ViewBackend::ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* backend)
+ViewBackend::ViewBackend(ClientBundleBase* clientBundle, struct wpe_view_backend* backend)
     : m_clientBundle(clientBundle)
     , m_backend(backend)
 {
@@ -163,7 +163,7 @@ static struct wpe_view_backend_interface view_backend_exportable_fdo_interface =
 extern "C" {
 
 struct wpe_view_backend_exportable_fdo {
-    ClientBundle* clientBundle;
+    ClientBundleBase* clientBundle;
     struct wpe_view_backend* backend;
 };
 
