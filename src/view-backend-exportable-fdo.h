@@ -98,3 +98,15 @@ private:
 
 
 } // namespace
+
+extern "C" {
+
+struct wpe_view_backend_exportable_fdo;
+
+struct wpe_view_backend_exportable_fdo*
+wpe_view_backend_exportable_fdo_new(ClientBundleBase *clientBundle);
+
+ClientBundleBase*
+wpe_view_backend_exportable_fdo_get_client_bundle(struct wpe_view_backend_exportable_fdo* exportable);
+
+}
