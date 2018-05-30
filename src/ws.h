@@ -53,6 +53,11 @@ public:
     void registerViewBackend(uint32_t, ExportableClient&);
     void unregisterViewBackend(uint32_t);
 
+    EGLDisplay getEGLDisplay()
+    {
+        return m_eglDisplay;
+    }
+
 private:
     Instance();
 
@@ -61,6 +66,8 @@ private:
     GSource* m_source;
 
     std::unordered_map<uint32_t, Surface*> m_viewBackendMap;
+
+    EGLDisplay m_eglDisplay;
 };
 
 } // namespace WS

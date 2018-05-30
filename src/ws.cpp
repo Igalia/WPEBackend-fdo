@@ -222,6 +222,8 @@ void Instance::initialize(EGLDisplay eglDisplay)
     PFNEGLBINDWAYLANDDISPLAYWL bindWaylandDisplayWL =
         reinterpret_cast<PFNEGLBINDWAYLANDDISPLAYWL>(eglGetProcAddress("eglBindWaylandDisplayWL"));
     bindWaylandDisplayWL(eglDisplay, m_display);
+
+    m_eglDisplay = eglDisplay;
 }
 
 int Instance::createClient()
