@@ -96,7 +96,7 @@ void ViewBackend::frameCallback(struct wl_resource* callbackResource)
 
 void ViewBackend::exportBufferResource(struct wl_resource* bufferResource)
 {
-    m_clientBundle->client->export_buffer_resource(m_clientBundle->data, bufferResource);
+    m_clientBundle->exportBuffer(bufferResource);
 }
 
 void ViewBackend::dispatchFrameCallback()

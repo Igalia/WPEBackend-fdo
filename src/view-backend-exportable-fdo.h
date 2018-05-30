@@ -43,6 +43,8 @@ public:
     {
     }
 
+    virtual void exportBuffer(struct wl_resource *bufferResource) = 0;
+
     void* data;
     ViewBackend* viewBackend;
     uint32_t initialWidth;
@@ -56,6 +58,11 @@ public:
         : ClientBundleBase(data, viewBackend, initialWidth, initialHeight)
         , client(_client)
     {
+    }
+
+    void exportBuffer(struct wl_resource *bufferResource) override
+    {
+        client->export_buffer_resource(data, bufferResource);
     }
 
     struct wpe_view_backend_exportable_fdo_client* client;
