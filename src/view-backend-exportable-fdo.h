@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include <cassert>
 #include "wpe-fdo/view-backend-exportable.h"
 #include <gio/gio.h>
 #include <vector>
@@ -44,6 +45,7 @@ public:
     }
 
     virtual void exportBuffer(struct wl_resource *bufferResource) = 0;
+    virtual void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer) = 0;
 
     void* data;
     ViewBackend* viewBackend;
@@ -63,6 +65,11 @@ public:
     void exportBuffer(struct wl_resource *bufferResource) override
     {
         client->export_buffer_resource(data, bufferResource);
+    }
+
+    void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer)
+    {
+        assert(!"This interface doesn't support Linux DMA buffers");
     }
 
     struct wpe_view_backend_exportable_fdo_client* client;

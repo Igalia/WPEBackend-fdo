@@ -89,6 +89,11 @@ public:
         client->export_egl_image(data, image);
     }
 
+    void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer)
+    {
+        // @FIXME: placeholder, to be implemented
+    }
+
     struct buffer_data* releaseImage(EGLImageKHR image)
     {
         for (auto* buf_data : m_buffers)
