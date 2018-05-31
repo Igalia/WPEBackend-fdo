@@ -28,6 +28,7 @@
 #include <glib.h>
 #include <unordered_map>
 #include <wayland-server.h>
+#include "linux-dmabuf/linux-dmabuf.h"
 
 typedef void *EGLDisplay;
 
@@ -36,6 +37,7 @@ namespace WS {
 struct ExportableClient {
     virtual void frameCallback(struct wl_resource*) = 0;
     virtual void exportBufferResource(struct wl_resource*) = 0;
+    virtual void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) = 0;
 };
 
 struct Surface;

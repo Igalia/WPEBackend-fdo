@@ -85,6 +85,7 @@ public:
     int clientFd();
     void frameCallback(struct wl_resource* callbackResource) override;
     void exportBufferResource(struct wl_resource* bufferResource) override;
+    void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) override;
     void dispatchFrameCallback();
     void releaseBuffer(struct wl_resource* buffer_resource);
 
