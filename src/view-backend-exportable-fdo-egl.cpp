@@ -27,6 +27,7 @@
 #include "ws.h"
 #include "view-backend-exportable-fdo.h"
 #include "wpe-fdo/view-backend-exportable-egl.h"
+#include "linux-dmabuf/linux-dmabuf.h"
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <list>
@@ -91,7 +92,49 @@ public:
 
     void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer)
     {
-        // @FIXME: placeholder, to be implemented
+        const struct linux_dmabuf_attributes *buf_attribs =
+            linux_dmabuf_get_buffer_attributes(dmabuf_buffer);
+        assert(buf_attribs);
+
+        EGLint attribs[50];
+        int atti = 0;
+
+        attribs[atti++] = EGL_WIDTH;
+        attribs[atti++] = buf_attribs->width;
+        attribs[atti++] = EGL_HEIGHT;
+        attribs[atti++] = buf_attribs->height;
+        attribs[atti++] = EGL_LINUX_DRM_FOURCC_EXT;
+        attribs[atti++] = buf_attribs->format;
+
+        for (int i = 0; i < buf_attribs->n_planes; i++) {
+            attribs[atti++] = EGL_DMA_BUF_PLANE0_FD_EXT;
+            attribs[atti++] = buf_attribs->fd[i];
+            attribs[atti++] = EGL_DMA_BUF_PLANE0_OFFSET_EXT;
+            attribs[atti++] = buf_attribs->offset[i];
+            attribs[atti++] = EGL_DMA_BUF_PLANE0_PITCH_EXT;
+            attribs[atti++] = buf_attribs->stride[i];
+            attribs[atti++] = EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT;
+            attribs[atti++] = buf_attribs->modifier[i] & 0xFFFFFFFF;
+            attribs[atti++] = EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT;
+            attribs[atti++] = buf_attribs->modifier[i] >> 32;
+        }
+
+        attribs[atti++] = EGL_NONE;
+
+        EGLImageKHR image = eglCreateImage (m_eglDisplay,
+                                            EGL_NO_CONTEXT,
+                                            EGL_LINUX_DMA_BUF_EXT,
+                                            nullptr,
+                                            attribs);
+        if (!image)
+            return;
+
+        auto* buf_data = new struct buffer_data;
+        buf_data->buffer_resource = nullptr;
+        buf_data->egl_image = image;
+        m_buffers.push_back(buf_data);
+
+        client->export_egl_image(data, image);
     }
 
     struct buffer_data* releaseImage(EGLImageKHR image)
