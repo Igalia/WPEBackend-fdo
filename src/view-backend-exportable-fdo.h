@@ -111,7 +111,7 @@ static struct wpe_view_backend_interface view_backend_exportable_fdo_interface =
     // create
     [](void* data, struct wpe_view_backend* backend) -> void*
     {
-        auto* clientBundle = reinterpret_cast<ClientBundle*>(data);
+        auto* clientBundle = reinterpret_cast<ClientBundleBase*>(data);
         return new ViewBackend(clientBundle, backend);
     },
     // destroy
