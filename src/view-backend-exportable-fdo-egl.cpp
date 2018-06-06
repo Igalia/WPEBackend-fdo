@@ -39,7 +39,7 @@ struct buffer_data {
     EGLImageKHR egl_image;
 };
 
-class ClientBundleEGL : public ClientBundleBase {
+class ClientBundleEGL final : public ClientBundleBase {
 public:
     ClientBundleEGL(struct wpe_view_backend_exportable_fdo_egl_client* _client, void* data,
                     ViewBackend* viewBackend, uint32_t initialWidth, uint32_t initialHeight)
@@ -57,7 +57,7 @@ public:
         assert (eglDestroyImage);
     }
 
-    ~ClientBundleEGL()
+    virtual ~ClientBundleEGL()
     {
         for (auto* buf_data : m_buffers) {
             assert(buf_data->egl_image);
@@ -90,7 +90,7 @@ public:
         client->export_egl_image(data, image);
     }
 
-    void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer)
+    void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer) override
     {
         const struct linux_dmabuf_attributes *buf_attribs =
             linux_dmabuf_get_buffer_attributes(dmabuf_buffer);

@@ -28,7 +28,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-class ClientBundle : public ClientBundleBase {
+class ClientBundle final : public ClientBundleBase {
 public:
     ClientBundle(struct wpe_view_backend_exportable_fdo_client* _client, void* data, ViewBackend* viewBackend,
                  uint32_t initialWidth, uint32_t initialHeight)
@@ -37,12 +37,14 @@ public:
     {
     }
 
+    virtual ~ClientBundle() = default;
+
     void exportBuffer(struct wl_resource *bufferResource) override
     {
         client->export_buffer_resource(data, bufferResource);
     }
 
-    void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer)
+    void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer) override
     {
         assert(!"This interface doesn't support Linux DMA buffers");
     }
