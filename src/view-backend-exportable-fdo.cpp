@@ -27,16 +27,16 @@
 #include "view-backend-exportable-fdo.h"
 #include "view-backend-exportable-private.h"
 
-class ClientBundle final : public ClientBundleBase {
+class ClientBundleBuffer final : public ClientBundle {
 public:
-    ClientBundle(struct wpe_view_backend_exportable_fdo_client* _client, void* data, ViewBackend* viewBackend,
+    ClientBundleBuffer(struct wpe_view_backend_exportable_fdo_client* _client, void* data, ViewBackend* viewBackend,
                  uint32_t initialWidth, uint32_t initialHeight)
-        : ClientBundleBase(data, viewBackend, initialWidth, initialHeight)
+        : ClientBundle(data, viewBackend, initialWidth, initialHeight)
         , client(_client)
     {
     }
 
-    virtual ~ClientBundle() = default;
+    virtual ~ClientBundleBuffer() = default;
 
     void exportBuffer(struct wl_resource *bufferResource) override
     {
@@ -57,7 +57,7 @@ __attribute__((visibility("default")))
 struct wpe_view_backend_exportable_fdo*
 wpe_view_backend_exportable_fdo_create(struct wpe_view_backend_exportable_fdo_client* client, void* data, uint32_t width, uint32_t height)
 {
-    auto* clientBundle = new ClientBundle(client, data, nullptr, width, height);
+    auto* clientBundle = new ClientBundleBuffer(client, data, nullptr, width, height);
 
     struct wpe_view_backend* backend = wpe_view_backend_create_with_backend_interface(&view_backend_exportable_fdo_interface, clientBundle);
 

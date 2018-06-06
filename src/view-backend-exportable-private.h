@@ -34,9 +34,9 @@
 
 class ViewBackend;
 
-class ClientBundleBase {
+class ClientBundle {
 public:
-    ClientBundleBase(void* _data, ViewBackend* _viewBackend, uint32_t _initialWidth, uint32_t _initialHeight)
+    ClientBundle(void* _data, ViewBackend* _viewBackend, uint32_t _initialWidth, uint32_t _initialHeight)
         : data(_data)
         , viewBackend(_viewBackend)
         , initialWidth(_initialWidth)
@@ -44,7 +44,7 @@ public:
     {
     }
 
-    virtual ~ClientBundleBase() = default;
+    virtual ~ClientBundle() = default;
 
     virtual void exportBuffer(struct wl_resource *bufferResource) = 0;
     virtual void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer) = 0;
@@ -58,7 +58,7 @@ public:
 
 class ViewBackend : public WS::ExportableClient {
 public:
-    ViewBackend(ClientBundleBase* clientBundle, struct wpe_view_backend* backend);
+    ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* backend);
     ~ViewBackend();
 
     void initialize();
@@ -74,7 +74,7 @@ private:
 
     uint32_t m_id { 0 };
 
-    ClientBundleBase* m_clientBundle;
+    ClientBundle* m_clientBundle;
     struct wpe_view_backend* m_backend;
 
     std::vector<struct wl_resource*> m_callbackResources;
@@ -85,7 +85,7 @@ private:
 };
 
 struct wpe_view_backend_exportable_fdo {
-    ClientBundleBase* clientBundle;
+    ClientBundle* clientBundle;
     struct wpe_view_backend* backend;
 };
 
@@ -93,7 +93,7 @@ static struct wpe_view_backend_interface view_backend_exportable_fdo_interface =
     // create
     [](void* data, struct wpe_view_backend* backend) -> void*
     {
-        auto* clientBundle = reinterpret_cast<ClientBundleBase*>(data);
+        auto* clientBundle = reinterpret_cast<ClientBundle*>(data);
         return new ViewBackend(clientBundle, backend);
     },
     // destroy

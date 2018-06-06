@@ -40,11 +40,11 @@ struct buffer_data {
     EGLImageKHR egl_image;
 };
 
-class ClientBundleEGL final : public ClientBundleBase {
+class ClientBundleEGL final : public ClientBundle {
 public:
     ClientBundleEGL(struct wpe_view_backend_exportable_fdo_egl_client* _client, void* data,
                     ViewBackend* viewBackend, uint32_t initialWidth, uint32_t initialHeight)
-        : ClientBundleBase(data, viewBackend, initialWidth, initialHeight)
+        : ClientBundle(data, viewBackend, initialWidth, initialHeight)
         , client(_client)
     {
         m_eglDisplay = WS::Instance::singleton().getEGLDisplay();

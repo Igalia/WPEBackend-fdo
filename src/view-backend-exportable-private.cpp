@@ -30,7 +30,7 @@
 #include <gio/gio.h>
 #include <vector>
 
-ViewBackend::ViewBackend(ClientBundleBase* clientBundle, struct wpe_view_backend* backend)
+ViewBackend::ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* backend)
     : m_clientBundle(clientBundle)
     , m_backend(backend)
 {
