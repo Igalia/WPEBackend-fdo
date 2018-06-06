@@ -30,8 +30,6 @@
 #include <gio/gio.h>
 #include <vector>
 
-namespace {
-
 class ViewBackend;
 
 class ClientBundleBase {
@@ -103,9 +101,6 @@ private:
     GSource* m_source;
     int m_clientFd { -1 };
 };
-
-
-} // namespace
 
 extern "C" {
 

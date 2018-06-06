@@ -28,8 +28,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-namespace {
-
 ViewBackend::ViewBackend(ClientBundleBase* clientBundle, struct wpe_view_backend* backend)
     : m_clientBundle(clientBundle)
     , m_backend(backend)
@@ -162,8 +160,6 @@ static struct wpe_view_backend_interface view_backend_exportable_fdo_interface =
         return backend.clientFd();
     }
 };
-
-} // namespace
 
 extern "C" {
 
