@@ -134,57 +134,7 @@ gboolean ViewBackend::s_socketCallback(GSocket* socket, GIOCondition condition, 
     return TRUE;
 }
 
-static struct wpe_view_backend_interface view_backend_exportable_fdo_interface = {
-    // create
-    [](void* data, struct wpe_view_backend* backend) -> void*
-    {
-        auto* clientBundle = reinterpret_cast<ClientBundle*>(data);
-        return new ViewBackend(clientBundle, backend);
-    },
-    // destroy
-    [](void* data)
-    {
-        auto* backend = reinterpret_cast<ViewBackend*>(data);
-        delete backend;
-    },
-    // initialize
-    [](void* data)
-    {
-        auto& backend = *reinterpret_cast<ViewBackend*>(data);
-        backend.initialize();
-    },
-    // get_renderer_host_fd
-    [](void* data) -> int
-    {
-        auto& backend = *reinterpret_cast<ViewBackend*>(data);
-        return backend.clientFd();
-    }
-};
-
 extern "C" {
-
-struct wpe_view_backend_exportable_fdo {
-    ClientBundleBase* clientBundle;
-    struct wpe_view_backend* backend;
-};
-
-struct wpe_view_backend_exportable_fdo*
-wpe_view_backend_exportable_fdo_new(ClientBundleBase *clientBundle)
-{
-    struct wpe_view_backend* backend = wpe_view_backend_create_with_backend_interface(&view_backend_exportable_fdo_interface, clientBundle);
-
-    auto* exportable = new struct wpe_view_backend_exportable_fdo;
-    exportable->clientBundle = clientBundle;
-    exportable->backend = backend;
-
-    return exportable;
-}
-
-ClientBundleBase*
-wpe_view_backend_exportable_fdo_get_client_bundle(struct wpe_view_backend_exportable_fdo* exportable)
-{
-    return exportable->clientBundle;
-}
 
 __attribute__((visibility("default")))
 struct wpe_view_backend_exportable_fdo*
@@ -192,7 +142,13 @@ wpe_view_backend_exportable_fdo_create(struct wpe_view_backend_exportable_fdo_cl
 {
     auto* clientBundle = new ClientBundle(client, data, nullptr, width, height);
 
-    return wpe_view_backend_exportable_fdo_new(clientBundle);
+    struct wpe_view_backend* backend = wpe_view_backend_create_with_backend_interface(&view_backend_exportable_fdo_interface, clientBundle);
+
+    auto* exportable = new struct wpe_view_backend_exportable_fdo;
+    exportable->clientBundle = clientBundle;
+    exportable->backend = backend;
+
+    return exportable;
 }
 
 __attribute__((visibility("default")))

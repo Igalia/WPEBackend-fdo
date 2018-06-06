@@ -170,15 +170,20 @@ wpe_view_backend_exportable_fdo_egl_create(struct wpe_view_backend_exportable_fd
 {
     auto* clientBundle = new ClientBundleEGL(client, data, nullptr, width, height);
 
-    return wpe_view_backend_exportable_fdo_new(clientBundle);
+    struct wpe_view_backend* backend = wpe_view_backend_create_with_backend_interface(&view_backend_exportable_fdo_interface, clientBundle);
+
+    auto* exportable = new struct wpe_view_backend_exportable_fdo;
+    exportable->clientBundle = clientBundle;
+    exportable->backend = backend;
+
+    return exportable;
 }
 
 __attribute__((visibility("default")))
 void
 wpe_view_backend_exportable_fdo_egl_dispatch_release_image(struct wpe_view_backend_exportable_fdo* exportable, EGLImageKHR image)
 {
-    auto* clientBundle = reinterpret_cast<ClientBundleEGL*>
-        (wpe_view_backend_exportable_fdo_get_client_bundle(exportable));
+    auto* clientBundle = reinterpret_cast<ClientBundleEGL*>(exportable->clientBundle);
 
     auto* buffer_data = clientBundle->releaseImage(image);
     if (!buffer_data)
