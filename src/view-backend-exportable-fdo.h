@@ -51,28 +51,6 @@ public:
     uint32_t initialHeight;
 };
 
-class ClientBundle : public ClientBundleBase {
-public:
-    ClientBundle(struct wpe_view_backend_exportable_fdo_client* _client, void* data, ViewBackend* viewBackend,
-                 uint32_t initialWidth, uint32_t initialHeight)
-        : ClientBundleBase(data, viewBackend, initialWidth, initialHeight)
-        , client(_client)
-    {
-    }
-
-    void exportBuffer(struct wl_resource *bufferResource) override
-    {
-        client->export_buffer_resource(data, bufferResource);
-    }
-
-    void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer)
-    {
-        assert(!"This interface doesn't support Linux DMA buffers");
-    }
-
-    struct wpe_view_backend_exportable_fdo_client* client;
-};
-
 
 class ViewBackend : public WS::ExportableClient {
 public:
