@@ -26,6 +26,7 @@
 #include <assert.h>
 #include "ws.h"
 #include "view-backend-exportable-fdo.h"
+#include "view-backend-exportable-private.h"
 #include "wpe-fdo/view-backend-exportable-egl.h"
 #include "linux-dmabuf/linux-dmabuf.h"
 #include <EGL/egl.h>
