@@ -27,6 +27,8 @@
 #include "view-backend-exportable-fdo.h"
 #include "view-backend-exportable-private.h"
 
+namespace {
+
 class ClientBundleBuffer final : public ClientBundle {
 public:
     ClientBundleBuffer(struct wpe_view_backend_exportable_fdo_client* _client, void* data, ViewBackend* viewBackend,
@@ -50,6 +52,8 @@ public:
 
     struct wpe_view_backend_exportable_fdo_client* client;
 };
+
+} // namespace
 
 extern "C" {
 
