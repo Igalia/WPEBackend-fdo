@@ -23,9 +23,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "ws.h"
-#include "view-backend-exportable-fdo.h"
 #include "view-backend-exportable-private.h"
+#include "ws.h"
+#include <cassert>
 
 namespace {
 

@@ -23,15 +23,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <assert.h>
-#include "ws.h"
-#include "view-backend-exportable-fdo.h"
-#include "view-backend-exportable-private.h"
-#include "wpe-fdo/view-backend-exportable-egl.h"
 #include "linux-dmabuf/linux-dmabuf.h"
+#include "view-backend-exportable-private.h"
+#include "ws.h"
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#include <cassert>
 #include <list>
+#include <wpe-fdo/view-backend-exportable-egl.h>
 
 namespace {
 

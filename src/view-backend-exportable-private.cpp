@@ -23,12 +23,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cassert>
 #include "view-backend-exportable-private.h"
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <gio/gio.h>
-#include <vector>
 
 ViewBackend::ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* backend)
     : m_clientBundle(clientBundle)

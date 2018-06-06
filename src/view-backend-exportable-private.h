@@ -25,12 +25,10 @@
 
 #pragma once
 
-
-#include <cassert>
-#include "wpe-fdo/view-backend-exportable.h"
 #include "ws.h"
 #include <gio/gio.h>
 #include <vector>
+#include <wpe-fdo/view-backend-exportable.h>
 
 class ViewBackend;
 
@@ -54,7 +52,6 @@ public:
     uint32_t initialWidth;
     uint32_t initialHeight;
 };
-
 
 class ViewBackend : public WS::ExportableClient {
 public:
