@@ -54,9 +54,19 @@ set(WPEBACKEND_FDO_SOURCES
     src/renderer-backend-egl.cpp
     src/renderer-host.cpp
     src/view-backend-exportable-fdo.cpp
+    src/view-backend-exportable-private.cpp
     src/input-libxkbcommon.cpp
     src/ws.cpp
+    src/linux-dmabuf/linux-dmabuf.c
+    src/linux-dmabuf/linux-dmabuf-protocol.c
 )
+
+option(EXPORTABLE_EGL "Enable the exportable EGL interface" ON)
+
+if (EXPORTABLE_EGL)
+    list(APPEND WPEBACKEND_FDO_PUBLIC_HEADERS include/wpe-fdo/view-backend-exportable-egl.h)
+    list(APPEND WPEBACKEND_FDO_SOURCES src/view-backend-exportable-fdo-egl.cpp)
+endif ()
 
 add_library(WPEBackend-fdo SHARED ${WPEBACKEND_FDO_SOURCES})
 target_include_directories(WPEBackend-fdo PRIVATE ${WPEBACKEND_FDO_INCLUDE_DIRECTORIES})
