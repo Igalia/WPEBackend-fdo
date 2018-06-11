@@ -23,14 +23,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <assert.h>
-#include "ws.h"
-#include "view-backend-exportable-fdo.h"
-#include "wpe-fdo/view-backend-exportable-egl.h"
 #include "linux-dmabuf/linux-dmabuf.h"
+#include "view-backend-exportable-private.h"
+#include "ws.h"
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#include <cassert>
 #include <list>
+#include <wpe-fdo/view-backend-exportable-egl.h>
 
 namespace {
 
@@ -39,11 +39,11 @@ struct buffer_data {
     EGLImageKHR egl_image;
 };
 
-class ClientBundleEGL : public ClientBundleBase {
+class ClientBundleEGL final : public ClientBundle {
 public:
     ClientBundleEGL(struct wpe_view_backend_exportable_fdo_egl_client* _client, void* data,
                     ViewBackend* viewBackend, uint32_t initialWidth, uint32_t initialHeight)
-        : ClientBundleBase(data, viewBackend, initialWidth, initialHeight)
+        : ClientBundle(data, viewBackend, initialWidth, initialHeight)
         , client(_client)
     {
         m_eglDisplay = WS::Instance::singleton().getEGLDisplay();
@@ -57,7 +57,7 @@ public:
         assert (eglDestroyImage);
     }
 
-    ~ClientBundleEGL()
+    virtual ~ClientBundleEGL()
     {
         for (auto* buf_data : m_buffers) {
             assert(buf_data->egl_image);
@@ -90,7 +90,7 @@ public:
         client->export_egl_image(data, image);
     }
 
-    void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer)
+    void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer) override
     {
         const struct linux_dmabuf_attributes *buf_attribs =
             linux_dmabuf_get_buffer_attributes(dmabuf_buffer);
@@ -170,15 +170,20 @@ wpe_view_backend_exportable_fdo_egl_create(struct wpe_view_backend_exportable_fd
 {
     auto* clientBundle = new ClientBundleEGL(client, data, nullptr, width, height);
 
-    return wpe_view_backend_exportable_fdo_new(clientBundle);
+    struct wpe_view_backend* backend = wpe_view_backend_create_with_backend_interface(&view_backend_exportable_fdo_interface, clientBundle);
+
+    auto* exportable = new struct wpe_view_backend_exportable_fdo;
+    exportable->clientBundle = clientBundle;
+    exportable->backend = backend;
+
+    return exportable;
 }
 
 __attribute__((visibility("default")))
 void
 wpe_view_backend_exportable_fdo_egl_dispatch_release_image(struct wpe_view_backend_exportable_fdo* exportable, EGLImageKHR image)
 {
-    auto* clientBundle = reinterpret_cast<ClientBundleEGL*>
-        (wpe_view_backend_exportable_fdo_get_client_bundle(exportable));
+    auto* clientBundle = reinterpret_cast<ClientBundleEGL*>(exportable->clientBundle);
 
     auto* buffer_data = clientBundle->releaseImage(image);
     if (!buffer_data)

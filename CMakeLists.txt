@@ -54,9 +54,11 @@ set(WPEBACKEND_FDO_SOURCES
     src/renderer-backend-egl.cpp
     src/renderer-host.cpp
     src/view-backend-exportable-fdo.cpp
+    src/view-backend-exportable-private.cpp
     src/input-libxkbcommon.cpp
     src/ws.cpp
     src/linux-dmabuf/linux-dmabuf.c
+    src/linux-dmabuf/linux-dmabuf-protocol.c
 )
 
 option(EXPORTABLE_EGL "Enable the exportable EGL interface" ON)
