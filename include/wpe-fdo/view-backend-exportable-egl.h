@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017, 2018 Igalia S.L.
+ * Copyright (C) 2018 Igalia S.L.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,53 +23,39 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#if !defined(__WPE_FDO_EGL_H_INSIDE__) && !defined(WPE_FDO_COMPILATION)
+#error "Only <wpe/fdo-egl.h> can be included directly."
+#endif
 
-#include <glib.h>
-#include <unordered_map>
-#include <wayland-server.h>
-#include "linux-dmabuf/linux-dmabuf.h"
+#ifndef __view_backend_exportable_egl_h__
+#define __view_backend_exportable_egl_h__
 
-typedef void *EGLDisplay;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-namespace WS {
+#include <wpe/wpe.h>
 
-struct ExportableClient {
-    virtual void frameCallback(struct wl_resource*) = 0;
-    virtual void exportBufferResource(struct wl_resource*) = 0;
-    virtual void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) = 0;
+typedef void* EGLImageKHR;
+
+struct wpe_view_backend_exportable_fdo;
+
+struct wpe_view_backend_exportable_fdo_egl_client {
+    void (*export_egl_image)(void* data, EGLImageKHR image);
+    void (*_wpe_reserved0)(void);
+    void (*_wpe_reserved1)(void);
+    void (*_wpe_reserved2)(void);
+    void (*_wpe_reserved3)(void);
 };
 
-struct Surface;
+struct wpe_view_backend_exportable_fdo*
+wpe_view_backend_exportable_fdo_egl_create(struct wpe_view_backend_exportable_fdo_egl_client*, void*, uint32_t width, uint32_t height);
 
-class Instance {
-public:
-    static Instance& singleton();
-    ~Instance();
+void
+wpe_view_backend_exportable_fdo_egl_dispatch_release_image(struct wpe_view_backend_exportable_fdo* exportable, EGLImageKHR image);
 
-    void initialize(EGLDisplay);
+#ifdef __cplusplus
+}
+#endif
 
-    int createClient();
-
-    void createSurface(uint32_t, Surface*);
-    struct wl_client* registerViewBackend(uint32_t, ExportableClient&);
-    void unregisterViewBackend(uint32_t);
-
-    EGLDisplay getEGLDisplay()
-    {
-        return m_eglDisplay;
-    }
-
-private:
-    Instance();
-
-    struct wl_display* m_display;
-    struct wl_global* m_compositor;
-    GSource* m_source;
-
-    std::unordered_map<uint32_t, Surface*> m_viewBackendMap;
-
-    EGLDisplay m_eglDisplay;
-};
-
-} // namespace WS
+#endif /* __view_backend_exportable_egl_h___ */

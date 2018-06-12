@@ -33,6 +33,7 @@
 #define __WPE_FDO_EGL_H_INSIDE__
 
 #include <wpe/initialize-egl.h>
+#include <wpe/view-backend-exportable-egl.h>
 
 #undef __WPE_FDO_EGL_H_INSIDE__
 
