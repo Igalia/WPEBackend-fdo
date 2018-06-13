@@ -84,6 +84,8 @@ GSourceFuncs Source::s_sourceFuncs = {
 
 struct Surface {
     uint32_t id { 0 };
+    struct wl_client* client { nullptr };
+
     ExportableClient* exportableClient { nullptr };
 
     struct wl_resource* bufferResource { nullptr };
@@ -161,6 +163,7 @@ static const struct wl_compositor_interface s_compositorInterface = {
         }
 
         auto* surface = new Surface;
+        surface->client = client;
         surface->id = id;
         Instance::singleton().createSurface(id, surface);
         wl_resource_set_implementation(surfaceResource, &s_surfaceInterface, surface,
@@ -257,13 +260,14 @@ void Instance::createSurface(uint32_t id, Surface* surface)
     m_viewBackendMap.insert({ id, surface });
 }
 
-void Instance::registerViewBackend(uint32_t id, ExportableClient& exportableClient)
+struct wl_client* Instance::registerViewBackend(uint32_t id, ExportableClient& exportableClient)
 {
     auto it = m_viewBackendMap.find(id);
     if (it == m_viewBackendMap.end())
         std::abort();
 
     it->second->exportableClient = &exportableClient;
+    return it->second->client;
 }
 
 void Instance::unregisterViewBackend(uint32_t id)

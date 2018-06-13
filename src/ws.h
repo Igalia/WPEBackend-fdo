@@ -52,7 +52,7 @@ public:
     int createClient();
 
     void createSurface(uint32_t, Surface*);
-    void registerViewBackend(uint32_t, ExportableClient&);
+    struct wl_client* registerViewBackend(uint32_t, ExportableClient&);
     void unregisterViewBackend(uint32_t);
 
     EGLDisplay getEGLDisplay()

@@ -40,6 +40,8 @@ struct Source {
     GSource source;
     GPollFD pfd;
     struct wl_display* display;
+    struct wl_event_queue* queue;
+    bool hasError;
 };
 
 GSourceFuncs Source::s_sourceFuncs = {
@@ -47,12 +49,12 @@ GSourceFuncs Source::s_sourceFuncs = {
     [](GSource* base, gint* timeout) -> gboolean
     {
         auto& source = *reinterpret_cast<Source*>(base);
-        *timeout = -1;
 
-        while (wl_display_prepare_read(source.display) != 0) {
-            if (wl_display_dispatch_pending(source.display) < 0)
-                return FALSE;
-        }
+        // We take up this opportunity to flush the display object, but
+        // otherwise we're not able to determine whether there are any
+        // pending dispatches (that would allow us skip the polling)
+        // without scheduling a read on the wl_display object.
+        *timeout = -1;
         wl_display_flush(source.display);
         return FALSE;
     },
@@ -61,12 +63,31 @@ GSourceFuncs Source::s_sourceFuncs = {
     {
         auto& source = *reinterpret_cast<Source*>(base);
 
+        // If error events were read, we note the error and return TRUE,
+        // removing the source in the ensuing dispatch callback.
+        if (source.pfd.revents & (G_IO_ERR | G_IO_HUP)) {
+            source.hasError = true;
+            return TRUE;
+        }
+
+        // If there are pending dispatches on this queue, we return TRUE
+        // to proceed to dispatching ASAP. If there are none, a new read
+        // intention is set up for this wl_display object.
+        if (wl_display_prepare_read_queue(source.display, source.queue) != 0)
+            return TRUE;
+
+        // Only perform the read if input was made available during polling.
+        // Error during read is noted and will be handled in the following
+        // dispatch callback. If no input is available, the read is canceled.
+        // revents value is zeroed out in any case.
         if (source.pfd.revents & G_IO_IN) {
             if (wl_display_read_events(source.display) < 0)
-                return FALSE;
+                source.hasError = true;
+            source.pfd.revents = 0;
             return TRUE;
         } else {
             wl_display_cancel_read(source.display);
+            source.pfd.revents = 0;
             return FALSE;
         }
     },
@@ -75,15 +96,14 @@ GSourceFuncs Source::s_sourceFuncs = {
     {
         auto& source = *reinterpret_cast<Source*>(base);
 
-        if (source.pfd.revents & G_IO_IN) {
-            if (wl_display_dispatch_pending(source.display) < 0)
-                return FALSE;
-        }
-
-        if (source.pfd.revents & (G_IO_ERR | G_IO_HUP))
+        // Remove the source if any error was registered.
+        if (source.hasError)
             return FALSE;
 
-        source.pfd.revents = 0;
+        // Dispatch any pending events. The source is removed in case of
+        // an error occurring during this step.
+        if (wl_display_dispatch_queue_pending(source.display, source.queue) < 0)
+            return FALSE;
         return TRUE;
     },
     nullptr, // finalize
@@ -96,57 +116,14 @@ public:
     Backend(int hostFd)
     {
         m_display = wl_display_connect_to_fd(hostFd);
-
-        m_source = g_source_new(&Source::s_sourceFuncs, sizeof(Source));
-        auto& source = *reinterpret_cast<Source*>(m_source);
-        source.pfd.fd = wl_display_get_fd(m_display);
-        source.pfd.events = G_IO_IN | G_IO_ERR | G_IO_HUP;
-        source.pfd.revents = 0;
-        source.display = m_display;
-
-        g_source_add_poll(m_source, &source.pfd);
-        g_source_set_name(m_source, "WPEBackend-fdo::Backend");
-        g_source_set_priority(m_source, -70);
-        g_source_set_can_recurse(m_source, TRUE);
-        g_source_attach(m_source, g_main_context_get_thread_default());
-
-        m_registry = wl_display_get_registry(m_display);
-        wl_registry_add_listener(m_registry, &s_registryListener, this);
-        wl_display_roundtrip(m_display);
     }
 
-    ~Backend()
-    {
-        if (m_source) {
-            g_source_destroy(m_source);
-            g_source_unref(m_source);
-        }
-    }
+    ~Backend() = default;
 
     struct wl_display* display() const { return m_display; }
-    struct wl_compositor* compositor() const { return m_compositor; }
 
 private:
-    static const struct wl_registry_listener s_registryListener;
-
     struct wl_display* m_display;
-    struct wl_registry* m_registry;
-    struct wl_compositor* m_compositor;
-
-    GSource* m_source;
-};
-
-const struct wl_registry_listener Backend::s_registryListener = {
-    // global
-    [](void* data, struct wl_registry* registry, uint32_t name, const char* interface, uint32_t)
-    {
-        auto& backend = *reinterpret_cast<Backend*>(data);
-
-        if (!std::strcmp(interface, "wl_compositor"))
-            backend.m_compositor = static_cast<struct wl_compositor*>(wl_registry_bind(registry, name, &wl_compositor_interface, 1));
-    },
-    // global_remove
-    [](void*, struct wl_registry*, uint32_t) { },
 };
 
 class Target {
@@ -154,81 +131,136 @@ public:
     Target(struct wpe_renderer_backend_egl_target* target, int hostFd)
         : m_target(target)
     {
-        m_socket = g_socket_new_from_fd(hostFd, nullptr);
-        if (m_socket)
-            g_socket_set_blocking(m_socket, FALSE);
+        m_glib.socket = g_socket_new_from_fd(hostFd, nullptr);
+        if (m_glib.socket)
+            g_socket_set_blocking(m_glib.socket, FALSE);
     }
 
     ~Target()
     {
-        if (m_frameCallback)
-            wl_callback_destroy(m_frameCallback);
-        if (m_window)
-            wl_egl_window_destroy(m_window);
-        if (m_surface)
-            wl_surface_destroy(m_surface);
+        g_clear_pointer(&m_wl.frameCallback, wl_callback_destroy);
+        g_clear_pointer(&m_wl.window, wl_egl_window_destroy);
+        g_clear_pointer(&m_wl.surface, wl_surface_destroy);
 
-        if (m_socket)
-            g_object_unref(m_socket);
-        if (m_source) {
-            g_source_destroy(m_source);
-            g_source_unref(m_source);
+        g_clear_pointer(&m_wl.compositor, wl_compositor_destroy);
+        g_clear_pointer(&m_wl.registry, wl_registry_destroy);
+        g_clear_pointer(&m_wl.eventQueue, wl_event_queue_destroy);
+
+        g_clear_object(&m_glib.socket);
+        if (m_glib.frameSource) {
+            g_source_destroy(m_glib.frameSource);
+            g_source_unref(m_glib.frameSource);
+        }
+        if (m_glib.wlSource) {
+            g_source_destroy(m_glib.wlSource);
+            g_source_unref(m_glib.wlSource);
         }
     }
 
     void initialize(Backend& backend, uint32_t width, uint32_t height)
     {
-        m_source = g_source_new(&s_sourceFuncs, sizeof(GSource));
-        g_source_set_priority(m_source, -70);
-        g_source_set_name(m_source, "WPEBackend-fdo::Target");
-        g_source_set_callback(m_source, [](gpointer userData) -> gboolean {
+        auto* display = backend.display();
+        m_wl.eventQueue = wl_display_create_queue(display);
+
+        m_wl.registry = wl_display_get_registry(display);
+        wl_proxy_set_queue(reinterpret_cast<struct wl_proxy*>(m_wl.registry), m_wl.eventQueue);
+        wl_registry_add_listener(m_wl.registry, &s_registryListener, this);
+        wl_display_roundtrip_queue(display, m_wl.eventQueue);
+
+        m_wl.surface = wl_compositor_create_surface(m_wl.compositor);
+        wl_proxy_set_queue(reinterpret_cast<struct wl_proxy*>(m_wl.surface), m_wl.eventQueue);
+        m_wl.window = wl_egl_window_create(m_wl.surface, width, height);
+        wl_display_roundtrip_queue(display, m_wl.eventQueue);
+
+        m_glib.wlSource = g_source_new(&Source::s_sourceFuncs, sizeof(Source));
+        {
+            auto& source = *reinterpret_cast<Source*>(m_glib.wlSource);
+            source.pfd.fd = wl_display_get_fd(display);
+            source.pfd.events = G_IO_IN | G_IO_ERR | G_IO_HUP;
+            source.pfd.revents = 0;
+            source.display = display;
+            source.queue = m_wl.eventQueue;
+            source.hasError = false;
+
+            g_source_add_poll(m_glib.wlSource, &source.pfd);
+            g_source_set_name(m_glib.wlSource, "WPEBackend-fdo::wayland");
+            g_source_set_priority(m_glib.wlSource, -70);
+            g_source_set_can_recurse(m_glib.wlSource, TRUE);
+            g_source_attach(m_glib.wlSource, g_main_context_get_thread_default());
+        }
+
+        m_glib.frameSource = g_source_new(&s_sourceFuncs, sizeof(GSource));
+        g_source_set_priority(m_glib.frameSource, -70);
+        g_source_set_name(m_glib.frameSource, "WPEBackend-fdo::frame");
+        g_source_set_callback(m_glib.frameSource, [](gpointer userData) -> gboolean {
             auto* target = static_cast<Target*>(userData);
 
-            wl_callback_destroy(target->m_frameCallback);
-            target->m_frameCallback = nullptr;
+            g_clear_pointer(&target->m_wl.frameCallback, wl_callback_destroy);
+            target->m_wl.frameCallback = nullptr;
 
             wpe_renderer_backend_egl_target_dispatch_frame_complete(target->m_target);
             return G_SOURCE_CONTINUE;
         }, this, nullptr);
-        g_source_attach(m_source, g_main_context_get_thread_default());
+        g_source_attach(m_glib.frameSource, g_main_context_get_thread_default());
 
-        m_surface = wl_compositor_create_surface(backend.compositor());
-        m_window = wl_egl_window_create(m_surface, width, height);
-        wl_display_roundtrip(backend.display());
-
-        uint32_t message[] = { 0x42, wl_proxy_get_id(reinterpret_cast<struct wl_proxy*>(m_surface)) };
-        if (m_socket)
-            g_socket_send(m_socket, reinterpret_cast<gchar*>(message), 2 * sizeof(uint32_t),
+        uint32_t message[] = { 0x42, wl_proxy_get_id(reinterpret_cast<struct wl_proxy*>(m_wl.surface)) };
+        if (m_glib.socket)
+            g_socket_send(m_glib.socket, reinterpret_cast<gchar*>(message), 2 * sizeof(uint32_t),
                 nullptr, nullptr);
     }
 
     void requestFrame()
     {
-        if (m_frameCallback)
+        if (m_wl.frameCallback)
             std::abort();
 
-        m_frameCallback = wl_surface_frame(m_surface);
-        wl_callback_add_listener(m_frameCallback, &s_callbackListener, this);
+        m_wl.frameCallback = wl_surface_frame(m_wl.surface);
+        wl_callback_add_listener(m_wl.frameCallback, &s_callbackListener, this);
     }
 
     void dispatchFrameComplete()
     {
-        g_source_set_ready_time(m_source, 0);
+        g_source_set_ready_time(m_glib.frameSource, 0);
     }
 
-    struct wl_egl_window* window() const { return m_window; }
+    struct wl_egl_window* window() const { return m_wl.window; }
 
 private:
+    static const struct wl_registry_listener s_registryListener;
     static const struct wl_callback_listener s_callbackListener;
     static GSourceFuncs s_sourceFuncs;
 
     struct wpe_renderer_backend_egl_target* m_target { nullptr };
-    GSource* m_source { nullptr };
-    GSocket* m_socket { nullptr };
 
-    struct wl_surface* m_surface { nullptr };
-    struct wl_egl_window* m_window { nullptr };
-    struct wl_callback* m_frameCallback { nullptr };
+    struct {
+        GSocket* socket { nullptr };
+        GSource* wlSource { nullptr };
+        GSource* frameSource { nullptr };
+    } m_glib;
+
+    struct {
+        struct wl_display* displayWrapper { nullptr };
+        struct wl_event_queue* eventQueue { nullptr };
+        struct wl_registry* registry { nullptr };
+        struct wl_compositor* compositor { nullptr };
+
+        struct wl_surface* surface { nullptr };
+        struct wl_egl_window* window { nullptr };
+        struct wl_callback* frameCallback { nullptr };
+    } m_wl;
+};
+
+const struct wl_registry_listener Target::s_registryListener = {
+    // global
+    [](void* data, struct wl_registry* registry, uint32_t name, const char* interface, uint32_t)
+    {
+        auto& target = *reinterpret_cast<Target*>(data);
+
+        if (!std::strcmp(interface, "wl_compositor"))
+            target.m_wl.compositor = static_cast<struct wl_compositor*>(wl_registry_bind(registry, name, &wl_compositor_interface, 1));
+    },
+    // global_remove
+    [](void*, struct wl_registry*, uint32_t) { },
 };
 
 const struct wl_callback_listener Target::s_callbackListener = {
