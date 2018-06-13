@@ -195,7 +195,7 @@ public:
         g_source_set_callback(m_glib.frameSource, [](gpointer userData) -> gboolean {
             auto* target = static_cast<Target*>(userData);
 
-            wl_callback_destroy(target->m_wl.frameCallback);
+            g_clear_pointer(&target->m_wl.frameCallback, wl_callback_destroy);
             target->m_wl.frameCallback = nullptr;
 
             wpe_renderer_backend_egl_target_dispatch_frame_complete(target->m_target);
