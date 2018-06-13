@@ -151,8 +151,6 @@ public:
             wl_registry_destroy(m_wl.registry);
         if (m_wl.eventQueue)
             wl_event_queue_destroy(m_wl.eventQueue);
-        if (m_wl.displayWrapper)
-            wl_proxy_wrapper_destroy(m_wl.displayWrapper);
 
         if (m_glib.socket)
             g_object_unref(m_glib.socket);
@@ -169,11 +167,10 @@ public:
     void initialize(Backend& backend, uint32_t width, uint32_t height)
     {
         auto* display = backend.display();
-        m_wl.displayWrapper = static_cast<struct wl_display*>(wl_proxy_create_wrapper(display));
         m_wl.eventQueue = wl_display_create_queue(display);
-        wl_proxy_set_queue(reinterpret_cast<struct wl_proxy*>(m_wl.displayWrapper), m_wl.eventQueue);
 
-        m_wl.registry = wl_display_get_registry(m_wl.displayWrapper);
+        m_wl.registry = wl_display_get_registry(display);
+        wl_proxy_set_queue(reinterpret_cast<struct wl_proxy*>(m_wl.registry), m_wl.eventQueue);
         wl_registry_add_listener(m_wl.registry, &s_registryListener, this);
         wl_display_roundtrip_queue(display, m_wl.eventQueue);
 
