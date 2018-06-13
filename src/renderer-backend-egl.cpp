@@ -138,22 +138,15 @@ public:
 
     ~Target()
     {
-        if (m_wl.frameCallback)
-            wl_callback_destroy(m_wl.frameCallback);
-        if (m_wl.window)
-            wl_egl_window_destroy(m_wl.window);
-        if (m_wl.surface)
-            wl_surface_destroy(m_wl.surface);
+        g_clear_pointer(&m_wl.frameCallback, wl_callback_destroy);
+        g_clear_pointer(&m_wl.window, wl_egl_window_destroy);
+        g_clear_pointer(&m_wl.surface, wl_surface_destroy);
 
-        if (m_wl.compositor)
-            wl_compositor_destroy(m_wl.compositor);
-        if (m_wl.registry)
-            wl_registry_destroy(m_wl.registry);
-        if (m_wl.eventQueue)
-            wl_event_queue_destroy(m_wl.eventQueue);
+        g_clear_pointer(&m_wl.compositor, wl_compositor_destroy);
+        g_clear_pointer(&m_wl.registry, wl_registry_destroy);
+        g_clear_pointer(&m_wl.eventQueue, wl_event_queue_destroy);
 
-        if (m_glib.socket)
-            g_object_unref(m_glib.socket);
+        g_clear_pointer(&m_glib.socket, g_object_unref);
         if (m_glib.frameSource) {
             g_source_destroy(m_glib.frameSource);
             g_source_unref(m_glib.frameSource);
