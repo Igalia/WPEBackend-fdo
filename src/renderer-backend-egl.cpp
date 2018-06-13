@@ -146,7 +146,7 @@ public:
         g_clear_pointer(&m_wl.registry, wl_registry_destroy);
         g_clear_pointer(&m_wl.eventQueue, wl_event_queue_destroy);
 
-        g_clear_pointer(&m_glib.socket, g_object_unref);
+        g_clear_object(&m_glib.socket);
         if (m_glib.frameSource) {
             g_source_destroy(m_glib.frameSource);
             g_source_unref(m_glib.frameSource);
