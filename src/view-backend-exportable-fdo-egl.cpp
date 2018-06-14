@@ -96,6 +96,35 @@ public:
             linux_dmabuf_get_buffer_attributes(dmabuf_buffer);
         assert(buf_attribs);
 
+        static const struct {
+            EGLint fd;
+            EGLint offset;
+            EGLint pitch;
+            EGLint modifier_lo;
+            EGLint modifier_hi;
+        } plane_enums[4] = {
+            {EGL_DMA_BUF_PLANE0_FD_EXT,
+             EGL_DMA_BUF_PLANE0_OFFSET_EXT,
+             EGL_DMA_BUF_PLANE0_PITCH_EXT,
+             EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT,
+             EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT},
+            {EGL_DMA_BUF_PLANE1_FD_EXT,
+             EGL_DMA_BUF_PLANE1_OFFSET_EXT,
+             EGL_DMA_BUF_PLANE1_PITCH_EXT,
+             EGL_DMA_BUF_PLANE1_MODIFIER_LO_EXT,
+             EGL_DMA_BUF_PLANE1_MODIFIER_HI_EXT},
+            {EGL_DMA_BUF_PLANE2_FD_EXT,
+             EGL_DMA_BUF_PLANE2_OFFSET_EXT,
+             EGL_DMA_BUF_PLANE2_PITCH_EXT,
+             EGL_DMA_BUF_PLANE2_MODIFIER_LO_EXT,
+             EGL_DMA_BUF_PLANE2_MODIFIER_HI_EXT},
+            {EGL_DMA_BUF_PLANE3_FD_EXT,
+             EGL_DMA_BUF_PLANE3_OFFSET_EXT,
+             EGL_DMA_BUF_PLANE3_PITCH_EXT,
+             EGL_DMA_BUF_PLANE3_MODIFIER_LO_EXT,
+             EGL_DMA_BUF_PLANE3_MODIFIER_HI_EXT},
+        };
+
         EGLint attribs[50];
         int atti = 0;
 
@@ -107,15 +136,15 @@ public:
         attribs[atti++] = buf_attribs->format;
 
         for (int i = 0; i < buf_attribs->n_planes; i++) {
-            attribs[atti++] = EGL_DMA_BUF_PLANE0_FD_EXT;
+            attribs[atti++] = plane_enums[i].fd;
             attribs[atti++] = buf_attribs->fd[i];
-            attribs[atti++] = EGL_DMA_BUF_PLANE0_OFFSET_EXT;
+            attribs[atti++] = plane_enums[i].offset;
             attribs[atti++] = buf_attribs->offset[i];
-            attribs[atti++] = EGL_DMA_BUF_PLANE0_PITCH_EXT;
+            attribs[atti++] = plane_enums[i].pitch;
             attribs[atti++] = buf_attribs->stride[i];
-            attribs[atti++] = EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT;
+            attribs[atti++] = plane_enums[i].modifier_lo;
             attribs[atti++] = buf_attribs->modifier[i] & 0xFFFFFFFF;
-            attribs[atti++] = EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT;
+            attribs[atti++] = plane_enums[i].modifier_hi;
             attribs[atti++] = buf_attribs->modifier[i] >> 32;
         }
 
