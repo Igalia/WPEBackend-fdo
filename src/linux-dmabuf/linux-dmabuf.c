@@ -4,7 +4,6 @@
  */
 
 #include <assert.h>
-#include "drm_fourcc.h"
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include "linux-dmabuf.h"
