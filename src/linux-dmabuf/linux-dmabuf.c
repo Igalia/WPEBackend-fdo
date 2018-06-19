@@ -13,6 +13,11 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifndef EGL_EXT_image_dma_buf_import_modifiers
+typedef EGLBoolean (* PFNEGLQUERYDMABUFFORMATSEXTPROC) (EGLDisplay dpy, EGLint max_formats, EGLint *formats, EGLint *num_formats);
+typedef EGLBoolean (* PFNEGLQUERYDMABUFMODIFIERSEXTPROC) (EGLDisplay dpy, EGLint format, EGLint max_modifiers, EGLuint64KHR *modifiers, EGLBoolean *external_only, EGLint *num_modifiers);
+#endif /* EGL_EXT_image_dma_buf_import_modifiers */
+
 typedef void (*linux_dmabuf_user_data_destroy_func)(struct linux_dmabuf_buffer *buffer);
 
 /* Per-process global data. */
