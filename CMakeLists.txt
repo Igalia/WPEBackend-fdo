@@ -23,6 +23,10 @@ endif ()
 
 add_definitions(-DWPE_FDO_COMPILATION)
 
+if (NOT (WAYLAND_wayland-client_VERSION VERSION_LESS 1.10))
+    add_definitions(-DWAYLAND_1_10_OR_GREATER)
+endif ()
+
 set(WPEBACKEND_FDO_INCLUDE_DIRECTORIES
     "include"
     ${EGL_INCLUDE_DIRS}

@@ -12,14 +12,9 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 #include <wayland-server.h>
+#include "drm_fourcc.h"
 
 #define MAX_DMABUF_PLANES 4
-#ifndef DRM_FORMAT_MOD_INVALID
-#define DRM_FORMAT_MOD_INVALID ((1ULL<<56) - 1)
-#endif
-#ifndef DRM_FORMAT_MOD_LINEAR
-#define DRM_FORMAT_MOD_LINEAR 0
-#endif
 
 typedef void* EGLDisplay;
 
