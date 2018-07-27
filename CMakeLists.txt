@@ -59,7 +59,6 @@ set(WPEBACKEND_FDO_SOURCES
     src/renderer-host.cpp
     src/view-backend-exportable-fdo.cpp
     src/view-backend-exportable-private.cpp
-    src/input-libxkbcommon.cpp
     src/ws.cpp
     src/linux-dmabuf/linux-dmabuf.c
     src/linux-dmabuf/linux-dmabuf-protocol.c
