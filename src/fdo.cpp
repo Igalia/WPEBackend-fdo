@@ -43,9 +43,6 @@ struct wpe_loader_interface _wpe_loader_interface = {
         if (!std::strcmp(object_name, "_wpe_renderer_backend_egl_target_interface"))
             return &fdo_renderer_backend_egl_target;
 
-        if (!std::strcmp(object_name, "_wpe_input_key_mapper_interface"))
-            return &libxkbcommon_input_key_mapper_interface;
-
         return nullptr;
     },
 };
