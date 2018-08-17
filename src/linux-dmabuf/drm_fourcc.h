@@ -26,15 +26,12 @@
 
 #include <stdint.h>
 
-#define __u32 uint32_t
-#define __u64 uint64_t
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-#define fourcc_code(a, b, c, d) ((__u32)(a) | ((__u32)(b) << 8) | \
-				 ((__u32)(c) << 16) | ((__u32)(d) << 24))
+#define fourcc_code(a, b, c, d) ((uint32_t)(a) | ((uint32_t)(b) << 8) | \
+				 ((uint32_t)(c) << 16) | ((uint32_t)(d) << 24))
 
 #define DRM_FORMAT_BIG_ENDIAN (1<<31) /* format is big endian instead of little endian */
 
@@ -191,7 +188,7 @@ extern "C" {
 #define DRM_FORMAT_RESERVED	      ((1ULL << 56) - 1)
 
 #define fourcc_mod_code(vendor, val) \
-	((((__u64)DRM_FORMAT_MOD_VENDOR_## vendor) << 56) | ((val) & 0x00ffffffffffffffULL))
+	((((uint32_t)DRM_FORMAT_MOD_VENDOR_## vendor) << 56) | ((val) & 0x00ffffffffffffffULL))
 
 /*
  * Format Modifier tokens:
