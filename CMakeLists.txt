@@ -1,11 +1,23 @@
 cmake_minimum_required(VERSION 3.0)
 cmake_policy(VERSION 3.0)
 
-project(wpebackend-fdo VERSION 0.1)
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+include(VersioningUtils)
 
+SET_PROJECT_VERSION(1 0 0)
 set(WPEBACKEND_FDO_API_VERSION 0.1)
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+# Before making a release, the LT_VERSION string should be modified.
+# The string is of the form C:R:A.
+# - If interfaces have been changed or added, but binary compatibility has
+#   been preserved, change to C+1:0:A+1
+# - If binary compatibility has been broken (eg removed or changed interfaces)
+#   change to C+1:0:0
+# - If the interface is the same as the previous version, change to C:R+1:A
+CALCULATE_LIBRARY_VERSIONS_FROM_LIBTOOL_TRIPLE(LIBWPEBACKEND_FDO 1 0 0)
+
+project(wpebackend-fdo VERSION "${PROJECT_VERSION}")
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-exceptions -fno-rtti")
 
 include(DistTargets)
@@ -78,8 +90,8 @@ target_link_libraries(WPEBackend-fdo ${WPEBACKEND_FDO_LIBRARIES})
 set_target_properties(WPEBackend-fdo
     PROPERTIES
     OUTPUT_NAME WPEBackend-fdo-${WPEBACKEND_FDO_API_VERSION}
-    VERSION ${PROJECT_VERSION}
-    SOVERSION ${PROJECT_VERSION_MAJOR}
+    VERSION ${LIBWPEBACKEND_FDO_VERSION}
+    SOVERSION ${LIBWPEBACKEND_FDO_VERSION_MAJOR}
 )
 
 install(
