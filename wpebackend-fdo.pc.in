@@ -6,6 +6,6 @@ libdir=${exec_prefix}/lib
 Name: wpebackend-fdo-@WPEBACKEND_FDO_API_VERSION@
 Description: The WPEBackend-fdo library
 Version: @PROJECT_VERSION@
-Requires: wpe-0.1
+Requires: wpe-0.2
 Cflags: -I${includedir}/wpe-fdo-@WPEBACKEND_FDO_API_VERSION@
 Libs: -L${libdir} -lWPEBackend-fdo-@WPEBACKEND_FDO_API_VERSION@
