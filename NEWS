@@ -1,3 +1,18 @@
+=======================
+1.0.0 - August 21, 2018
+=======================
+
+- Updated to use libwpe 1.0.0.
+- The libWPEBackend-fdo library now uses the libtool versioning convention.
+- New API which supports exporting frames as EGL images. This provides
+  applications with a ready to to render EGLImage, and has the advantage
+  that the library hides the actual protocol used by the backend's nested
+  compositor from the application.
+- Improved dispatching of Wayland events.
+- Support using DMA-BUF Wayland surfaces.
+- Support using Wayland versions older than 1.10
+
+====================
 0.1 - April 26, 2018
 ====================
 
