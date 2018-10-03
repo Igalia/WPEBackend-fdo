@@ -31,7 +31,7 @@ namespace {
 
 class ClientBundleBuffer final : public ClientBundle {
 public:
-    ClientBundleBuffer(struct wpe_view_backend_exportable_fdo_client* _client, void* data, ViewBackend* viewBackend,
+    ClientBundleBuffer(const struct wpe_view_backend_exportable_fdo_client* _client, void* data, ViewBackend* viewBackend,
                  uint32_t initialWidth, uint32_t initialHeight)
         : ClientBundle(data, viewBackend, initialWidth, initialHeight)
         , client(_client)
@@ -50,7 +50,7 @@ public:
         assert(!"This interface doesn't support Linux DMA buffers");
     }
 
-    struct wpe_view_backend_exportable_fdo_client* client;
+    const struct wpe_view_backend_exportable_fdo_client* client;
 };
 
 } // namespace
@@ -59,7 +59,7 @@ extern "C" {
 
 __attribute__((visibility("default")))
 struct wpe_view_backend_exportable_fdo*
-wpe_view_backend_exportable_fdo_create(struct wpe_view_backend_exportable_fdo_client* client, void* data, uint32_t width, uint32_t height)
+wpe_view_backend_exportable_fdo_create(const struct wpe_view_backend_exportable_fdo_client* client, void* data, uint32_t width, uint32_t height)
 {
     auto* clientBundle = new ClientBundleBuffer(client, data, nullptr, width, height);
 

@@ -49,7 +49,7 @@ struct wpe_view_backend_exportable_fdo_egl_client {
 };
 
 struct wpe_view_backend_exportable_fdo*
-wpe_view_backend_exportable_fdo_egl_create(struct wpe_view_backend_exportable_fdo_egl_client*, void*, uint32_t width, uint32_t height);
+wpe_view_backend_exportable_fdo_egl_create(const struct wpe_view_backend_exportable_fdo_egl_client*, void*, uint32_t width, uint32_t height);
 
 void
 wpe_view_backend_exportable_fdo_egl_dispatch_release_image(struct wpe_view_backend_exportable_fdo* exportable, EGLImageKHR image);

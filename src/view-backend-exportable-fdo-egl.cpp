@@ -68,7 +68,7 @@ struct buffer_data {
 
 class ClientBundleEGL final : public ClientBundle {
 public:
-    ClientBundleEGL(struct wpe_view_backend_exportable_fdo_egl_client* _client, void* data,
+    ClientBundleEGL(const struct wpe_view_backend_exportable_fdo_egl_client* _client, void* data,
                     ViewBackend* viewBackend, uint32_t initialWidth, uint32_t initialHeight)
         : ClientBundle(data, viewBackend, initialWidth, initialHeight)
         , client(_client)
@@ -206,7 +206,7 @@ public:
         return nullptr;
     }
 
-    struct wpe_view_backend_exportable_fdo_egl_client* client;
+    const struct wpe_view_backend_exportable_fdo_egl_client* client;
 
 private:
     EGLDisplay m_eglDisplay;
@@ -222,7 +222,7 @@ extern "C" {
 
 __attribute__((visibility("default")))
 struct wpe_view_backend_exportable_fdo*
-wpe_view_backend_exportable_fdo_egl_create(struct wpe_view_backend_exportable_fdo_egl_client* client, void* data, uint32_t width, uint32_t height)
+wpe_view_backend_exportable_fdo_egl_create(const struct wpe_view_backend_exportable_fdo_egl_client* client, void* data, uint32_t width, uint32_t height)
 {
     auto* clientBundle = new ClientBundleEGL(client, data, nullptr, width, height);
 
