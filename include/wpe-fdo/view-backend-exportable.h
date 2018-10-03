@@ -48,7 +48,7 @@ struct wpe_view_backend_exportable_fdo_client {
 };
 
 struct wpe_view_backend_exportable_fdo*
-wpe_view_backend_exportable_fdo_create(struct wpe_view_backend_exportable_fdo_client*, void*, uint32_t width, uint32_t height);
+wpe_view_backend_exportable_fdo_create(const struct wpe_view_backend_exportable_fdo_client*, void*, uint32_t width, uint32_t height);
 
 void
 wpe_view_backend_exportable_fdo_destroy(struct wpe_view_backend_exportable_fdo*);
