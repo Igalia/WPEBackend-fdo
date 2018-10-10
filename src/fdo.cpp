@@ -42,6 +42,8 @@ struct wpe_loader_interface _wpe_loader_interface = {
             return &fdo_renderer_backend_egl;
         if (!std::strcmp(object_name, "_wpe_renderer_backend_egl_target_interface"))
             return &fdo_renderer_backend_egl_target;
+        if (!std::strcmp(object_name, "_wpe_renderer_backend_egl_offscreen_target_interface"))
+            return &fdo_renderer_backend_egl_offscreen_target;
 
         return nullptr;
     },

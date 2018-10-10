@@ -350,3 +350,24 @@ struct wpe_renderer_backend_egl_target_interface fdo_renderer_backend_egl_target
     {
     },
 };
+
+struct wpe_renderer_backend_egl_offscreen_target_interface fdo_renderer_backend_egl_offscreen_target = {
+    // create
+    []() -> void*
+    {
+        return nullptr;
+    },
+    // destroy
+    [](void* data)
+    {
+    },
+    // initialize
+    [](void* data, void* backend_data)
+    {
+    },
+    // get_native_window
+    [](void* data) -> EGLNativeWindowType
+    {
+        return nullptr;
+    },
+};
