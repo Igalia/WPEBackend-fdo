@@ -188,9 +188,10 @@ Instance& Instance::singleton()
 }
 
 Instance::Instance()
+    : m_display(wl_display_create())
+    , m_source(g_source_new(&Source::s_sourceFuncs, sizeof(Source)))
+    , m_eglDisplay(EGL_NO_DISPLAY)
 {
-    m_display = wl_display_create();
-
     m_compositor = wl_global_create(m_display, &wl_compositor_interface, 3, this,
         [](struct wl_client* client, void*, uint32_t version, uint32_t id)
         {
@@ -203,7 +204,6 @@ Instance::Instance()
             wl_resource_set_implementation(resource, &s_compositorInterface, nullptr, nullptr);
         });
 
-    m_source = g_source_new(&Source::s_sourceFuncs, sizeof(Source));
     auto& source = *reinterpret_cast<Source*>(m_source);
 
     struct wl_event_loop* eventLoop = wl_display_get_event_loop(m_display);
@@ -234,6 +234,14 @@ Instance::~Instance()
 
 void Instance::initialize(EGLDisplay eglDisplay)
 {
+    if (m_eglDisplay == eglDisplay)
+        return;
+
+    if (m_eglDisplay != EGL_NO_DISPLAY) {
+        fprintf(stderr, "WPE fdo doesn't support multiple EGL displays\n");
+        return;
+    }
+
     PFNEGLBINDWAYLANDDISPLAYWL bindWaylandDisplayWL =
         reinterpret_cast<PFNEGLBINDWAYLANDDISPLAYWL>(eglGetProcAddress("eglBindWaylandDisplayWL"));
     bindWaylandDisplayWL(eglDisplay, m_display);
