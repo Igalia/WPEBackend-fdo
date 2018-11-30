@@ -107,6 +107,7 @@ void ViewBackend::dispatchFrameCallback()
         wl_callback_send_done(resource, 0);
     m_callbackResources.clear();
     wl_client_flush(m_client);
+    wpe_view_backend_dispatch_frame_displayed(m_backend);
 }
 
 void ViewBackend::releaseBuffer(struct wl_resource* buffer_resource)
