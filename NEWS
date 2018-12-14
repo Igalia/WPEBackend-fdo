@@ -1,3 +1,16 @@
+=========================
+1.1.0 - December 14, 2018
+=========================
+
+- Use the new libwpe API to notify when frames have been displayed.
+- Allow calling wpe_fdo_initialize_for_egl_display() multiple times, with
+  a warning printed to the standard error output when trying to switch
+  displays (which is unsupported).
+- Provide a dummy implementation of the EGL offscreen target interface, to
+  let WebKit use Pbuffer-based offscreen contexts as fallback, instead of
+  crashing.
+- Minor cleanups in headers and function prototypes.
+
 =======================
 1.0.0 - August 21, 2018
 =======================
