@@ -25,6 +25,7 @@
 
 #include "interfaces.h"
 
+#include "bridge/wpe-bridge-client-protocol.h"
 #include <cstring>
 #include <gio/gio.h>
 #include <glib.h>
@@ -142,6 +143,7 @@ public:
         g_clear_pointer(&m_wl.window, wl_egl_window_destroy);
         g_clear_pointer(&m_wl.surface, wl_surface_destroy);
 
+        g_clear_pointer(&m_wl.wpeBridge, wpe_bridge_destroy);
         g_clear_pointer(&m_wl.compositor, wl_compositor_destroy);
         g_clear_pointer(&m_wl.registry, wl_registry_destroy);
         g_clear_pointer(&m_wl.eventQueue, wl_event_queue_destroy);
@@ -170,6 +172,10 @@ public:
         m_wl.surface = wl_compositor_create_surface(m_wl.compositor);
         wl_proxy_set_queue(reinterpret_cast<struct wl_proxy*>(m_wl.surface), m_wl.eventQueue);
         m_wl.window = wl_egl_window_create(m_wl.surface, width, height);
+
+        // FIXME: this should be enough?
+        uint32_t bridgeID = (*reinterpret_cast<uintptr_t*>(this)) & 0xffffffff;
+        wpe_bridge_connect(m_wl.wpeBridge, m_wl.surface, bridgeID);
         wl_display_roundtrip_queue(display, m_wl.eventQueue);
 
         m_glib.wlSource = g_source_new(&Source::s_sourceFuncs, sizeof(Source));
@@ -203,7 +209,7 @@ public:
         }, this, nullptr);
         g_source_attach(m_glib.frameSource, g_main_context_get_thread_default());
 
-        uint32_t message[] = { 0x42, wl_proxy_get_id(reinterpret_cast<struct wl_proxy*>(m_wl.surface)) };
+        uint32_t message[] = { 0x42, bridgeID };
         if (m_glib.socket)
             g_socket_send(m_glib.socket, reinterpret_cast<gchar*>(message), 2 * sizeof(uint32_t),
                 nullptr, nullptr);
@@ -243,6 +249,7 @@ private:
         struct wl_event_queue* eventQueue { nullptr };
         struct wl_registry* registry { nullptr };
         struct wl_compositor* compositor { nullptr };
+        struct wpe_bridge* wpeBridge { nullptr };
 
         struct wl_surface* surface { nullptr };
         struct wl_egl_window* window { nullptr };
@@ -258,6 +265,8 @@ const struct wl_registry_listener Target::s_registryListener = {
 
         if (!std::strcmp(interface, "wl_compositor"))
             target.m_wl.compositor = static_cast<struct wl_compositor*>(wl_registry_bind(registry, name, &wl_compositor_interface, 1));
+        if (!std::strcmp(interface, "wpe_bridge"))
+            target.m_wl.wpeBridge = static_cast<struct wpe_bridge*>(wl_registry_bind(registry, name, &wpe_bridge_interface, 1));
     },
     // global_remove
     [](void*, struct wl_registry*, uint32_t) { },

@@ -28,6 +28,7 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include "linux-dmabuf/linux-dmabuf.h"
+#include "bridge/wpe-bridge-server-protocol.h"
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -167,7 +168,6 @@ static const struct wl_compositor_interface s_compositorInterface = {
         auto* surface = new Surface;
         surface->client = client;
         surface->id = id;
-        Instance::singleton().createSurface(id, surface);
         wl_resource_set_implementation(surfaceResource, &s_surfaceInterface, surface,
             [](struct wl_resource* resource)
             {
@@ -177,6 +177,18 @@ static const struct wl_compositor_interface s_compositorInterface = {
     },
     // create_region
     [](struct wl_client*, struct wl_resource*, uint32_t) { },
+};
+
+static const struct wpe_bridge_interface s_wpeBridgeInterface = {
+    // connect
+    [](struct wl_client*, struct wl_resource*, struct wl_resource* surfaceResource, uint32_t bridgeID)
+    {
+        auto* surface = static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
+        if (!surface)
+            return;
+
+        Instance::singleton().createSurface(bridgeID, surface);
+    },
 };
 
 Instance& Instance::singleton()
@@ -202,6 +214,17 @@ Instance::Instance()
             }
 
             wl_resource_set_implementation(resource, &s_compositorInterface, nullptr, nullptr);
+        });
+    m_wpeBridge = wl_global_create(m_display, &wpe_bridge_interface, 1, this,
+        [](struct wl_client* client, void*, uint32_t version, uint32_t id)
+        {
+            struct wl_resource* resource = wl_resource_create(client, &wpe_bridge_interface, version, id);
+            if (!resource) {
+                wl_client_post_no_memory(client);
+                return;
+            }
+
+            wl_resource_set_implementation(resource, &s_wpeBridgeInterface, nullptr, nullptr);
         });
 
     auto& source = *reinterpret_cast<Source*>(m_source);

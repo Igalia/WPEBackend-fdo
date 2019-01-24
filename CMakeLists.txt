@@ -72,6 +72,9 @@ set(WPEBACKEND_FDO_SOURCES
     src/view-backend-exportable-fdo.cpp
     src/view-backend-exportable-private.cpp
     src/ws.cpp
+
+    src/bridge/wpe-bridge-protocol.c
+
     src/linux-dmabuf/linux-dmabuf.c
     src/linux-dmabuf/linux-dmabuf-protocol.c
 )

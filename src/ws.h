@@ -65,6 +65,7 @@ private:
 
     struct wl_display* m_display;
     struct wl_global* m_compositor;
+    struct wl_global* m_wpeBridge;
     GSource* m_source;
 
     std::unordered_map<uint32_t, Surface*> m_viewBackendMap;
