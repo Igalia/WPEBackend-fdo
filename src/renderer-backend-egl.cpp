@@ -173,8 +173,7 @@ public:
         wl_proxy_set_queue(reinterpret_cast<struct wl_proxy*>(m_wl.surface), m_wl.eventQueue);
         m_wl.window = wl_egl_window_create(m_wl.surface, width, height);
 
-        // FIXME: this should be enough?
-        uint32_t bridgeID = (*reinterpret_cast<uintptr_t*>(this)) & 0xffffffff;
+        uint32_t bridgeID = g_random_int();
         wpe_bridge_connect(m_wl.wpeBridge, m_wl.surface, bridgeID);
         wl_display_roundtrip_queue(display, m_wl.eventQueue);
 
