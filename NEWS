@@ -1,3 +1,11 @@
+==========================
+1.0.1 - February 6th, 2019
+==========================
+
+- Allow wpe_fdo_initialize_for_egl_display() to be called multiple times;
+  it will emit a warning when trying to switch to a different EGL display,
+  which is unsupported.
+
 =======================
 1.0.0 - August 21, 2018
 =======================
