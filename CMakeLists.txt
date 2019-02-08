@@ -108,3 +108,34 @@ install(
     FILES "${CMAKE_CURRENT_BINARY_DIR}/wpebackend-fdo-${WPEBACKEND_FDO_API_VERSION}.pc"
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )
+
+option(BUILD_DOCS "Build the documentation" OFF)
+if (BUILD_DOCS)
+    find_program(HOTDOC hotdoc)
+    if (NOT HOTDOC)
+        message(FATAL_ERROR "hotdoc not found!")
+    endif ()
+
+    execute_process(
+        COMMAND ${HOTDOC} --has-extension c-extension
+        RESULT_VARIABLE HAS_HOTDOC_C_EXTENSION
+    )
+    if ("${HAS_HOTDOC_C_EXTENSION}" EQUAL 0)
+        add_custom_target(Documentation ALL
+            ${HOTDOC} run
+                --project-name WPEBackend-fdo
+                --project-version ${PROJECT_VERSION}
+                --sitemap ${CMAKE_SOURCE_DIR}/docs/sitemap.txt
+                --output ${CMAKE_CURRENT_BINARY_DIR}/Documentation/
+                --c-smart-index
+                --extra-c-flags=-DWPE_FDO_COMPILATION
+                --c-sources
+                    ${CMAKE_SOURCE_DIR}/include/wpe-fdo/*.h
+                --c-include-directories
+                    ${CMAKE_SOURCE_DIR}/include
+                    ${WPEBACKEND_FDO_INCLUDE_DIRECTORIES}
+        )
+    else ()
+        message(FATAL_ERROR "Hotdoc C extension not found, can't build documentation.")
+    endif ()
+endif ()
