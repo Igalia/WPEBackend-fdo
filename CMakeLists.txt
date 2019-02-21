@@ -27,6 +27,7 @@ find_package(EGL REQUIRED)
 find_package(GLIB REQUIRED COMPONENTS gio)
 find_package(Wayland REQUIRED)
 find_package(WaylandEGL REQUIRED)
+find_package(WaylandScanner REQUIRED)
 find_package(WPE REQUIRED)
 
 if (EGL_DEFINITIONS)
@@ -41,6 +42,7 @@ endif ()
 
 set(WPEBACKEND_FDO_INCLUDE_DIRECTORIES
     "include"
+    ${CMAKE_BINARY_DIR}
     ${EGL_INCLUDE_DIRS}
     ${GLIB_INCLUDE_DIRS}
     ${WAYLAND_INCLUDE_DIRS}
@@ -64,7 +66,13 @@ set(WPEBACKEND_FDO_PUBLIC_HEADERS
     include/wpe-fdo/fdo.h
 )
 
+set(WPEBACKEND_FDO_GENERATED_SOURCES
+    ${CMAKE_BINARY_DIR}/bridge/wpe-bridge-protocol.c
+)
+
 set(WPEBACKEND_FDO_SOURCES
+    ${WPEBACKEND_FDO_GENERATED_SOURCES}
+
     src/fdo.cpp
     src/initialize-egl.cpp
     src/renderer-backend-egl.cpp
@@ -72,8 +80,21 @@ set(WPEBACKEND_FDO_SOURCES
     src/view-backend-exportable-fdo.cpp
     src/view-backend-exportable-private.cpp
     src/ws.cpp
+
     src/linux-dmabuf/linux-dmabuf.c
     src/linux-dmabuf/linux-dmabuf-protocol.c
+)
+
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bridge)
+add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/bridge/wpe-bridge-protocol.c
+           ${CMAKE_BINARY_DIR}/bridge/wpe-bridge-client-protocol.h
+           ${CMAKE_BINARY_DIR}/bridge/wpe-bridge-server-protocol.h
+    DEPENDS ${CMAKE_SOURCE_DIR}/src/bridge/wpe-bridge.xml
+    COMMAND ${WAYLAND_SCANNER} ${WAYLAND_SCANNER_CODE_ARG} < ${CMAKE_SOURCE_DIR}/src/bridge/wpe-bridge.xml > ${CMAKE_BINARY_DIR}/bridge/wpe-bridge-protocol.c
+    COMMAND ${WAYLAND_SCANNER} client-header < ${CMAKE_SOURCE_DIR}/src/bridge/wpe-bridge.xml > ${CMAKE_BINARY_DIR}/bridge/wpe-bridge-client-protocol.h
+    COMMAND ${WAYLAND_SCANNER} server-header < ${CMAKE_SOURCE_DIR}/src/bridge/wpe-bridge.xml > ${CMAKE_BINARY_DIR}/bridge/wpe-bridge-server-protocol.h
+    VERBATIM
 )
 
 option(EXPORTABLE_EGL "Enable the exportable EGL interface" ON)
