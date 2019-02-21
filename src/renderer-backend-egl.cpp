@@ -173,10 +173,6 @@ public:
         wl_proxy_set_queue(reinterpret_cast<struct wl_proxy*>(m_wl.surface), m_wl.eventQueue);
         m_wl.window = wl_egl_window_create(m_wl.surface, width, height);
 
-        uint32_t bridgeID = g_random_int();
-        wpe_bridge_connect(m_wl.wpeBridge, m_wl.surface, bridgeID);
-        wl_display_roundtrip_queue(display, m_wl.eventQueue);
-
         m_glib.wlSource = g_source_new(&Source::s_sourceFuncs, sizeof(Source));
         {
             auto& source = *reinterpret_cast<Source*>(m_glib.wlSource);
@@ -208,10 +204,9 @@ public:
         }, this, nullptr);
         g_source_attach(m_glib.frameSource, g_main_context_get_thread_default());
 
-        uint32_t message[] = { 0x42, bridgeID };
-        if (m_glib.socket)
-            g_socket_send(m_glib.socket, reinterpret_cast<gchar*>(message), 2 * sizeof(uint32_t),
-                nullptr, nullptr);
+        wpe_bridge_add_listener(m_wl.wpeBridge, &s_bridgeListener, this);
+        wpe_bridge_connect(m_wl.wpeBridge, m_wl.surface);
+        wl_display_roundtrip_queue(display, m_wl.eventQueue);
     }
 
     void requestFrame()
@@ -228,11 +223,20 @@ public:
         g_source_set_ready_time(m_glib.frameSource, 0);
     }
 
+    void bridgeConnected(uint32_t bridgeID)
+    {
+        uint32_t message[] = { 0x42, bridgeID };
+        if (m_glib.socket)
+            g_socket_send(m_glib.socket, reinterpret_cast<gchar*>(message), 2 * sizeof(uint32_t), nullptr, nullptr);
+    }
+
     struct wl_egl_window* window() const { return m_wl.window; }
 
 private:
     static const struct wl_registry_listener s_registryListener;
     static const struct wl_callback_listener s_callbackListener;
+    static const struct wpe_bridge_listener s_bridgeListener;
+
     static GSourceFuncs s_sourceFuncs;
 
     struct wpe_renderer_backend_egl_target* m_target { nullptr };
@@ -276,6 +280,14 @@ const struct wl_callback_listener Target::s_callbackListener = {
     [](void* data, struct wl_callback*, uint32_t time)
     {
         static_cast<Target*>(data)->dispatchFrameComplete();
+    },
+};
+
+const struct wpe_bridge_listener Target::s_bridgeListener = {
+    // connected
+    [](void* data, struct wpe_bridge*, uint32_t id)
+    {
+        static_cast<Target*>(data)->bridgeConnected(id);
     },
 };
 

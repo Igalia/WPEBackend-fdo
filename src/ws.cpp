@@ -181,12 +181,15 @@ static const struct wl_compositor_interface s_compositorInterface = {
 
 static const struct wpe_bridge_interface s_wpeBridgeInterface = {
     // connect
-    [](struct wl_client*, struct wl_resource*, struct wl_resource* surfaceResource, uint32_t bridgeID)
+    [](struct wl_client*, struct wl_resource* resource, struct wl_resource* surfaceResource)
     {
         auto* surface = static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
         if (!surface)
             return;
 
+        static uint32_t bridgeID = 0;
+        ++bridgeID;
+        wpe_bridge_send_connected(resource, bridgeID);
         Instance::singleton().createSurface(bridgeID, surface);
     },
 };
