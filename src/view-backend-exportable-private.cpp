@@ -103,8 +103,10 @@ void ViewBackend::exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buf
 
 void ViewBackend::dispatchFrameCallback()
 {
-    for (auto* resource : m_callbackResources)
+    for (auto* resource : m_callbackResources) {
         wl_callback_send_done(resource, 0);
+        wl_resource_destroy(resource);
+    }
     m_callbackResources.clear();
     wl_client_flush(m_client);
 }
