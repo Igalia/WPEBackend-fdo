@@ -29,12 +29,44 @@
 #include <EGL/eglext.h>
 #include "linux-dmabuf/linux-dmabuf.h"
 #include "bridge/wpe-bridge-server-protocol.h"
+#include <cassert>
 #include <sys/socket.h>
 #include <unistd.h>
 
 #ifndef EGL_WL_bind_wayland_display
 typedef EGLBoolean (EGLAPIENTRYP PFNEGLBINDWAYLANDDISPLAYWL) (EGLDisplay dpy, struct wl_display *display);
 #endif
+
+#ifndef EGL_EXT_image_dma_buf_import
+#define EGL_LINUX_DMA_BUF_EXT             0x3270
+#define EGL_DMA_BUF_PLANE0_FD_EXT         0x3272
+#define EGL_DMA_BUF_PLANE0_OFFSET_EXT     0x3273
+#define EGL_DMA_BUF_PLANE0_PITCH_EXT      0x3274
+#define EGL_DMA_BUF_PLANE1_FD_EXT         0x3275
+#define EGL_DMA_BUF_PLANE1_OFFSET_EXT     0x3276
+#define EGL_DMA_BUF_PLANE1_PITCH_EXT      0x3277
+#define EGL_DMA_BUF_PLANE2_FD_EXT         0x3278
+#define EGL_DMA_BUF_PLANE2_OFFSET_EXT     0x3279
+#define EGL_DMA_BUF_PLANE2_PITCH_EXT      0x327A
+#endif /* EGL_EXT_image_dma_buf_import */
+
+#ifndef EGL_EXT_image_dma_buf_import_modifiers
+#define EGL_DMA_BUF_PLANE3_FD_EXT         0x3440
+#define EGL_DMA_BUF_PLANE3_OFFSET_EXT     0x3441
+#define EGL_DMA_BUF_PLANE3_PITCH_EXT      0x3442
+#define EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT 0x3443
+#define EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT 0x3444
+#define EGL_DMA_BUF_PLANE1_MODIFIER_LO_EXT 0x3445
+#define EGL_DMA_BUF_PLANE1_MODIFIER_HI_EXT 0x3446
+#define EGL_DMA_BUF_PLANE2_MODIFIER_LO_EXT 0x3447
+#define EGL_DMA_BUF_PLANE2_MODIFIER_HI_EXT 0x3448
+#define EGL_DMA_BUF_PLANE3_MODIFIER_LO_EXT 0x3449
+#define EGL_DMA_BUF_PLANE3_MODIFIER_HI_EXT 0x344A
+#endif /* EGL_EXT_image_dma_buf_import_modifiers */
+
+static PFNEGLBINDWAYLANDDISPLAYWL eglBindWaylandDisplayWL;
+static PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR;
+static PFNEGLDESTROYIMAGEKHRPROC eglDestroyImageKHR;
 
 namespace WS {
 
@@ -258,28 +290,60 @@ Instance::~Instance()
         wl_display_destroy(m_display);
 }
 
-void Instance::initialize(EGLDisplay eglDisplay)
+static bool isEGLExtensionSupported(const char* extensionList, const char* extension)
+{
+    if (!extensionList)
+        return false;
+
+    int extensionLen = strlen(extension);
+    const char* extensionListPtr = extensionList;
+    while ((extensionListPtr = strstr(extensionListPtr, extension))) {
+        if (extensionListPtr[extensionLen] == ' ' || extensionListPtr[extensionLen] == '\0')
+            return true;
+	extensionListPtr += extensionLen;
+    }
+    return false;
+}
+
+bool Instance::initialize(EGLDisplay eglDisplay)
 {
     if (m_eglDisplay == eglDisplay)
-        return;
+        return true;
 
     if (m_eglDisplay != EGL_NO_DISPLAY) {
         fprintf(stderr, "WPE fdo doesn't support multiple EGL displays\n");
-        return;
+        return false;
     }
 
-    PFNEGLBINDWAYLANDDISPLAYWL bindWaylandDisplayWL =
-        reinterpret_cast<PFNEGLBINDWAYLANDDISPLAYWL>(eglGetProcAddress("eglBindWaylandDisplayWL"));
-    bindWaylandDisplayWL(eglDisplay, m_display);
+    const char* extensions = eglQueryString(eglDisplay, EGL_EXTENSIONS);
+    if (isEGLExtensionSupported(extensions, "EGL_WL_bind_wayland_display"))
+        eglBindWaylandDisplayWL = reinterpret_cast<PFNEGLBINDWAYLANDDISPLAYWL>(eglGetProcAddress("eglBindWaylandDisplayWL"));
+    if (!eglBindWaylandDisplayWL)
+        return false;
+
+    if (isEGLExtensionSupported(extensions, "EGL_KHR_image_base")) {
+        eglCreateImageKHR = reinterpret_cast<PFNEGLCREATEIMAGEKHRPROC>(eglGetProcAddress("eglCreateImageKHR"));
+        eglDestroyImageKHR = reinterpret_cast<PFNEGLDESTROYIMAGEKHRPROC>(eglGetProcAddress("eglDestroyImageKHR"));
+    }
+    if (!eglCreateImageKHR || !eglDestroyImageKHR)
+        return false;
+
+    if (!eglBindWaylandDisplayWL(eglDisplay, m_display))
+        return false;
 
     m_eglDisplay = eglDisplay;
 
     /* Initialize Linux dmabuf subsystem. */
     linux_dmabuf_setup(m_display, eglDisplay);
+
+    return true;
 }
 
 int Instance::createClient()
 {
+    if (m_eglDisplay == EGL_NO_DISPLAY)
+        return -1;
+
     int pair[2];
     if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, pair) < 0)
         return -1;
@@ -294,6 +358,84 @@ int Instance::createClient()
 void Instance::createSurface(uint32_t id, Surface* surface)
 {
     m_viewBackendMap.insert({ id, surface });
+}
+
+EGLImageKHR Instance::createImage(struct wl_resource* resourceBuffer)
+{
+    if (m_eglDisplay == EGL_NO_DISPLAY)
+        return EGL_NO_IMAGE_KHR;
+    return eglCreateImageKHR(m_eglDisplay, EGL_NO_CONTEXT, EGL_WAYLAND_BUFFER_WL, resourceBuffer, nullptr);
+}
+
+EGLImageKHR Instance::createImage(const struct linux_dmabuf_buffer* dmabufBuffer)
+{
+    if (m_eglDisplay == EGL_NO_DISPLAY)
+        return EGL_NO_IMAGE_KHR;
+    const struct linux_dmabuf_attributes* bufAttribs =
+        linux_dmabuf_get_buffer_attributes(dmabufBuffer);
+    assert(bufAttribs);
+
+    static const struct {
+        EGLint fd;
+        EGLint offset;
+        EGLint pitch;
+        EGLint modifierLo;
+        EGLint modifierHi;
+    } planeEnums[4] = {
+        {EGL_DMA_BUF_PLANE0_FD_EXT,
+         EGL_DMA_BUF_PLANE0_OFFSET_EXT,
+         EGL_DMA_BUF_PLANE0_PITCH_EXT,
+         EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT,
+         EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT},
+        {EGL_DMA_BUF_PLANE1_FD_EXT,
+         EGL_DMA_BUF_PLANE1_OFFSET_EXT,
+         EGL_DMA_BUF_PLANE1_PITCH_EXT,
+         EGL_DMA_BUF_PLANE1_MODIFIER_LO_EXT,
+         EGL_DMA_BUF_PLANE1_MODIFIER_HI_EXT},
+        {EGL_DMA_BUF_PLANE2_FD_EXT,
+         EGL_DMA_BUF_PLANE2_OFFSET_EXT,
+         EGL_DMA_BUF_PLANE2_PITCH_EXT,
+         EGL_DMA_BUF_PLANE2_MODIFIER_LO_EXT,
+         EGL_DMA_BUF_PLANE2_MODIFIER_HI_EXT},
+        {EGL_DMA_BUF_PLANE3_FD_EXT,
+         EGL_DMA_BUF_PLANE3_OFFSET_EXT,
+         EGL_DMA_BUF_PLANE3_PITCH_EXT,
+         EGL_DMA_BUF_PLANE3_MODIFIER_LO_EXT,
+         EGL_DMA_BUF_PLANE3_MODIFIER_HI_EXT},
+    };
+
+    EGLint attribs[50];
+    int atti = 0;
+    attribs[atti++] = EGL_WIDTH;
+    attribs[atti++] = bufAttribs->width;
+    attribs[atti++] = EGL_HEIGHT;
+    attribs[atti++] = bufAttribs->height;
+    attribs[atti++] = EGL_LINUX_DRM_FOURCC_EXT;
+    attribs[atti++] = bufAttribs->format;
+
+    for (int i = 0; i < bufAttribs->n_planes; i++) {
+        attribs[atti++] = planeEnums[i].fd;
+        attribs[atti++] = bufAttribs->fd[i];
+        attribs[atti++] = planeEnums[i].offset;
+        attribs[atti++] = bufAttribs->offset[i];
+        attribs[atti++] = planeEnums[i].pitch;
+        attribs[atti++] = bufAttribs->stride[i];
+        attribs[atti++] = planeEnums[i].modifierLo;
+        attribs[atti++] = bufAttribs->modifier[i] & 0xFFFFFFFF;
+        attribs[atti++] = planeEnums[i].modifierHi;
+        attribs[atti++] = bufAttribs->modifier[i] >> 32;
+    }
+
+    attribs[atti++] = EGL_NONE;
+
+    return eglCreateImageKHR(m_eglDisplay, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, nullptr, attribs);
+}
+
+void Instance::destroyImage(EGLImageKHR image)
+{
+    if (m_eglDisplay == EGL_NO_DISPLAY)
+        return;
+    eglDestroyImageKHR(m_eglDisplay, image);
 }
 
 struct wl_client* Instance::registerViewBackend(uint32_t id, ExportableClient& exportableClient)
