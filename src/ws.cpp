@@ -37,6 +37,11 @@
 typedef EGLBoolean (EGLAPIENTRYP PFNEGLBINDWAYLANDDISPLAYWL) (EGLDisplay dpy, struct wl_display *display);
 #endif
 
+#ifndef EGL_EXT_image_dma_buf_import_modifiers
+typedef EGLBoolean (* PFNEGLQUERYDMABUFFORMATSEXTPROC) (EGLDisplay dpy, EGLint max_formats, EGLint *formats, EGLint *num_formats);
+typedef EGLBoolean (* PFNEGLQUERYDMABUFMODIFIERSEXTPROC) (EGLDisplay dpy, EGLint format, EGLint max_modifiers, EGLuint64KHR *modifiers, EGLBoolean *external_only, EGLint *num_modifiers);
+#endif /* EGL_EXT_image_dma_buf_import_modifiers */
+
 #ifndef EGL_EXT_image_dma_buf_import
 #define EGL_LINUX_DMA_BUF_EXT             0x3270
 #define EGL_DMA_BUF_PLANE0_FD_EXT         0x3272
@@ -67,6 +72,8 @@ typedef EGLBoolean (EGLAPIENTRYP PFNEGLBINDWAYLANDDISPLAYWL) (EGLDisplay dpy, st
 static PFNEGLBINDWAYLANDDISPLAYWL eglBindWaylandDisplayWL;
 static PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR;
 static PFNEGLDESTROYIMAGEKHRPROC eglDestroyImageKHR;
+static PFNEGLQUERYDMABUFFORMATSEXTPROC eglQueryDmaBufFormatsEXT;
+static PFNEGLQUERYDMABUFMODIFIERSEXTPROC eglQueryDmaBufModifiersEXT;
 
 namespace WS {
 
@@ -133,7 +140,7 @@ static const struct wl_surface_interface s_surfaceInterface = {
     {
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
 
-        surface.dmabufBuffer = linux_dmabuf_get_buffer(bufferResource);
+        surface.dmabufBuffer = Instance::singleton().getDmaBufBuffer(bufferResource);
 
         if (surface.bufferResource)
             wl_buffer_send_release(surface.bufferResource);
@@ -262,6 +269,8 @@ Instance::Instance()
             wl_resource_set_implementation(resource, &s_wpeBridgeInterface, nullptr, nullptr);
         });
 
+    wl_list_init(&m_dmabufBuffers);
+
     auto& source = *reinterpret_cast<Source*>(m_source);
 
     struct wl_event_loop* eventLoop = wl_display_get_event_loop(m_display);
@@ -279,11 +288,27 @@ Instance::Instance()
 
 Instance::~Instance()
 {
-    linux_dmabuf_teardown();
-
     if (m_source) {
         g_source_destroy(m_source);
         g_source_unref(m_source);
+    }
+
+    if (m_compositor)
+        wl_global_destroy(m_compositor);
+
+    if (m_wpeBridge)
+        wl_global_destroy(m_wpeBridge);
+
+    if (m_linuxDmabuf) {
+        struct linux_dmabuf_buffer *buffer;
+        struct linux_dmabuf_buffer *tmp;
+        wl_list_for_each_safe(buffer, tmp, &m_dmabufBuffers, link) {
+            assert(buffer);
+
+            wl_list_remove(&buffer->link);
+            linux_dmabuf_buffer_destroy(buffer);
+        }
+        wl_global_destroy(m_linuxDmabuf);
     }
 
     if (m_display)
@@ -334,7 +359,16 @@ bool Instance::initialize(EGLDisplay eglDisplay)
     m_eglDisplay = eglDisplay;
 
     /* Initialize Linux dmabuf subsystem. */
-    linux_dmabuf_setup(m_display, eglDisplay);
+    if (isEGLExtensionSupported(extensions, "EGL_EXT_image_dma_buf_import")
+        && isEGLExtensionSupported(extensions, "EGL_EXT_image_dma_buf_import_modifiers")) {
+        eglQueryDmaBufFormatsEXT = reinterpret_cast<PFNEGLQUERYDMABUFFORMATSEXTPROC>(eglGetProcAddress("eglQueryDmaBufFormatsEXT"));
+        eglQueryDmaBufModifiersEXT = reinterpret_cast<PFNEGLQUERYDMABUFMODIFIERSEXTPROC>(eglGetProcAddress("eglQueryDmaBufModifiersEXT"));
+    }
+    if (eglQueryDmaBufFormatsEXT && eglQueryDmaBufModifiersEXT) {
+        if (m_linuxDmabuf)
+            assert(!"Linux-dmabuf has already been initialized");
+        m_linuxDmabuf = linux_dmabuf_setup(m_display);
+    }
 
     return true;
 }
@@ -369,11 +403,8 @@ EGLImageKHR Instance::createImage(struct wl_resource* resourceBuffer)
 
 EGLImageKHR Instance::createImage(const struct linux_dmabuf_buffer* dmabufBuffer)
 {
-    if (m_eglDisplay == EGL_NO_DISPLAY)
+    if (!m_linuxDmabuf)
         return EGL_NO_IMAGE_KHR;
-    const struct linux_dmabuf_attributes* bufAttribs =
-        linux_dmabuf_get_buffer_attributes(dmabufBuffer);
-    assert(bufAttribs);
 
     static const struct {
         EGLint fd;
@@ -407,23 +438,23 @@ EGLImageKHR Instance::createImage(const struct linux_dmabuf_buffer* dmabufBuffer
     EGLint attribs[50];
     int atti = 0;
     attribs[atti++] = EGL_WIDTH;
-    attribs[atti++] = bufAttribs->width;
+    attribs[atti++] = dmabufBuffer->attributes.width;
     attribs[atti++] = EGL_HEIGHT;
-    attribs[atti++] = bufAttribs->height;
+    attribs[atti++] = dmabufBuffer->attributes.height;
     attribs[atti++] = EGL_LINUX_DRM_FOURCC_EXT;
-    attribs[atti++] = bufAttribs->format;
+    attribs[atti++] = dmabufBuffer->attributes.format;
 
-    for (int i = 0; i < bufAttribs->n_planes; i++) {
+    for (int i = 0; i < dmabufBuffer->attributes.n_planes; i++) {
         attribs[atti++] = planeEnums[i].fd;
-        attribs[atti++] = bufAttribs->fd[i];
+        attribs[atti++] = dmabufBuffer->attributes.fd[i];
         attribs[atti++] = planeEnums[i].offset;
-        attribs[atti++] = bufAttribs->offset[i];
+        attribs[atti++] = dmabufBuffer->attributes.offset[i];
         attribs[atti++] = planeEnums[i].pitch;
-        attribs[atti++] = bufAttribs->stride[i];
+        attribs[atti++] = dmabufBuffer->attributes.stride[i];
         attribs[atti++] = planeEnums[i].modifierLo;
-        attribs[atti++] = bufAttribs->modifier[i] & 0xFFFFFFFF;
+        attribs[atti++] = dmabufBuffer->attributes.modifier[i] & 0xFFFFFFFF;
         attribs[atti++] = planeEnums[i].modifierHi;
-        attribs[atti++] = bufAttribs->modifier[i] >> 32;
+        attribs[atti++] = dmabufBuffer->attributes.modifier[i] >> 32;
     }
 
     attribs[atti++] = EGL_NONE;
@@ -436,6 +467,56 @@ void Instance::destroyImage(EGLImageKHR image)
     if (m_eglDisplay == EGL_NO_DISPLAY)
         return;
     eglDestroyImageKHR(m_eglDisplay, image);
+}
+
+void Instance::importDmaBufBuffer(struct linux_dmabuf_buffer* buffer)
+{
+    if (!m_linuxDmabuf)
+        return;
+    wl_list_insert(&m_dmabufBuffers, &buffer->link);
+}
+
+const struct linux_dmabuf_buffer* Instance::getDmaBufBuffer(struct wl_resource* bufferResource) const
+{
+    if (!m_linuxDmabuf)
+        return nullptr;
+
+    struct linux_dmabuf_buffer* buffer;
+    wl_list_for_each(buffer, &m_dmabufBuffers, link) {
+        if (buffer->buffer_resource == bufferResource)
+            return buffer;
+    }
+
+    return NULL;
+}
+
+void Instance::foreachDmaBufModifier(std::function<void (int format, int modifier)> callback)
+{
+    if (m_eglDisplay == EGL_NO_DISPLAY)
+        return;
+
+    EGLint formats[128];
+    EGLint numFormats;
+    if (!eglQueryDmaBufFormatsEXT(m_eglDisplay, 128, formats, &numFormats))
+        assert(!"Linux-dmabuf: Failed to query formats");
+
+    for (int i = 0; i < numFormats; i++) {
+        uint64_t modifiers[64];
+        EGLint numModifiers;
+        if (!eglQueryDmaBufModifiersEXT(m_eglDisplay, formats[i], 64, modifiers, NULL, &numModifiers))
+            assert(!"Linux-dmabuf: Failed to query modifiers of a format");
+
+        /* Send DRM_FORMAT_MOD_INVALID token when no modifiers are supported
+         * for this format.
+         */
+        if (numModifiers == 0) {
+            numModifiers = 1;
+            modifiers[0] = DRM_FORMAT_MOD_INVALID;
+        }
+
+        for (int j = 0; j < numModifiers; j++)
+            callback(formats[i], modifiers[j]);
+    }
 }
 
 struct wl_client* Instance::registerViewBackend(uint32_t id, ExportableClient& exportableClient)

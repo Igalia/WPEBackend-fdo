@@ -5,18 +5,10 @@
 
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include <stdbool.h>
-#include <stdint.h>
 #include <wayland-server.h>
 #include "drm_fourcc.h"
 
 #define MAX_DMABUF_PLANES 4
-
-typedef void* EGLDisplay;
 
 struct linux_dmabuf_attributes {
     uint32_t width;
@@ -30,20 +22,21 @@ struct linux_dmabuf_attributes {
     uint64_t modifier[MAX_DMABUF_PLANES];
 };
 
-struct linux_dmabuf_buffer;
+typedef void (*linux_dmabuf_user_data_destroy_func)(struct linux_dmabuf_buffer *buffer);
 
-bool
-linux_dmabuf_setup(struct wl_display *wl_display, EGLDisplay egl_display);
+struct linux_dmabuf_buffer {
+    struct wl_resource *buffer_resource;
+    struct wl_resource *params_resource;
+    struct linux_dmabuf_attributes attributes;
+
+    void *user_data;
+    linux_dmabuf_user_data_destroy_func user_data_destroy_func;
+
+    struct wl_list link;
+};
+
+struct wl_global *
+linux_dmabuf_setup(struct wl_display *wl_display);
 
 void
-linux_dmabuf_teardown(void);
-
-const struct linux_dmabuf_buffer *
-linux_dmabuf_get_buffer(struct wl_resource *buffer_resource);
-
-const struct linux_dmabuf_attributes *
-linux_dmabuf_get_buffer_attributes(const struct linux_dmabuf_buffer *buffer);
-
-#ifdef __cplusplus
-}
-#endif
+linux_dmabuf_buffer_destroy(struct linux_dmabuf_buffer *buffer);

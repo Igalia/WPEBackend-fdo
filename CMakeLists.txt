@@ -43,6 +43,7 @@ endif ()
 set(WPEBACKEND_FDO_INCLUDE_DIRECTORIES
     "include"
     ${CMAKE_BINARY_DIR}
+    ${CMAKE_SOURCE_DIR}/src
     ${EGL_INCLUDE_DIRS}
     ${GLIB_INCLUDE_DIRS}
     ${WAYLAND_INCLUDE_DIRS}
@@ -81,7 +82,7 @@ set(WPEBACKEND_FDO_SOURCES
     src/view-backend-exportable-private.cpp
     src/ws.cpp
 
-    src/linux-dmabuf/linux-dmabuf.c
+    src/linux-dmabuf/linux-dmabuf.cpp
     src/linux-dmabuf/linux-dmabuf-protocol.c
 )
 

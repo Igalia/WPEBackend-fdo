@@ -4,58 +4,13 @@
  */
 
 #include <assert.h>
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
 #include "linux-dmabuf.h"
 #include "linux-dmabuf-unstable-v1-server-protocol.h"
+#include "ws.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#ifndef EGL_EXT_image_dma_buf_import_modifiers
-typedef EGLBoolean (* PFNEGLQUERYDMABUFFORMATSEXTPROC) (EGLDisplay dpy, EGLint max_formats, EGLint *formats, EGLint *num_formats);
-typedef EGLBoolean (* PFNEGLQUERYDMABUFMODIFIERSEXTPROC) (EGLDisplay dpy, EGLint format, EGLint max_modifiers, EGLuint64KHR *modifiers, EGLBoolean *external_only, EGLint *num_modifiers);
-#endif /* EGL_EXT_image_dma_buf_import_modifiers */
-
-typedef void (*linux_dmabuf_user_data_destroy_func)(struct linux_dmabuf_buffer *buffer);
-
-/* Per-process global data. */
-static struct {
-    struct wl_display *wl_display;
-    EGLDisplay egl_display;
-
-    PFNEGLQUERYDMABUFFORMATSEXTPROC eglQueryDmaBufFormatsEXT;
-    PFNEGLQUERYDMABUFMODIFIERSEXTPROC eglQueryDmaBufModifiersEXT;
-
-    /* A list of active linux_dmabuf_buffer's. */
-    struct wl_list dmabuf_buffers;
-} linux_dmabuf_data = {NULL, };
-
-struct linux_dmabuf_buffer {
-    struct wl_resource *buffer_resource;
-    struct wl_resource *params_resource;
-    struct linux_dmabuf_attributes attributes;
-
-    void *user_data;
-    linux_dmabuf_user_data_destroy_func user_data_destroy_func;
-
-    struct wl_list link;
-};
-
-static void
-linux_dmabuf_buffer_destroy(struct linux_dmabuf_buffer *buffer)
-{
-    for (int i = 0; i < buffer->attributes.n_planes; i++) {
-        close(buffer->attributes.fd[i]);
-        buffer->attributes.fd[i] = -1;
-    }
-    buffer->attributes.n_planes = 0;
-
-    wl_list_remove(&buffer->link);
-
-    free(buffer);
-}
 
 static void
 params_destroy(struct wl_client *client, struct wl_resource *resource)
@@ -73,8 +28,7 @@ params_add(struct wl_client *client,
 	   uint32_t modifier_hi,
 	   uint32_t modifier_lo)
 {
-    struct linux_dmabuf_buffer *buffer =
-        wl_resource_get_user_data(params_resource);
+    auto *buffer = static_cast<struct linux_dmabuf_buffer *>(wl_resource_get_user_data(params_resource));
     if (!buffer) {
         wl_resource_post_error(params_resource,
                                ZWP_LINUX_BUFFER_PARAMS_V1_ERROR_ALREADY_USED,
@@ -119,9 +73,7 @@ params_add(struct wl_client *client,
 static void
 destroy_wl_buffer_resource(struct wl_resource *resource)
 {
-    struct linux_dmabuf_buffer *buffer;
-
-    buffer = wl_resource_get_user_data(resource);
+    auto *buffer = static_cast<struct linux_dmabuf_buffer *>(wl_resource_get_user_data(resource));
     assert(buffer && buffer->buffer_resource == resource);
     assert(!buffer->params_resource);
 
@@ -152,7 +104,7 @@ import_dmabuf(struct linux_dmabuf_buffer *dmabuf)
     }
 
     /* Accept the buffer. */
-    wl_list_insert(&linux_dmabuf_data.dmabuf_buffers, &dmabuf->link);
+    WS::Instance::singleton().importDmaBufBuffer(dmabuf);
 
     return true;
 }
@@ -162,8 +114,7 @@ params_create_common(struct wl_client *client, struct wl_resource *params_resour
                      uint32_t buffer_id, int32_t width, int32_t height,
                      uint32_t format, uint32_t flags)
 {
-    struct linux_dmabuf_buffer *buffer =
-        wl_resource_get_user_data(params_resource);
+    auto *buffer = static_cast<struct linux_dmabuf_buffer *>(wl_resource_get_user_data(params_resource));
     if (!buffer) {
         wl_resource_post_error(params_resource,
                                ZWP_LINUX_BUFFER_PARAMS_V1_ERROR_ALREADY_USED,
@@ -352,8 +303,7 @@ zwp_linux_buffer_params_implementation = {
 static void
 destroy_params(struct wl_resource *params_resource)
 {
-    struct linux_dmabuf_buffer *buffer =
-        wl_resource_get_user_data(params_resource);
+    auto *buffer = static_cast<struct linux_dmabuf_buffer *>(wl_resource_get_user_data(params_resource));
     if (!buffer)
         return;
 
@@ -373,8 +323,7 @@ linux_dmabuf_create_params(struct wl_client *client,
 {
     uint32_t version = wl_resource_get_version(linux_dmabuf_resource);
 
-    struct linux_dmabuf_buffer *buffer =
-        calloc(1, sizeof(struct linux_dmabuf_buffer));
+    auto *buffer = static_cast<struct linux_dmabuf_buffer *>(calloc(1, sizeof(struct linux_dmabuf_buffer)));
     if (!buffer)
         goto err_out;
 
@@ -408,8 +357,7 @@ static const struct zwp_linux_dmabuf_v1_interface linux_dmabuf_implementation = 
 };
 
 static void
-bind_linux_dmabuf(struct wl_client *client, void *data, uint32_t version,
-                  uint32_t id)
+bind_linux_dmabuf(struct wl_client *client, void *data, uint32_t version, uint32_t id)
 {
     struct wl_resource *resource =
         wl_resource_create(client, &zwp_linux_dmabuf_v1_interface,
@@ -422,49 +370,15 @@ bind_linux_dmabuf(struct wl_client *client, void *data, uint32_t version,
     wl_resource_set_implementation(resource, &linux_dmabuf_implementation,
                                    data, NULL);
 
-    EGLDisplay egl_display = linux_dmabuf_data.egl_display;
-    assert(egl_display);
-
-    EGLint formats[128];
-    EGLint num_formats;
-    uint64_t modifier_invalid = DRM_FORMAT_MOD_INVALID;
-    if (!linux_dmabuf_data.eglQueryDmaBufFormatsEXT(egl_display, 128, formats,
-                                                    &num_formats)) {
-        assert(!"Linux-dmabuf: Failed to query formats");
-    }
-
-    for (int i = 0; i < num_formats; i++) {
-        uint64_t modifiers[64];
-        EGLint num_modifiers;
-        if (!linux_dmabuf_data.eglQueryDmaBufModifiersEXT(egl_display,
-                                                          formats[i], 64,
-                                                          modifiers, NULL,
-                                                          &num_modifiers)) {
-            assert(!"Linux-dmabuf: Failed to query modifiers of a format");
+    WS::Instance::singleton().foreachDmaBufModifier([version, resource] (int format, int modifier) {
+        if (version >= ZWP_LINUX_DMABUF_V1_MODIFIER_SINCE_VERSION) {
+            uint32_t modifier_lo = modifier & 0xFFFFFFFF;
+            uint32_t modifier_hi = modifier >> 32;
+            zwp_linux_dmabuf_v1_send_modifier(resource, format, modifier_hi, modifier_lo);
+        } else if (modifier == DRM_FORMAT_MOD_LINEAR || modifier == DRM_FORMAT_MOD_INVALID) {
+            zwp_linux_dmabuf_v1_send_format(resource, format);
         }
-
-        /* Send DRM_FORMAT_MOD_INVALID token when no modifiers are supported
-         * for this format.
-         */
-        if (num_modifiers == 0) {
-            num_modifiers = 1;
-            modifiers[0] = modifier_invalid;
-        }
-
-        for (int j = 0; j < num_modifiers; j++) {
-            if (version >= ZWP_LINUX_DMABUF_V1_MODIFIER_SINCE_VERSION) {
-                uint32_t modifier_lo = modifiers[j] & 0xFFFFFFFF;
-                uint32_t modifier_hi = modifiers[j] >> 32;
-                zwp_linux_dmabuf_v1_send_modifier(resource,
-                                                  formats[i],
-                                                  modifier_hi,
-                                                  modifier_lo);
-            } else if (modifiers[j] == DRM_FORMAT_MOD_LINEAR ||
-                       modifiers == &modifier_invalid) {
-                zwp_linux_dmabuf_v1_send_format(resource, formats[i]);
-            }
-        }
-    }
+    });
 }
 
 /** Advertise linux_dmabuf support.
@@ -473,85 +387,26 @@ bind_linux_dmabuf(struct wl_client *client, void *data, uint32_t version,
  * the interface will be advertised to clients. Essentially it creates a
  * global.
  */
-bool
-linux_dmabuf_setup(struct wl_display *wl_display, EGLDisplay egl_display)
+struct wl_global *
+linux_dmabuf_setup(struct wl_display *wl_display)
 {
-    assert(wl_display && egl_display);
+    assert(wl_display);
 
-    if (linux_dmabuf_data.wl_display)
-        assert(!"Linux-dmabuf has already been initialized");
-
-    /* Check for supported EGL extensions. */
-    const char *egl_exts = eglQueryString(egl_display, EGL_EXTENSIONS);
-    assert(egl_exts);
-
-    if (strstr(egl_exts, "EGL_EXT_image_dma_buf_import") == NULL ||
-        strstr(egl_exts, "EGL_EXT_image_dma_buf_import_modifiers") == NULL) {
-        /* EGL implementation doesn't support importing DMA buffers, bailing. */
-        return false;
-    }
-
-    /* Load extension's function pointers. */
-    linux_dmabuf_data.eglQueryDmaBufFormatsEXT =
-        (PFNEGLQUERYDMABUFFORMATSEXTPROC) eglGetProcAddress("eglQueryDmaBufFormatsEXT");
-    assert(linux_dmabuf_data.eglQueryDmaBufFormatsEXT);
-
-    linux_dmabuf_data.eglQueryDmaBufModifiersEXT =
-        (PFNEGLQUERYDMABUFMODIFIERSEXTPROC) eglGetProcAddress("eglQueryDmaBufModifiersEXT");
-    assert(linux_dmabuf_data.eglQueryDmaBufModifiersEXT);
-
-    linux_dmabuf_data.wl_display = wl_display;
-    linux_dmabuf_data.egl_display = egl_display;
-
-    wl_list_init(&linux_dmabuf_data.dmabuf_buffers);
-
-    if (!wl_global_create(wl_display,
-                          &zwp_linux_dmabuf_v1_interface, 3,
-                          NULL, bind_linux_dmabuf)) {
-        return false;
-    }
-
-    return true;
+    return wl_global_create(wl_display,
+                            &zwp_linux_dmabuf_v1_interface, 3,
+                            NULL, bind_linux_dmabuf);
 }
 
 void
-linux_dmabuf_teardown(void)
+linux_dmabuf_buffer_destroy(struct linux_dmabuf_buffer *buffer)
 {
-    if (!linux_dmabuf_data.wl_display)
-        return;
-
-    struct linux_dmabuf_buffer *buffer;
-    struct linux_dmabuf_buffer *tmp;
-    wl_list_for_each_safe(buffer, tmp, &linux_dmabuf_data.dmabuf_buffers, link) {
-        assert(buffer);
-
-        wl_list_remove(&buffer->link);
-        linux_dmabuf_buffer_destroy(buffer);
+    for (int i = 0; i < buffer->attributes.n_planes; i++) {
+        close(buffer->attributes.fd[i]);
+        buffer->attributes.fd[i] = -1;
     }
-}
+    buffer->attributes.n_planes = 0;
 
-const struct linux_dmabuf_buffer *
-linux_dmabuf_get_buffer(struct wl_resource *buffer_resource)
-{
-    assert(buffer_resource);
+    wl_list_remove(&buffer->link);
 
-    if (!linux_dmabuf_data.wl_display)
-        return NULL;
-
-    struct linux_dmabuf_buffer *buffer;
-    wl_list_for_each(buffer, &linux_dmabuf_data.dmabuf_buffers, link) {
-        assert(buffer);
-        if (buffer->buffer_resource == buffer_resource)
-            return buffer;
-    }
-
-    return NULL;
-}
-
-const struct linux_dmabuf_attributes *
-linux_dmabuf_get_buffer_attributes(const struct linux_dmabuf_buffer *buffer)
-{
-    assert(buffer);
-
-    return (const struct linux_dmabuf_attributes *) &buffer->attributes;
+    free(buffer);
 }
