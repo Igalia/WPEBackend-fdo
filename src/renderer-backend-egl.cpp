@@ -185,13 +185,11 @@ public:
 
             g_source_add_poll(m_glib.wlSource, &source.pfd);
             g_source_set_name(m_glib.wlSource, "WPEBackend-fdo::wayland");
-            g_source_set_priority(m_glib.wlSource, -70);
             g_source_set_can_recurse(m_glib.wlSource, TRUE);
             g_source_attach(m_glib.wlSource, g_main_context_get_thread_default());
         }
 
         m_glib.frameSource = g_source_new(&s_sourceFuncs, sizeof(GSource));
-        g_source_set_priority(m_glib.frameSource, -70);
         g_source_set_name(m_glib.frameSource, "WPEBackend-fdo::frame");
         g_source_set_callback(m_glib.frameSource, [](gpointer userData) -> gboolean {
             auto* target = static_cast<Target*>(userData);
