@@ -28,8 +28,8 @@
 #include "ws.h"
 
 __attribute__((visibility("default")))
-void
+bool
 wpe_fdo_initialize_for_egl_display(EGLDisplay display)
 {
-    WS::Instance::singleton().initialize(display);
+    return WS::Instance::singleton().initialize(display);
 }

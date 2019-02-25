@@ -26,11 +26,13 @@
 #pragma once
 
 #include <glib.h>
+#include <functional>
 #include <unordered_map>
 #include <wayland-server.h>
 #include "linux-dmabuf/linux-dmabuf.h"
 
 typedef void *EGLDisplay;
+typedef void *EGLImageKHR;
 
 namespace WS {
 
@@ -47,7 +49,7 @@ public:
     static Instance& singleton();
     ~Instance();
 
-    void initialize(EGLDisplay);
+    bool initialize(EGLDisplay);
 
     int createClient();
 
@@ -60,13 +62,23 @@ public:
         return m_eglDisplay;
     }
 
+    EGLImageKHR createImage(struct wl_resource*);
+    EGLImageKHR createImage(const struct linux_dmabuf_buffer*);
+    void destroyImage(EGLImageKHR);
+
+    void importDmaBufBuffer(struct linux_dmabuf_buffer*);
+    const struct linux_dmabuf_buffer* getDmaBufBuffer(struct wl_resource*) const;
+    void foreachDmaBufModifier(std::function<void (int format, int modifier)>);
+
 private:
     Instance();
 
-    struct wl_display* m_display;
-    struct wl_global* m_compositor;
-    struct wl_global* m_wpeBridge;
-    GSource* m_source;
+    struct wl_display* m_display { nullptr };
+    struct wl_global* m_compositor { nullptr };
+    struct wl_global* m_wpeBridge { nullptr };
+    struct wl_global* m_linuxDmabuf { nullptr };
+    struct wl_list m_dmabufBuffers;
+    GSource* m_source { nullptr };
 
     std::unordered_map<uint32_t, Surface*> m_viewBackendMap;
 
