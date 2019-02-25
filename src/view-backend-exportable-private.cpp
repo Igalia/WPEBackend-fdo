@@ -70,7 +70,6 @@ void ViewBackend::initialize()
 
     m_source = g_socket_create_source(m_socket, G_IO_IN, nullptr);
     g_source_set_callback(m_source, reinterpret_cast<GSourceFunc>(s_socketCallback), this, nullptr);
-    g_source_set_priority(m_source, -70);
     g_source_set_can_recurse(m_source, TRUE);
     g_source_attach(m_source, g_main_context_get_thread_default());
 
