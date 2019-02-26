@@ -91,14 +91,14 @@ void ViewBackend::frameCallback(struct wl_resource* callbackResource)
     m_callbackResources.push_back(callbackResource);
 }
 
-void ViewBackend::exportBufferResource(struct wl_resource* bufferResource)
+void ViewBackend::exportBufferResource(struct wl_resource* bufferResource, uint32_t width, uint32_t height)
 {
-    m_clientBundle->exportBuffer(bufferResource);
+    m_clientBundle->exportBuffer(bufferResource, width, height);
 }
 
-void ViewBackend::exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer)
+void ViewBackend::exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer, uint32_t width, uint32_t height)
 {
-    m_clientBundle->exportBuffer(dmabuf_buffer);
+    m_clientBundle->exportBuffer(dmabuf_buffer, width, height);
 }
 
 void ViewBackend::dispatchFrameCallback()

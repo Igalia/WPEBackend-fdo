@@ -34,6 +34,7 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
 #include <wpe/wpe.h>
 
 typedef void* EGLImageKHR;
@@ -53,6 +54,9 @@ wpe_view_backend_exportable_fdo_egl_create(const struct wpe_view_backend_exporta
 
 void
 wpe_view_backend_exportable_fdo_egl_dispatch_release_image(struct wpe_view_backend_exportable_fdo* exportable, EGLImageKHR image);
+
+bool
+wpe_view_backend_exportable_fdo_egl_dispatch_query_image_size(struct wpe_view_backend_exportable_fdo* exportable, EGLImageKHR image, uint32_t* width, uint32_t* height);
 
 #ifdef __cplusplus
 }

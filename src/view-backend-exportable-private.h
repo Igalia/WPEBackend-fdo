@@ -44,8 +44,8 @@ public:
 
     virtual ~ClientBundle() = default;
 
-    virtual void exportBuffer(struct wl_resource *bufferResource) = 0;
-    virtual void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer) = 0;
+    virtual void exportBuffer(struct wl_resource*, uint32_t, uint32_t) = 0;
+    virtual void exportBuffer(const struct linux_dmabuf_buffer*, uint32_t, uint32_t) = 0;
 
     void* data;
     ViewBackend* viewBackend;
@@ -61,8 +61,8 @@ public:
     void initialize();
     int clientFd();
     void frameCallback(struct wl_resource* callbackResource) override;
-    void exportBufferResource(struct wl_resource* bufferResource) override;
-    void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) override;
+    void exportBufferResource(struct wl_resource*, uint32_t, uint32_t) override;
+    void exportLinuxDmabuf(const struct linux_dmabuf_buffer*, uint32_t, uint32_t) override;
     void dispatchFrameCallback();
     void releaseBuffer(struct wl_resource* buffer_resource);
 

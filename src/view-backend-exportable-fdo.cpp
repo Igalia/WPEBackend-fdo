@@ -40,12 +40,12 @@ public:
 
     virtual ~ClientBundleBuffer() = default;
 
-    void exportBuffer(struct wl_resource *bufferResource) override
+    void exportBuffer(struct wl_resource *bufferResource, uint32_t, uint32_t) override
     {
         client->export_buffer_resource(data, bufferResource);
     }
 
-    void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer) override
+    void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer, uint32_t, uint32_t) override
     {
         assert(!"This interface doesn't support Linux DMA buffers");
     }

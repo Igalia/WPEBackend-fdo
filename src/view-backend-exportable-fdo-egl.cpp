@@ -37,6 +37,8 @@ namespace {
 struct buffer_data {
     struct wl_resource *buffer_resource;
     EGLImageKHR egl_image;
+    uint32_t width;
+    uint32_t height;
 };
 
 class ClientBundleEGL final : public ClientBundle {
@@ -59,7 +61,7 @@ public:
         m_buffers.clear();
     }
 
-    void exportBuffer(struct wl_resource *bufferResource) override
+    void exportBuffer(struct wl_resource *bufferResource, uint32_t width, uint32_t height) override
     {
         EGLImageKHR image = WS::Instance::singleton().createImage(bufferResource);
         if (!image)
@@ -68,12 +70,14 @@ public:
         auto* buf_data = new struct buffer_data;
         buf_data->buffer_resource = bufferResource;
         buf_data->egl_image = image;
+        buf_data->width = width;
+        buf_data->height = height;
         m_buffers.push_back(buf_data);
 
         client->export_egl_image(data, image);
     }
 
-    void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer) override
+    void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer, uint32_t width, uint32_t height) override
     {
         EGLImageKHR image = WS::Instance::singleton().createImage(dmabuf_buffer);
         if (!image)
@@ -82,22 +86,34 @@ public:
         auto* buf_data = new struct buffer_data;
         buf_data->buffer_resource = nullptr;
         buf_data->egl_image = image;
+        buf_data->width = width;
+        buf_data->height = height;
         m_buffers.push_back(buf_data);
 
         client->export_egl_image(data, image);
     }
 
-    struct buffer_data* releaseImage(EGLImageKHR image)
+    struct buffer_data* bufferData(EGLImageKHR image)
     {
         for (auto* buf_data : m_buffers)
-            if (buf_data->egl_image == image) {
-                m_buffers.remove(buf_data);
-                WS::Instance::singleton().destroyImage(buf_data->egl_image);
-
+            if (buf_data->egl_image == image)
                 return buf_data;
-            }
 
         return nullptr;
+    }
+
+    struct wl_resource* releaseImage(EGLImageKHR image)
+    {
+        auto* buffer_data = bufferData(image);
+        if (!buffer_data)
+            return nullptr;
+
+        m_buffers.remove(buffer_data);
+        WS::Instance::singleton().destroyImage(buffer_data->egl_image);
+        auto* buffer_resource = buffer_data->buffer_resource;
+        delete buffer_data;
+
+        return buffer_resource;
     }
 
     const struct wpe_view_backend_exportable_fdo_egl_client* client;
@@ -131,18 +147,27 @@ wpe_view_backend_exportable_fdo_egl_dispatch_release_image(struct wpe_view_backe
 {
     auto* clientBundle = reinterpret_cast<ClientBundleEGL*>(exportable->clientBundle);
 
-    auto* buffer_data = clientBundle->releaseImage(image);
+    auto* buffer_resource = clientBundle->releaseImage(image);
+    if (buffer_resource)
+        wpe_view_backend_exportable_fdo_dispatch_release_buffer(exportable, buffer_resource);
+}
+
+__attribute__((visibility("default")))
+bool
+wpe_view_backend_exportable_fdo_egl_dispatch_query_image_size(struct wpe_view_backend_exportable_fdo* exportable, EGLImageKHR image, uint32_t* width, uint32_t* height)
+{
+    auto* clientBundle = reinterpret_cast<ClientBundleEGL*>(exportable->clientBundle);
+
+    auto* buffer_data = clientBundle->bufferData(image);
     if (!buffer_data)
-        return;
+        return false;
 
-    /* the EGL image has already been destroyed by ClientBundleEGL */
+    if (width)
+        *width = buffer_data->width;
+    if (height)
+        *height = buffer_data->height;
 
-    if (buffer_data->buffer_resource) {
-        wpe_view_backend_exportable_fdo_dispatch_release_buffer(exportable,
-                                                                buffer_data->buffer_resource);
-    }
-
-    delete buffer_data;
+    return true;
 }
 
 }

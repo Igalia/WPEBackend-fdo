@@ -71,6 +71,7 @@ typedef EGLBoolean (* PFNEGLQUERYDMABUFMODIFIERSEXTPROC) (EGLDisplay dpy, EGLint
 #endif /* EGL_EXT_image_dma_buf_import_modifiers */
 
 static PFNEGLBINDWAYLANDDISPLAYWL eglBindWaylandDisplayWL;
+static PFNEGLQUERYWAYLANDBUFFERWL eglQueryWaylandBufferWL;
 static PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR;
 static PFNEGLDESTROYIMAGEKHRPROC eglDestroyImageKHR;
 static PFNEGLQUERYDMABUFFORMATSEXTPROC eglQueryDmaBufFormatsEXT;
@@ -176,12 +177,16 @@ static const struct wl_surface_interface s_surfaceInterface = {
         if (!surface.exportableClient)
             return;
 
-        if (surface.dmabufBuffer) {
-            surface.exportableClient->exportLinuxDmabuf(surface.dmabufBuffer);
-        } else {
+        if (surface.dmabufBuffer)
+            surface.exportableClient->exportLinuxDmabuf(surface.dmabufBuffer, surface.dmabufBuffer->attributes.width, surface.dmabufBuffer->attributes.height);
+        else {
             struct wl_resource* bufferResource = surface.bufferResource;
+            auto* eglDisplay = Instance::singleton().getEGLDisplay();
+            int width, height;
+            eglQueryWaylandBufferWL(eglDisplay, bufferResource, EGL_WIDTH, &width);
+            eglQueryWaylandBufferWL(eglDisplay, bufferResource, EGL_HEIGHT, &height);
             surface.bufferResource = nullptr;
-            surface.exportableClient->exportBufferResource(bufferResource);
+            surface.exportableClient->exportBufferResource(bufferResource, std::max<uint32_t>(width, 0), std::max<uint32_t>(height, 0));
         }
     },
     // set_buffer_transform
@@ -342,9 +347,11 @@ bool Instance::initialize(EGLDisplay eglDisplay)
     }
 
     const char* extensions = eglQueryString(eglDisplay, EGL_EXTENSIONS);
-    if (isEGLExtensionSupported(extensions, "EGL_WL_bind_wayland_display"))
+    if (isEGLExtensionSupported(extensions, "EGL_WL_bind_wayland_display")) {
         eglBindWaylandDisplayWL = reinterpret_cast<PFNEGLBINDWAYLANDDISPLAYWL>(eglGetProcAddress("eglBindWaylandDisplayWL"));
-    if (!eglBindWaylandDisplayWL)
+        eglQueryWaylandBufferWL = reinterpret_cast<PFNEGLQUERYWAYLANDBUFFERWL>(eglGetProcAddress("eglQueryWaylandBufferWL"));
+    }
+    if (!eglBindWaylandDisplayWL || !eglQueryWaylandBufferWL)
         return false;
 
     if (isEGLExtensionSupported(extensions, "EGL_KHR_image_base")) {
