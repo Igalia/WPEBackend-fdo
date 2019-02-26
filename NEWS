@@ -1,3 +1,13 @@
+==========================
+1.1.90 - February 26, 2019
+==========================
+
+- Function wpe_fdo_initialize_for_egl_display() now returns a boolean value
+  which indicates whether initialization was successful.
+- Some function parameters have been marked as "const" to explicitly indicate
+  that they are not modified.
+- Avoid leaking Wayland callback objects on each frame.
+
 =========================
 1.1.0 - December 14, 2018
 =========================
