@@ -370,7 +370,7 @@ bind_linux_dmabuf(struct wl_client *client, void *data, uint32_t version, uint32
     wl_resource_set_implementation(resource, &linux_dmabuf_implementation,
                                    data, NULL);
 
-    WS::Instance::singleton().foreachDmaBufModifier([version, resource] (int format, int modifier) {
+    WS::Instance::singleton().foreachDmaBufModifier([version, resource] (int format, uint64_t modifier) {
         if (version >= ZWP_LINUX_DMABUF_V1_MODIFIER_SINCE_VERSION) {
             uint32_t modifier_lo = modifier & 0xFFFFFFFF;
             uint32_t modifier_hi = modifier >> 32;

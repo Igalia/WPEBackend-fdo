@@ -490,7 +490,7 @@ const struct linux_dmabuf_buffer* Instance::getDmaBufBuffer(struct wl_resource* 
     return NULL;
 }
 
-void Instance::foreachDmaBufModifier(std::function<void (int format, int modifier)> callback)
+void Instance::foreachDmaBufModifier(std::function<void (int format, uint64_t modifier)> callback)
 {
     if (m_eglDisplay == EGL_NO_DISPLAY)
         return;

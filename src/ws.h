@@ -68,7 +68,7 @@ public:
 
     void importDmaBufBuffer(struct linux_dmabuf_buffer*);
     const struct linux_dmabuf_buffer* getDmaBufBuffer(struct wl_resource*) const;
-    void foreachDmaBufModifier(std::function<void (int format, int modifier)>);
+    void foreachDmaBufModifier(std::function<void (int format, uint64_t modifier)>);
 
 private:
     Instance();
