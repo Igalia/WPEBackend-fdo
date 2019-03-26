@@ -1,3 +1,9 @@
+======================
+1.2.0 - March 26, 2019
+======================
+
+- Fix rendering issue due to usage of wrong width of DMA-BUF flags type.
+
 =======================
 1.1.91 - March 14, 2019
 =======================
