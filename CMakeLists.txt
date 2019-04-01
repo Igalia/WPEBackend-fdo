@@ -61,6 +61,7 @@ set(WPEBACKEND_FDO_LIBRARIES
 )
 
 set(WPEBACKEND_FDO_PUBLIC_HEADERS
+    include/wpe-fdo/exported-image-egl.h
     include/wpe-fdo/initialize-egl.h
     include/wpe-fdo/view-backend-exportable.h
     include/wpe-fdo/fdo-egl.h
@@ -74,6 +75,7 @@ set(WPEBACKEND_FDO_GENERATED_SOURCES
 set(WPEBACKEND_FDO_SOURCES
     ${WPEBACKEND_FDO_GENERATED_SOURCES}
 
+    src/exported-image-egl.cpp
     src/fdo.cpp
     src/initialize-egl.cpp
     src/renderer-backend-egl.cpp

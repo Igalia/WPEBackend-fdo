@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017, 2018 Igalia S.L.
+ * Copyright (C) 2019 Igalia S.L.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,19 +23,34 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef __WEBKIT_WEB_EXTENSION_H__
-#error "Headers <wpe/fdo-egl.h> and <wpe/webkit-web-extension.h> cannot be included together."
+#if !defined(__WPE_FDO_EGL_H_INSIDE__) && !defined(WPE_FDO_COMPILATION)
+#error "Only <wpe/fdo-egl.h> can be included directly."
 #endif
 
-#ifndef __wpe_fdo_egl_h__
-#define __wpe_fdo_egl_h__
+#ifndef __exported_image_egl_h__
+#define __exported_image_egl_h__
 
-#define __WPE_FDO_EGL_H_INSIDE__
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#include <wpe/exported-image-egl.h>
-#include <wpe/initialize-egl.h>
-#include <wpe/view-backend-exportable-egl.h>
+#include <wpe/wpe.h>
 
-#undef __WPE_FDO_EGL_H_INSIDE__
+typedef void* EGLImageKHR;
 
-#endif /* __wpe_fdo_egl_h__ */
+struct wpe_fdo_egl_exported_image;
+
+uint32_t
+wpe_fdo_egl_exported_image_get_width(struct wpe_fdo_egl_exported_image*);
+
+uint32_t
+wpe_fdo_egl_exported_image_get_height(struct wpe_fdo_egl_exported_image*);
+
+EGLImageKHR
+wpe_fdo_egl_exported_image_get_egl_image(struct wpe_fdo_egl_exported_image*);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __exported_image_egl_h___ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017, 2018 Igalia S.L.
+ * Copyright (C) 2019 Igalia S.L.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,19 +23,42 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef __WEBKIT_WEB_EXTENSION_H__
-#error "Headers <wpe/fdo-egl.h> and <wpe/webkit-web-extension.h> cannot be included together."
-#endif
+#include "view-backend-exportable-fdo-egl-private.h"
+#include "ws.h"
+#include <cassert>
+#include <wpe-fdo/exported-image-egl.h>
 
-#ifndef __wpe_fdo_egl_h__
-#define __wpe_fdo_egl_h__
+extern "C" {
 
-#define __WPE_FDO_EGL_H_INSIDE__
+__attribute__((visibility("default")))
+uint32_t
+wpe_fdo_egl_exported_image_get_width(struct wpe_fdo_egl_exported_image* image)
+{
+    return image->width;
+}
 
-#include <wpe/exported-image-egl.h>
-#include <wpe/initialize-egl.h>
-#include <wpe/view-backend-exportable-egl.h>
+__attribute__((visibility("default")))
+uint32_t
+wpe_fdo_egl_exported_image_get_height(struct wpe_fdo_egl_exported_image* image)
+{
+    return image->height;
+}
 
-#undef __WPE_FDO_EGL_H_INSIDE__
+__attribute__((visibility("default")))
+EGLImageKHR
+wpe_fdo_egl_exported_image_get_egl_image(struct wpe_fdo_egl_exported_image* image)
+{
+    return image->eglImage;
+}
 
-#endif /* __wpe_fdo_egl_h__ */
+}
+
+void
+wpe_fdo_egl_exported_image_destroy(struct wpe_fdo_egl_exported_image* image)
+{
+    assert(image->eglImage);
+    WS::Instance::singleton().destroyImage(image->eglImage);
+    wl_list_remove(&image->bufferDestroyListener.link);
+
+    delete image;
+}

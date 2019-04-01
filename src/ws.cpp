@@ -71,6 +71,7 @@ typedef EGLBoolean (* PFNEGLQUERYDMABUFMODIFIERSEXTPROC) (EGLDisplay dpy, EGLint
 #endif /* EGL_EXT_image_dma_buf_import_modifiers */
 
 static PFNEGLBINDWAYLANDDISPLAYWL eglBindWaylandDisplayWL;
+static PFNEGLQUERYWAYLANDBUFFERWL eglQueryWaylandBufferWL;
 static PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR;
 static PFNEGLDESTROYIMAGEKHRPROC eglDestroyImageKHR;
 static PFNEGLQUERYDMABUFFORMATSEXTPROC eglQueryDmaBufFormatsEXT;
@@ -341,9 +342,11 @@ bool Instance::initialize(EGLDisplay eglDisplay)
     }
 
     const char* extensions = eglQueryString(eglDisplay, EGL_EXTENSIONS);
-    if (isEGLExtensionSupported(extensions, "EGL_WL_bind_wayland_display"))
+    if (isEGLExtensionSupported(extensions, "EGL_WL_bind_wayland_display")) {
         eglBindWaylandDisplayWL = reinterpret_cast<PFNEGLBINDWAYLANDDISPLAYWL>(eglGetProcAddress("eglBindWaylandDisplayWL"));
-    if (!eglBindWaylandDisplayWL)
+        eglQueryWaylandBufferWL = reinterpret_cast<PFNEGLQUERYWAYLANDBUFFERWL>(eglGetProcAddress("eglQueryWaylandBufferWL"));
+    }
+    if (!eglBindWaylandDisplayWL || !eglQueryWaylandBufferWL)
         return false;
 
     if (isEGLExtensionSupported(extensions, "EGL_KHR_image_base")) {
@@ -364,6 +367,7 @@ bool Instance::initialize(EGLDisplay eglDisplay)
         eglQueryDmaBufFormatsEXT = reinterpret_cast<PFNEGLQUERYDMABUFFORMATSEXTPROC>(eglGetProcAddress("eglQueryDmaBufFormatsEXT"));
         eglQueryDmaBufModifiersEXT = reinterpret_cast<PFNEGLQUERYDMABUFMODIFIERSEXTPROC>(eglGetProcAddress("eglQueryDmaBufModifiersEXT"));
     }
+
     if (eglQueryDmaBufFormatsEXT && eglQueryDmaBufModifiersEXT) {
         if (m_linuxDmabuf)
             assert(!"Linux-dmabuf has already been initialized");
@@ -467,6 +471,21 @@ void Instance::destroyImage(EGLImageKHR image)
     if (m_eglDisplay == EGL_NO_DISPLAY)
         return;
     eglDestroyImageKHR(m_eglDisplay, image);
+}
+
+void Instance::queryBufferSize(struct wl_resource* bufferResource, uint32_t* width, uint32_t* height)
+{
+    if (width) {
+        int w;
+        eglQueryWaylandBufferWL(m_eglDisplay, bufferResource, EGL_WIDTH, &w);
+        *width = w;
+    }
+
+    if (height) {
+        int h;
+        eglQueryWaylandBufferWL(m_eglDisplay, bufferResource, EGL_HEIGHT, &h);
+        *height = h;
+    }
 }
 
 void Instance::importDmaBufBuffer(struct linux_dmabuf_buffer* buffer)
