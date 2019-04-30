@@ -66,6 +66,8 @@ public:
     EGLImageKHR createImage(const struct linux_dmabuf_buffer*);
     void destroyImage(EGLImageKHR);
 
+    void queryBufferSize(struct wl_resource*, uint32_t* width, uint32_t* height);
+
     void importDmaBufBuffer(struct linux_dmabuf_buffer*);
     const struct linux_dmabuf_buffer* getDmaBufBuffer(struct wl_resource*) const;
     void foreachDmaBufModifier(std::function<void (int format, uint64_t modifier)>);
