@@ -34,8 +34,9 @@
 extern "C" {
 #endif
 
-#include <EGL/egl.h>
 #include <stdbool.h>
+
+typedef void *EGLDisplay;
 
 bool
 wpe_fdo_initialize_for_egl_display(EGLDisplay);
