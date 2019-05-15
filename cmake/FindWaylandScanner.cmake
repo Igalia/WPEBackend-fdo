@@ -28,15 +28,90 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-find_package(PkgConfig)
-pkg_check_modules(WAYLAND_SCANNER wayland-scanner)
+set(WAYLAND_SCANNER "" CACHE FILEPATH "Path to the wayland-scanner tool")
 
-pkg_get_variable(WAYLAND_SCANNER wayland-scanner wayland_scanner)
-if (WAYLAND_SCANNER_VERSION VERSION_LESS "1.15")
-    set(WAYLAND_SCANNER_CODE_ARG "code")
-else ()
-    set(WAYLAND_SCANNER_CODE_ARG "private-code")
+function(wayland_scanner_get_version _result _exepath)
+    set(_version "")
+    set(_status -1)
+    if (EXISTS "${_exepath}")
+        execute_process(
+            COMMAND "${_exepath}" "--version"
+            RESULT_VARIABLE _status
+            ERROR_VARIABLE _version
+            ERROR_STRIP_TRAILING_WHITESPACE
+            OUTPUT_QUIET
+        )
+        if (_status EQUAL 0)
+            string(REPLACE "wayland-scanner" "" _version "${_version}")
+            string(STRIP "${_version}" _version)
+        endif ()
+    endif ()
+    if (_version)
+        set(${_result} "${_version}" PARENT_SCOPE)
+    else ()
+        unset(${_result} PARENT_SCOPE)
+    endif ()
+endfunction()
+
+#
+# Method 1: If -DWAYLAND_SCANNER=... was passed on the command line,
+#           check whether we can extract the version number from it.
+#           Otherwise: unset the variable, to try other methods below.
+#
+if (WAYLAND_SCANNER)
+    wayland_scanner_get_version(WAYLAND_SCANNER_VERSION "${WAYLAND_SCANNER}")
+    if (NOT WAYLAND_SCANNER_VERSION)
+        set(WAYLAND_SCANNER "")
+    endif ()
+endif ()
+
+#
+# Method 2: Try to find an executable program in the current $PATH.
+#
+if (NOT WAYLAND_SCANNER)
+    find_program(WAYLAND_SCANNER_EXECUTABLE NAMES wayland-scanner)
+    if (WAYLAND_SCANNER_EXECUTABLE)
+        wayland_scanner_get_version(WAYLAND_SCANNER_VERSION "${WAYLAND_SCANNER_EXECUTABLE}")
+        if (WAYLAND_SCANNER_VERSION)
+            set(WAYLAND_SCANNER "${WAYLAND_SCANNER_EXECUTABLE}")
+        endif ()
+    endif ()
+    unset(WAYLAND_SCANNER_EXECUTABLE)
+endif ()
+
+#
+# Method 3: Try to find the executable using pkg-config, in case the
+#           tool was installed in a non-standard location.
+#
+if (NOT DEFINED WAYLAND_SCANNER OR NOT WAYLAND_SCANNER)
+    find_package(PkgConfig)
+    pkg_check_modules(WAYLAND_SCANNER_PC wayland-scanner)
+    if (WAYLAND_SCANNER_PC_FOUND)
+        pkg_get_variable(WAYLAND_SCANNER_PC_EXECUTABLE wayland-scanner wayland_scanner)
+        if (WAYLAND_SCANNER_PC_EXECUTABLE)
+            wayland_scanner_get_version(WAYLAND_SCANNER_VERSION "${WAYLAND_SCANNER_PC_EXECUTABLE}")
+            if (WAYLAND_SCANNER_VERSION)
+                set(WAYLAND_SCANNER "${WAYLAND_SCANNER_PC_EXECUTABLE}")
+            endif ()
+        endif ()
+    endif ()
+    unset(WAYLAND_SCANNER_PC)
+    unset(WAYLAND_SCANNER_PC_EXECUTABLE)
+endif ()
+
+if (WAYLAND_SCANNER_VERSION)
+    if (WAYLAND_SCANNER_VERSION VERSION_LESS "1.15")
+        set(WAYLAND_SCANNER_CODE_ARG "code")
+    else ()
+        set(WAYLAND_SCANNER_CODE_ARG "private-code")
+    endif ()
 endif ()
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(WAYLAND_SCANNER DEFAULT_MSG WAYLAND_SCANNER)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(
+    WAYLAND_SCANNER
+    DEFAULT_MSG
+    WAYLAND_SCANNER
+    WAYLAND_SCANNER_VERSION
+    WAYLAND_SCANNER_CODE_ARG
+)
