@@ -231,7 +231,7 @@ static const struct wpe_bridge_interface s_wpeBridgeInterface = {
         static uint32_t bridgeID = 0;
         ++bridgeID;
         wpe_bridge_send_connected(resource, bridgeID);
-        Instance::singleton().createSurface(bridgeID, surface);
+        Instance::singleton().registerSurface(bridgeID, surface);
     },
 };
 
@@ -393,7 +393,7 @@ int Instance::createClient()
     return clientFd;
 }
 
-void Instance::createSurface(uint32_t id, Surface* surface)
+void Instance::registerSurface(uint32_t id, Surface* surface)
 {
     m_viewBackendMap.insert({ id, surface });
 }
@@ -538,9 +538,9 @@ void Instance::foreachDmaBufModifier(std::function<void (int format, uint64_t mo
     }
 }
 
-struct wl_client* Instance::registerViewBackend(uint32_t id, ExportableClient& exportableClient)
+struct wl_client* Instance::registerViewBackend(uint32_t surfaceId, ExportableClient& exportableClient)
 {
-    auto it = m_viewBackendMap.find(id);
+    auto it = m_viewBackendMap.find(surfaceId);
     if (it == m_viewBackendMap.end())
         std::abort();
 
@@ -548,9 +548,9 @@ struct wl_client* Instance::registerViewBackend(uint32_t id, ExportableClient& e
     return it->second->client;
 }
 
-void Instance::unregisterViewBackend(uint32_t id)
+void Instance::unregisterViewBackend(uint32_t surfaceId)
 {
-    auto it = m_viewBackendMap.find(id);
+    auto it = m_viewBackendMap.find(surfaceId);
     if (it != m_viewBackendMap.end()) {
         it->second->exportableClient = nullptr;
         m_viewBackendMap.erase(it);

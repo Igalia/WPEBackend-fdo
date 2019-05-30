@@ -139,6 +139,11 @@ public:
 
     ~Target()
     {
+        if (m_wl.wpeBridgeId && m_glib.socket) {
+            uint32_t message[] = { 0x43, m_wl.wpeBridgeId };
+            g_socket_send(m_glib.socket, reinterpret_cast<gchar*>(message), 2 * sizeof(uint32_t), nullptr, nullptr);
+        }
+
         g_clear_pointer(&m_wl.frameCallback, wl_callback_destroy);
         g_clear_pointer(&m_wl.window, wl_egl_window_destroy);
         g_clear_pointer(&m_wl.surface, wl_surface_destroy);
@@ -223,6 +228,7 @@ public:
 
     void bridgeConnected(uint32_t bridgeID)
     {
+        m_wl.wpeBridgeId = bridgeID;
         uint32_t message[] = { 0x42, bridgeID };
         if (m_glib.socket)
             g_socket_send(m_glib.socket, reinterpret_cast<gchar*>(message), 2 * sizeof(uint32_t), nullptr, nullptr);
@@ -246,11 +252,11 @@ private:
     } m_glib;
 
     struct {
-        struct wl_display* displayWrapper { nullptr };
         struct wl_event_queue* eventQueue { nullptr };
         struct wl_registry* registry { nullptr };
         struct wl_compositor* compositor { nullptr };
         struct wpe_bridge* wpeBridge { nullptr };
+        uint32_t wpeBridgeId { 0 };
 
         struct wl_surface* surface { nullptr };
         struct wl_egl_window* window { nullptr };

@@ -67,9 +67,12 @@ public:
     void releaseBuffer(struct wl_resource* buffer_resource);
 
 private:
+    void registerSurface(uint32_t);
+    void unregisterSurface(uint32_t);
+
     static gboolean s_socketCallback(GSocket*, GIOCondition, gpointer);
 
-    uint32_t m_id { 0 };
+    uint32_t m_surfaceId { 0 };
     struct wl_client* m_client { nullptr };
 
     ClientBundle* m_clientBundle;
