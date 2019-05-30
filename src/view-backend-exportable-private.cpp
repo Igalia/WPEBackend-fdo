@@ -39,7 +39,7 @@ ViewBackend::~ViewBackend()
     for (auto* resource : m_callbackResources)
         wl_resource_destroy(resource);
 
-    WS::Instance::singleton().unregisterViewBackend(m_id);
+    unregisterSurface(m_surfaceId);
 
     if (m_clientFd != -1)
         close(m_clientFd);
@@ -117,6 +117,24 @@ void ViewBackend::releaseBuffer(struct wl_resource* buffer_resource)
     wl_client_flush(m_client);
 }
 
+void ViewBackend::registerSurface(uint32_t surfaceId)
+{
+    m_surfaceId = surfaceId;
+    m_client = WS::Instance::singleton().registerViewBackend(m_surfaceId, *this);
+}
+
+void ViewBackend::unregisterSurface(uint32_t surfaceId)
+{
+    if (!surfaceId || m_surfaceId != surfaceId)
+        return;
+
+    for (auto* resource : m_callbackResources)
+        wl_resource_destroy(resource);
+    m_callbackResources.clear();
+    WS::Instance::singleton().unregisterViewBackend(m_surfaceId);
+    m_surfaceId = 0;
+}
+
 gboolean ViewBackend::s_socketCallback(GSocket* socket, GIOCondition condition, gpointer data)
 {
     if (!(condition & G_IO_IN))
@@ -128,10 +146,17 @@ gboolean ViewBackend::s_socketCallback(GSocket* socket, GIOCondition condition, 
     if (len == -1)
         return FALSE;
 
-    if (len == sizeof(uint32_t) * 2 && message[0] == 0x42) {
-        auto& viewBackend = *static_cast<ViewBackend*>(data);
-        viewBackend.m_id = message[1];
-        viewBackend.m_client = WS::Instance::singleton().registerViewBackend(viewBackend.m_id, viewBackend);
+    if (len != sizeof(uint32_t) * 2)
+        return TRUE;
+
+    auto& viewBackend = *static_cast<ViewBackend*>(data);
+    switch (message[0]) {
+    case 0x42:
+        viewBackend.registerSurface(message[1]);
+        break;
+    case 0x43:
+        viewBackend.unregisterSurface(message[1]);
+        break;
     }
 
     return TRUE;

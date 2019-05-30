@@ -53,7 +53,7 @@ public:
 
     int createClient();
 
-    void createSurface(uint32_t, Surface*);
+    void registerSurface(uint32_t, Surface*);
     struct wl_client* registerViewBackend(uint32_t, ExportableClient&);
     void unregisterViewBackend(uint32_t);
 
