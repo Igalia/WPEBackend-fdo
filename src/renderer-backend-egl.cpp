@@ -26,6 +26,8 @@
 #include "interfaces.h"
 
 #include "bridge/wpe-bridge-client-protocol.h"
+#include "ipc.h"
+#include "ipc-messages.h"
 #include <cstring>
 #include <gio/gio.h>
 #include <glib.h>
@@ -132,17 +134,13 @@ public:
     Target(struct wpe_renderer_backend_egl_target* target, int hostFd)
         : m_target(target)
     {
-        m_glib.socket = g_socket_new_from_fd(hostFd, nullptr);
-        if (m_glib.socket)
-            g_socket_set_blocking(m_glib.socket, FALSE);
+        m_glib.socket = FdoIPC::Connection::create(hostFd);
     }
 
     ~Target()
     {
-        if (m_wl.wpeBridgeId && m_glib.socket) {
-            uint32_t message[] = { 0x43, m_wl.wpeBridgeId };
-            g_socket_send(m_glib.socket, reinterpret_cast<gchar*>(message), 2 * sizeof(uint32_t), nullptr, nullptr);
-        }
+        if (m_wl.wpeBridgeId && m_glib.socket)
+            m_glib.socket->send(FdoIPC::Messages::UnregisterSurface, m_wl.wpeBridgeId);
 
         g_clear_pointer(&m_wl.frameCallback, wl_callback_destroy);
         g_clear_pointer(&m_wl.window, wl_egl_window_destroy);
@@ -153,7 +151,6 @@ public:
         g_clear_pointer(&m_wl.registry, wl_registry_destroy);
         g_clear_pointer(&m_wl.eventQueue, wl_event_queue_destroy);
 
-        g_clear_object(&m_glib.socket);
         if (m_glib.frameSource) {
             g_source_destroy(m_glib.frameSource);
             g_source_unref(m_glib.frameSource);
@@ -229,9 +226,8 @@ public:
     void bridgeConnected(uint32_t bridgeID)
     {
         m_wl.wpeBridgeId = bridgeID;
-        uint32_t message[] = { 0x42, bridgeID };
         if (m_glib.socket)
-            g_socket_send(m_glib.socket, reinterpret_cast<gchar*>(message), 2 * sizeof(uint32_t), nullptr, nullptr);
+            m_glib.socket->send(FdoIPC::Messages::RegisterSurface, bridgeID);
     }
 
     struct wl_egl_window* window() const { return m_wl.window; }
@@ -246,7 +242,7 @@ private:
     struct wpe_renderer_backend_egl_target* m_target { nullptr };
 
     struct {
-        GSocket* socket { nullptr };
+        std::unique_ptr<FdoIPC::Connection> socket;
         GSource* wlSource { nullptr };
         GSource* frameSource { nullptr };
     } m_glib;

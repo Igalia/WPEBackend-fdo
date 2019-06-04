@@ -78,6 +78,7 @@ set(WPEBACKEND_FDO_SOURCES
     src/exported-image-egl.cpp
     src/fdo.cpp
     src/initialize-egl.cpp
+    src/ipc.cpp
     src/renderer-backend-egl.cpp
     src/renderer-host.cpp
     src/view-backend-exportable-fdo.cpp
