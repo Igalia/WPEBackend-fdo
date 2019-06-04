@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "ipc.h"
 #include "ws.h"
 #include <gio/gio.h>
 #include <vector>
@@ -53,7 +54,7 @@ public:
     uint32_t initialHeight;
 };
 
-class ViewBackend : public WS::ExportableClient {
+class ViewBackend : public WS::ExportableClient, public FdoIPC::MessageReceiver {
 public:
     ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* backend);
     ~ViewBackend();
@@ -67,6 +68,8 @@ public:
     void releaseBuffer(struct wl_resource* buffer_resource);
 
 private:
+    void didReceiveMessage(uint32_t messageId, uint32_t messageBody) override;
+
     void registerSurface(uint32_t);
     void unregisterSurface(uint32_t);
 
@@ -80,8 +83,7 @@ private:
 
     std::vector<struct wl_resource*> m_callbackResources;
 
-    GSocket* m_socket;
-    GSource* m_source;
+    std::unique_ptr<FdoIPC::Connection> m_socket;
     int m_clientFd { -1 };
 };
 

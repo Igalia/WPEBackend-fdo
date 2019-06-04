@@ -23,7 +23,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "ipc-messages.h"
 #include "view-backend-exportable-private.h"
+#include <cassert>
 #include <sys/types.h>
 #include <sys/socket.h>
 
@@ -43,13 +45,6 @@ ViewBackend::~ViewBackend()
 
     if (m_clientFd != -1)
         close(m_clientFd);
-
-    if (m_source) {
-        g_source_destroy(m_source);
-        g_source_unref(m_source);
-    }
-    if (m_socket)
-        g_object_unref(m_socket);
 }
 
 void ViewBackend::initialize()
@@ -59,19 +54,12 @@ void ViewBackend::initialize()
     if (ret == -1)
         return;
 
-    m_socket = g_socket_new_from_fd(sockets[0], nullptr);
+    m_socket = FdoIPC::Connection::create(sockets[0], this);
     if (!m_socket) {
         close(sockets[0]);
         close(sockets[1]);
         return;
     }
-
-    g_socket_set_blocking(m_socket, FALSE);
-
-    m_source = g_socket_create_source(m_socket, G_IO_IN, nullptr);
-    g_source_set_callback(m_source, reinterpret_cast<GSourceFunc>(s_socketCallback), this, nullptr);
-    g_source_set_can_recurse(m_source, TRUE);
-    g_source_attach(m_source, g_main_context_get_thread_default());
 
     m_clientFd = sockets[1];
 
@@ -135,29 +123,16 @@ void ViewBackend::unregisterSurface(uint32_t surfaceId)
     m_surfaceId = 0;
 }
 
-gboolean ViewBackend::s_socketCallback(GSocket* socket, GIOCondition condition, gpointer data)
+void ViewBackend::didReceiveMessage(uint32_t messageId, uint32_t messageBody)
 {
-    if (!(condition & G_IO_IN))
-        return TRUE;
-
-    uint32_t message[2];
-    gssize len = g_socket_receive(socket, reinterpret_cast<gchar*>(message), sizeof(uint32_t) * 2,
-        nullptr, nullptr);
-    if (len == -1)
-        return FALSE;
-
-    if (len != sizeof(uint32_t) * 2)
-        return TRUE;
-
-    auto& viewBackend = *static_cast<ViewBackend*>(data);
-    switch (message[0]) {
-    case 0x42:
-        viewBackend.registerSurface(message[1]);
+    switch (messageId) {
+    case FdoIPC::Messages::RegisterSurface:
+        registerSurface(messageBody);
         break;
-    case 0x43:
-        viewBackend.unregisterSurface(message[1]);
+    case FdoIPC::Messages::UnregisterSurface:
+        unregisterSurface(messageBody);
         break;
+    default:
+        assert(!"WPE fdo received an invalid IPC message");
     }
-
-    return TRUE;
 }
