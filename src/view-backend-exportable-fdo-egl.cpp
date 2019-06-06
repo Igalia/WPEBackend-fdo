@@ -152,6 +152,7 @@ public:
 
         auto* image = new struct wpe_fdo_egl_exported_image;
         image->eglImage = eglImage;
+        image->bufferResource = dmabufBuffer->buffer_resource;
         image->width = dmabufBuffer->attributes.width;
         image->height = dmabufBuffer->attributes.height;
         wl_list_init(&image->bufferDestroyListener.link);

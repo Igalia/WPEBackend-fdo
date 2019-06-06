@@ -178,6 +178,8 @@ static const struct wl_surface_interface s_surfaceInterface = {
             return;
 
         if (surface.dmabufBuffer) {
+            struct wl_resource* bufferResource = surface.bufferResource;
+            surface.bufferResource = nullptr;
             surface.exportableClient->exportLinuxDmabuf(surface.dmabufBuffer);
         } else {
             struct wl_resource* bufferResource = surface.bufferResource;
