@@ -29,6 +29,8 @@
 
 typedef void *EGLImageKHR;
 
+typedef void (*wpe_fdo_egl_exported_image_destroy_notify_t)(void* data, struct wpe_fdo_egl_exported_image *image);
+
 struct wpe_fdo_egl_exported_image {
     EGLImageKHR eglImage { nullptr };
     uint32_t width { 0 };
@@ -36,6 +38,9 @@ struct wpe_fdo_egl_exported_image {
     bool locked { false };
     struct wl_resource* bufferResource { nullptr };
     struct wl_listener bufferDestroyListener;
+
+    wpe_fdo_egl_exported_image_destroy_notify_t destroyNotify;
+    void* destroyData;
 };
 
 void wpe_fdo_egl_exported_image_destroy(struct wpe_fdo_egl_exported_image*);
