@@ -177,13 +177,13 @@ static const struct wl_surface_interface s_surfaceInterface = {
         if (!surface.exportableClient)
             return;
 
-        if (surface.dmabufBuffer) {
+        struct wl_resource* bufferResource = surface.bufferResource;
+        surface.bufferResource = nullptr;
+
+        if (surface.dmabufBuffer)
             surface.exportableClient->exportLinuxDmabuf(surface.dmabufBuffer);
-        } else {
-            struct wl_resource* bufferResource = surface.bufferResource;
-            surface.bufferResource = nullptr;
+        else
             surface.exportableClient->exportBufferResource(bufferResource);
-        }
     },
     // set_buffer_transform
     [](struct wl_client*, struct wl_resource*, int32_t) { },
