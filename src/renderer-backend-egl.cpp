@@ -44,7 +44,7 @@ struct Source {
     GPollFD pfd;
     struct wl_display* display;
     struct wl_event_queue* queue;
-    bool hasError;
+    bool isReading;
 };
 
 GSourceFuncs Source::s_sourceFuncs = {
@@ -53,11 +53,21 @@ GSourceFuncs Source::s_sourceFuncs = {
     {
         auto& source = *reinterpret_cast<Source*>(base);
 
+        *timeout = -1;
+
+        if (source.isReading)
+            return FALSE;
+
+        // If there are pending dispatches on this queue we return TRUE to proceed to dispatching ASAP.
+        if (wl_display_prepare_read_queue(source.display, source.queue) != 0)
+            return TRUE;
+
+        source.isReading = true;
+
         // We take up this opportunity to flush the display object, but
         // otherwise we're not able to determine whether there are any
         // pending dispatches (that would allow us skip the polling)
         // without scheduling a read on the wl_display object.
-        *timeout = -1;
         wl_display_flush(source.display);
         return FALSE;
     },
@@ -66,33 +76,21 @@ GSourceFuncs Source::s_sourceFuncs = {
     {
         auto& source = *reinterpret_cast<Source*>(base);
 
-        // If error events were read, we note the error and return TRUE,
-        // removing the source in the ensuing dispatch callback.
-        if (source.pfd.revents & (G_IO_ERR | G_IO_HUP)) {
-            source.hasError = true;
-            return TRUE;
-        }
-
-        // If there are pending dispatches on this queue, we return TRUE
-        // to proceed to dispatching ASAP. If there are none, a new read
-        // intention is set up for this wl_display object.
-        if (wl_display_prepare_read_queue(source.display, source.queue) != 0)
-            return TRUE;
-
         // Only perform the read if input was made available during polling.
         // Error during read is noted and will be handled in the following
         // dispatch callback. If no input is available, the read is canceled.
         // revents value is zeroed out in any case.
-        if (source.pfd.revents & G_IO_IN) {
-            if (wl_display_read_events(source.display) < 0)
-                source.hasError = true;
-            source.pfd.revents = 0;
-            return TRUE;
-        } else {
-            wl_display_cancel_read(source.display);
-            source.pfd.revents = 0;
-            return FALSE;
+        if (source.isReading) {
+            source.isReading = false;
+
+            if (source.pfd.revents & G_IO_IN) {
+                if (wl_display_read_events(source.display) == 0)
+                    return TRUE;
+            } else
+                wl_display_cancel_read(source.display);
         }
+
+        return source.pfd.revents;
     },
     // dispatch
     [](GSource* base, GSourceFunc, gpointer) -> gboolean
@@ -100,16 +98,27 @@ GSourceFuncs Source::s_sourceFuncs = {
         auto& source = *reinterpret_cast<Source*>(base);
 
         // Remove the source if any error was registered.
-        if (source.hasError)
+        if (source.pfd.revents & (G_IO_ERR | G_IO_HUP))
             return FALSE;
 
         // Dispatch any pending events. The source is removed in case of
         // an error occurring during this step.
         if (wl_display_dispatch_queue_pending(source.display, source.queue) < 0)
             return FALSE;
+
+        source.pfd.revents = 0;
         return TRUE;
     },
-    nullptr, // finalize
+    // finalize
+    [](GSource *base)
+    {
+        auto& source = *reinterpret_cast<Source*>(base);
+
+        if (source.isReading) {
+            wl_display_cancel_read(source.display);
+            source.isReading = false;
+        }
+    },
     nullptr, // closure_callback
     nullptr, // closure_marshall
 };
@@ -183,7 +192,7 @@ public:
             source.pfd.revents = 0;
             source.display = display;
             source.queue = m_wl.eventQueue;
-            source.hasError = false;
+            source.isReading = false;
 
             g_source_add_poll(m_glib.wlSource, &source.pfd);
             g_source_set_name(m_glib.wlSource, "WPEBackend-fdo::wayland");
