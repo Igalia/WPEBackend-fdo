@@ -80,7 +80,7 @@ public:
             return;
 
         auto* buf_data = new struct buffer_data;
-        buf_data->buffer_resource = nullptr;
+        buf_data->buffer_resource = dmabuf_buffer->buffer_resource;
         buf_data->egl_image = image;
         m_buffers.push_back(buf_data);
 
