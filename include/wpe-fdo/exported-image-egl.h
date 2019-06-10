@@ -40,6 +40,11 @@ typedef void* EGLImageKHR;
 
 struct wpe_fdo_egl_exported_image;
 
+typedef void (*wpe_fdo_egl_exported_image_destroy_notify_t)(void *data, struct wpe_fdo_egl_exported_image *image);
+
+void
+wpe_fdo_egl_exported_image_set_destroy_notify(struct wpe_fdo_egl_exported_image*, wpe_fdo_egl_exported_image_destroy_notify_t, void*);
+
 uint32_t
 wpe_fdo_egl_exported_image_get_width(struct wpe_fdo_egl_exported_image*);
 

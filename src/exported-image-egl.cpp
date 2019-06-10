@@ -31,6 +31,14 @@
 extern "C" {
 
 __attribute__((visibility("default")))
+void
+wpe_fdo_egl_exported_image_set_destroy_notify(struct wpe_fdo_egl_exported_image* image, wpe_fdo_egl_exported_image_destroy_notify_t destroyNotify, void* destroyData)
+{
+    image->destroyNotify = destroyNotify;
+    image->destroyData = destroyData;
+}
+
+__attribute__((visibility("default")))
 uint32_t
 wpe_fdo_egl_exported_image_get_width(struct wpe_fdo_egl_exported_image* image)
 {
@@ -56,6 +64,9 @@ wpe_fdo_egl_exported_image_get_egl_image(struct wpe_fdo_egl_exported_image* imag
 void
 wpe_fdo_egl_exported_image_destroy(struct wpe_fdo_egl_exported_image* image)
 {
+    if (image->destroyNotify)
+        image->destroyNotify(image->destroyData, image);
+
     assert(image->eglImage);
     WS::Instance::singleton().destroyImage(image->eglImage);
     wl_list_remove(&image->bufferDestroyListener.link);
