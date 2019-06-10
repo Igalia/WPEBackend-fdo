@@ -38,9 +38,6 @@ ViewBackend::ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* ba
 
 ViewBackend::~ViewBackend()
 {
-    for (auto* resource : m_callbackResources)
-        wl_resource_destroy(resource);
-
     unregisterSurface(m_surfaceId);
 
     if (m_clientFd != -1)
@@ -119,6 +116,7 @@ void ViewBackend::unregisterSurface(uint32_t surfaceId)
     for (auto* resource : m_callbackResources)
         wl_resource_destroy(resource);
     m_callbackResources.clear();
+
     WS::Instance::singleton().unregisterViewBackend(m_surfaceId);
     m_surfaceId = 0;
 }
