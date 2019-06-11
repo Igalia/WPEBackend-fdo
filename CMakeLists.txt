@@ -40,6 +40,8 @@ if (NOT (WAYLAND_wayland-client_VERSION VERSION_LESS 1.10))
     add_definitions(-DWAYLAND_1_10_OR_GREATER)
 endif ()
 
+configure_file(include/wpe-fdo/version.h.cmake "${CMAKE_BINARY_DIR}/wpe-fdo/version.h" @ONLY)
+
 set(WPEBACKEND_FDO_INCLUDE_DIRECTORIES
     "include"
     ${CMAKE_BINARY_DIR}
@@ -61,6 +63,7 @@ set(WPEBACKEND_FDO_LIBRARIES
 )
 
 set(WPEBACKEND_FDO_PUBLIC_HEADERS
+    ${CMAKE_BINARY_DIR}/wpe-fdo/version.h
     include/wpe-fdo/exported-image-egl.h
     include/wpe-fdo/initialize-egl.h
     include/wpe-fdo/view-backend-exportable.h
