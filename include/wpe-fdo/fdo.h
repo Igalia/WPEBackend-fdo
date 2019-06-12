@@ -32,7 +32,7 @@
 
 #define __WPE_FDO_H_INSIDE__
 
-#include <wpe/version.h>
+#include "version.h"
 #include <wpe/view-backend-exportable.h>
 
 #undef __WPE_FDO_H_INSIDE__
