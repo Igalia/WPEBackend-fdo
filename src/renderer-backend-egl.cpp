@@ -160,10 +160,6 @@ public:
         g_clear_pointer(&m_wl.registry, wl_registry_destroy);
         g_clear_pointer(&m_wl.eventQueue, wl_event_queue_destroy);
 
-        if (m_glib.frameSource) {
-            g_source_destroy(m_glib.frameSource);
-            g_source_unref(m_glib.frameSource);
-        }
         if (m_glib.wlSource) {
             g_source_destroy(m_glib.wlSource);
             g_source_unref(m_glib.wlSource);
@@ -200,19 +196,6 @@ public:
             g_source_attach(m_glib.wlSource, g_main_context_get_thread_default());
         }
 
-        m_glib.frameSource = g_source_new(&s_sourceFuncs, sizeof(GSource));
-        g_source_set_name(m_glib.frameSource, "WPEBackend-fdo::frame");
-        g_source_set_callback(m_glib.frameSource, [](gpointer userData) -> gboolean {
-            auto* target = static_cast<Target*>(userData);
-
-            g_clear_pointer(&target->m_wl.frameCallback, wl_callback_destroy);
-            target->m_wl.frameCallback = nullptr;
-
-            wpe_renderer_backend_egl_target_dispatch_frame_complete(target->m_target);
-            return G_SOURCE_CONTINUE;
-        }, this, nullptr);
-        g_source_attach(m_glib.frameSource, g_main_context_get_thread_default());
-
         wpe_bridge_add_listener(m_wl.wpeBridge, &s_bridgeListener, this);
         wpe_bridge_connect(m_wl.wpeBridge, m_wl.surface);
         wl_display_roundtrip_queue(display, m_wl.eventQueue);
@@ -229,7 +212,8 @@ public:
 
     void dispatchFrameComplete()
     {
-        g_source_set_ready_time(m_glib.frameSource, 0);
+        g_clear_pointer(&m_wl.frameCallback, wl_callback_destroy);
+        wpe_renderer_backend_egl_target_dispatch_frame_complete(m_target);
     }
 
     void bridgeConnected(uint32_t bridgeID)
@@ -246,14 +230,11 @@ private:
     static const struct wl_callback_listener s_callbackListener;
     static const struct wpe_bridge_listener s_bridgeListener;
 
-    static GSourceFuncs s_sourceFuncs;
-
     struct wpe_renderer_backend_egl_target* m_target { nullptr };
 
     struct {
         std::unique_ptr<FdoIPC::Connection> socket;
         GSource* wlSource { nullptr };
-        GSource* frameSource { nullptr };
     } m_glib;
 
     struct {
@@ -298,22 +279,6 @@ const struct wpe_bridge_listener Target::s_bridgeListener = {
     {
         static_cast<Target*>(data)->bridgeConnected(id);
     },
-};
-
-GSourceFuncs Target::s_sourceFuncs = {
-    nullptr, // prepare
-    nullptr, // check
-    // dispatch
-    [](GSource* source, GSourceFunc callback, gpointer userData) -> gboolean
-    {
-        if (g_source_get_ready_time(source) == -1)
-            return G_SOURCE_CONTINUE;
-        g_source_set_ready_time(source, -1);
-        return callback(userData);
-    },
-    nullptr, // finalize
-    nullptr, // closure_callback
-    nullptr, // closure_marshall
 };
 
 } // namespace
