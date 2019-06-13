@@ -1,3 +1,14 @@
+=====================
+1.3.1 - June 13, 2019
+=====================
+
+- New macros in the API to check the version at compilation time.
+- Added support for detaching and attaching new ones for a view backend.
+- Improved handling of Wayland events.
+- Improved how CMake searches for wayland-scanner, making it friendlier for
+  cross-compilation.
+- Fixed double-free of callback resources during destruction of view backends.
+
 ===================
 1.3.0 - May 8, 2019
 ===================
