@@ -1,4 +1,13 @@
 ======================
+1.2.1 - July 1st, 2019
+======================
+
+- Improved how CMake searches for wayland-scanner, making it friendlier for
+  cross-compilation.
+- Fixed the build when using EGL headers which define prototypes for
+  EGL extensions, and when the EGL_WAYLAND_BUFFER_WL definition is missing.
+
+======================
 1.2.0 - March 26, 2019
 ======================
 
