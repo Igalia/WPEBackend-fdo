@@ -47,7 +47,25 @@ public:
 
     void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer) override
     {
-        assert(!"This interface doesn't support Linux DMA buffers");
+        auto* attributes = &dmabuf_buffer->attributes;
+
+        struct wpe_view_backend_exportable_fdo_dmabuf_resource dmabuf_resource;
+        memset(&dmabuf_resource, 0, sizeof(struct wpe_view_backend_exportable_fdo_dmabuf_resource));
+        dmabuf_resource.buffer_resource = dmabuf_buffer->buffer_resource;
+        dmabuf_resource.width = attributes->width;
+        dmabuf_resource.height = attributes->height;
+        dmabuf_resource.format = attributes->format;
+
+        if (attributes->n_planes >= 0)
+            dmabuf_resource.n_planes = attributes->n_planes;
+        for (uint8_t i = 0; i < dmabuf_resource.n_planes; ++i) {
+            dmabuf_resource.fds[i] = attributes->fd[i];
+            dmabuf_resource.strides[i] = attributes->stride[i];
+            dmabuf_resource.offsets[i] = attributes->offset[i];
+            dmabuf_resource.modifiers[i] = attributes->modifier[i];
+        }
+
+        client->export_dmabuf_resource(data, &dmabuf_resource);
     }
 
     const struct wpe_view_backend_exportable_fdo_client* client;

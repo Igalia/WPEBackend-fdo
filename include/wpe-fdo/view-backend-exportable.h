@@ -39,9 +39,21 @@ extern "C" {
 struct wl_resource;
 struct wpe_view_backend_exportable_fdo;
 
+struct wpe_view_backend_exportable_fdo_dmabuf_resource {
+    struct wl_resource* buffer_resource;
+    uint32_t width;
+    uint32_t height;
+    uint32_t format;
+    uint8_t n_planes;
+    int32_t fds[4];
+    uint32_t strides[4];
+    uint32_t offsets[4];
+    uint64_t modifiers[4];
+};
+
 struct wpe_view_backend_exportable_fdo_client {
     void (*export_buffer_resource)(void* data, struct wl_resource* buffer_resource);
-    void (*_wpe_reserved0)(void);
+    void (*export_dmabuf_resource)(void* data, struct wpe_view_backend_exportable_fdo_dmabuf_resource* dmabuf_resource);
     void (*_wpe_reserved1)(void);
     void (*_wpe_reserved2)(void);
     void (*_wpe_reserved3)(void);
