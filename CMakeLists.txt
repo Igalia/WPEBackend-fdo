@@ -18,10 +18,27 @@ CALCULATE_LIBRARY_VERSIONS_FROM_LIBTOOL_TRIPLE(LIBWPEBACKEND_FDO 4 0 3)
 
 project(wpebackend-fdo VERSION "${PROJECT_VERSION}")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-exceptions -fno-rtti")
-
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
 include(DistTargets)
 include(GNUInstallDirs)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_C_STANDARD 99)
+
+foreach (cxxflag -fno-exceptions -fno-rtti -Wall)
+    check_cxx_compiler_flag("${cxxflag}" CXX_HAS_FLAG_${cxxflag})
+    if (CXX_HAS_FLAG_${cxxflag})
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${cxxflag}")
+    endif ()
+endforeach ()
+
+foreach (cflag -Wall)
+    check_c_compiler_flag("${cflag}" CC_HAS_FLAG_${cflag})
+    if (CC_HAS_FLAG_${cflag})
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${cflag}")
+    endif ()
+endforeach ()
 
 find_package(EGL REQUIRED)
 find_package(GLIB REQUIRED COMPONENTS gio gobject)
