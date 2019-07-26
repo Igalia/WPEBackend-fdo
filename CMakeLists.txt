@@ -24,7 +24,7 @@ include(DistTargets)
 include(GNUInstallDirs)
 
 find_package(EGL REQUIRED)
-find_package(GLIB REQUIRED COMPONENTS gio)
+find_package(GLIB REQUIRED COMPONENTS gio gobject)
 find_package(Wayland REQUIRED)
 find_package(WaylandEGL REQUIRED)
 find_package(WaylandScanner REQUIRED)
@@ -56,6 +56,7 @@ set(WPEBACKEND_FDO_INCLUDE_DIRECTORIES
 set(WPEBACKEND_FDO_LIBRARIES
     ${EGL_LIBRARIES}
     ${GLIB_GIO_LIBRARIES}
+    ${GLIB_GOBJECT_LIBRARIES}
     ${GLIB_LIBRARIES}
     ${WAYLAND_LIBRARIES}
     ${WAYLAND_EGL_LIBRARIES}
