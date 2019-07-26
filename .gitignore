@@ -1,0 +1,7 @@
+/CMakeCache.txt
+/CMakeFiles/
+/bridge/
+/*.cmake
+/lib*.so*
+/wpe-fdo/
+/wpebackend-fdo-*.pc
