@@ -29,19 +29,33 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 find_package(PkgConfig)
-pkg_check_modules(PC_WPE QUIET wpe-1.0)
+pkg_check_modules(WPE IMPORTED_TARGET wpe-1.0)
 
-find_path(WPE_INCLUDE_DIRS
+find_path(WPE_INCLUDE_DIR
     NAMES wpe/wpe.h
-    HINTS ${PC_WPE_INCLUDEDIR} ${PC_WPE_INCLUDE_DIRS}
+    HINTS ${WPE_INCLUDEDIR} ${WPE_INCLUDE_DIRS}
 )
-
-find_library(WPE_LIBRARIES
+find_library(WPE_LIBRARY
     NAMES wpe-1.0
-    HINTS ${PC_WPE_LIBDIR} ${PC_WPE_LIBRARY_DIRS}
+    HINTS ${WPE_LIBDIR} ${WPE_LIBRARY_DIRS}
 )
+mark_as_advanced(WPE_INCLUDE_DIR WPE_LIBRARY)
 
-mark_as_advanced(WPE_INCLUDE_DIRS WPE_LIBRARIES)
+# If pkg-config has not found the module but find_path+find_library have
+# figured out where the header and library are, create the PkgConfig::WPE
+# imported target anyway with the found paths.
+#
+if (WPE_LIBRARY AND NOT TARGET WPE::libwpe)
+    add_library(WPE::libwpe INTERFACE IMPORTED)
+    if (TARGET PkgConfig::WPE)
+        target_link_libraries(WPE::libwpe INTERFACE PkgConfig::WPE)
+    else ()
+        set_property(TARGET WPE::libwpe PROPERTY
+            INTERFACE_LINK_LIBRARIES "${WPE_LIBRARY}")
+        set_property(TARGET WPE::libwpe PROPERTY
+            INTERFACE_INCLUDE_DIRECTORIES "${WPE_INCLUDE_DIR}")
+    endif ()
+endif ()
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(WPE REQUIRED_VARS WPE_INCLUDE_DIRS WPE_LIBRARIES)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(WPE REQUIRED_VARS WPE_LIBRARY WPE_INCLUDE_DIR)
