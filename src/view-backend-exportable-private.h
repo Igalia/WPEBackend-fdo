@@ -57,7 +57,7 @@ public:
 class ViewBackend : public WS::ExportableClient, public FdoIPC::MessageReceiver {
 public:
     ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* backend);
-    ~ViewBackend();
+    virtual ~ViewBackend();
 
     void initialize();
     int clientFd();
