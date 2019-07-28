@@ -81,7 +81,7 @@ static PFNEGLQUERYDMABUFMODIFIERSEXTPROC s_eglQueryDmaBufModifiersEXT;
 
 namespace WS {
 
-struct Source {
+struct ServerSource {
     static GSourceFuncs s_sourceFuncs;
 
     GSource source;
@@ -89,11 +89,11 @@ struct Source {
     struct wl_display* display;
 };
 
-GSourceFuncs Source::s_sourceFuncs = {
+GSourceFuncs ServerSource::s_sourceFuncs = {
     // prepare
     [](GSource* base, gint* timeout) -> gboolean
     {
-        auto& source = *reinterpret_cast<Source*>(base);
+        auto& source = *reinterpret_cast<ServerSource*>(base);
         *timeout = -1;
         wl_display_flush_clients(source.display);
         return FALSE;
@@ -101,13 +101,13 @@ GSourceFuncs Source::s_sourceFuncs = {
     // check
     [](GSource* base) -> gboolean
     {
-        auto& source = *reinterpret_cast<Source*>(base);
+        auto& source = *reinterpret_cast<ServerSource*>(base);
         return !!source.pfd.revents;
     },
     // dispatch
     [](GSource* base, GSourceFunc, gpointer) -> gboolean
     {
-        auto& source = *reinterpret_cast<Source*>(base);
+        auto& source = *reinterpret_cast<ServerSource*>(base);
 
         if (source.pfd.revents & G_IO_IN) {
             struct wl_event_loop* eventLoop = wl_display_get_event_loop(source.display);
@@ -247,7 +247,7 @@ Instance& Instance::singleton()
 
 Instance::Instance()
     : m_display(wl_display_create())
-    , m_source(g_source_new(&Source::s_sourceFuncs, sizeof(Source)))
+    , m_source(g_source_new(&ServerSource::s_sourceFuncs, sizeof(ServerSource)))
     , m_eglDisplay(EGL_NO_DISPLAY)
 {
     m_compositor = wl_global_create(m_display, &wl_compositor_interface, 3, this,
@@ -275,7 +275,7 @@ Instance::Instance()
 
     wl_list_init(&m_dmabufBuffers);
 
-    auto& source = *reinterpret_cast<Source*>(m_source);
+    auto& source = *reinterpret_cast<ServerSource*>(m_source);
 
     struct wl_event_loop* eventLoop = wl_display_get_event_loop(m_display);
     source.pfd.fd = wl_event_loop_get_fd(eventLoop);
