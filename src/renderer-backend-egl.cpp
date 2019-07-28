@@ -28,261 +28,56 @@
 
 #include <wpe/wpe-egl.h>
 #include "interfaces.h"
-
-#include "bridge/wpe-bridge-client-protocol.h"
-#include "ipc.h"
-#include "ipc-messages.h"
-#include <cstring>
-#include <gio/gio.h>
-#include <glib.h>
-
-#include <cstdio>
-#include <cstdlib>
+#include "ws-client.h"
 
 namespace {
 
-struct Source {
-    static GSourceFuncs s_sourceFuncs;
-
-    GSource source;
-    GPollFD pfd;
-    struct wl_display* display;
-    struct wl_event_queue* queue;
-    bool isReading;
-};
-
-GSourceFuncs Source::s_sourceFuncs = {
-    // prepare
-    [](GSource* base, gint* timeout) -> gboolean
-    {
-        auto& source = *reinterpret_cast<Source*>(base);
-
-        *timeout = -1;
-
-        if (source.isReading)
-            return FALSE;
-
-        // If there are pending dispatches on this queue we return TRUE to proceed to dispatching ASAP.
-        if (wl_display_prepare_read_queue(source.display, source.queue) != 0)
-            return TRUE;
-
-        source.isReading = true;
-
-        // We take up this opportunity to flush the display object, but
-        // otherwise we're not able to determine whether there are any
-        // pending dispatches (that would allow us skip the polling)
-        // without scheduling a read on the wl_display object.
-        wl_display_flush(source.display);
-        return FALSE;
-    },
-    // check
-    [](GSource* base) -> gboolean
-    {
-        auto& source = *reinterpret_cast<Source*>(base);
-
-        // Only perform the read if input was made available during polling.
-        // Error during read is noted and will be handled in the following
-        // dispatch callback. If no input is available, the read is canceled.
-        // revents value is zeroed out in any case.
-        if (source.isReading) {
-            source.isReading = false;
-
-            if (source.pfd.revents & G_IO_IN) {
-                if (wl_display_read_events(source.display) == 0)
-                    return TRUE;
-            } else
-                wl_display_cancel_read(source.display);
-        }
-
-        return source.pfd.revents;
-    },
-    // dispatch
-    [](GSource* base, GSourceFunc, gpointer) -> gboolean
-    {
-        auto& source = *reinterpret_cast<Source*>(base);
-
-        // Remove the source if any error was registered.
-        if (source.pfd.revents & (G_IO_ERR | G_IO_HUP))
-            return FALSE;
-
-        // Dispatch any pending events. The source is removed in case of
-        // an error occurring during this step.
-        if (wl_display_dispatch_queue_pending(source.display, source.queue) < 0)
-            return FALSE;
-
-        source.pfd.revents = 0;
-        return TRUE;
-    },
-    // finalize
-    [](GSource *base)
-    {
-        auto& source = *reinterpret_cast<Source*>(base);
-
-        if (source.isReading) {
-            wl_display_cancel_read(source.display);
-            source.isReading = false;
-        }
-    },
-    nullptr, // closure_callback
-    nullptr, // closure_marshall
-};
-
-class Backend {
+class Backend final : public WS::BaseBackend {
 public:
-    Backend(int hostFd)
-    {
-        m_display = wl_display_connect_to_fd(hostFd);
-    }
-
+    Backend(int hostFD)
+        : WS::BaseBackend(hostFD)
+    { }
     ~Backend() = default;
 
-    struct wl_display* display() const { return m_display; }
-
-private:
-    struct wl_display* m_display;
+    using WS::BaseBackend::display;
 };
 
-class Target {
+class Target final : public WS::BaseTarget, public WS::BaseTarget::Impl {
 public:
-    Target(struct wpe_renderer_backend_egl_target* target, int hostFd)
-        : m_target(target)
-    {
-        m_glib.socket = FdoIPC::Connection::create(hostFd);
-    }
+    Target(struct wpe_renderer_backend_egl_target* target, int hostFD)
+        : WS::BaseTarget(hostFD, *this)
+        , m_target(target)
+    { }
 
     ~Target()
     {
-        if (m_wl.wpeBridgeId && m_glib.socket)
-            m_glib.socket->send(FdoIPC::Messages::UnregisterSurface, m_wl.wpeBridgeId);
+        g_clear_pointer(&m_egl.window, wl_egl_window_destroy);
 
-        g_clear_pointer(&m_wl.frameCallback, wl_callback_destroy);
-        g_clear_pointer(&m_wl.window, wl_egl_window_destroy);
-        g_clear_pointer(&m_wl.surface, wl_surface_destroy);
-
-        g_clear_pointer(&m_wl.wpeBridge, wpe_bridge_destroy);
-        g_clear_pointer(&m_wl.compositor, wl_compositor_destroy);
-        g_clear_pointer(&m_wl.registry, wl_registry_destroy);
-        g_clear_pointer(&m_wl.eventQueue, wl_event_queue_destroy);
-
-        if (m_glib.wlSource) {
-            g_source_destroy(m_glib.wlSource);
-            g_source_unref(m_glib.wlSource);
-        }
+        m_target = nullptr;
     }
 
     void initialize(Backend& backend, uint32_t width, uint32_t height)
     {
-        auto* display = backend.display();
-        m_wl.eventQueue = wl_display_create_queue(display);
-
-        m_wl.registry = wl_display_get_registry(display);
-        wl_proxy_set_queue(reinterpret_cast<struct wl_proxy*>(m_wl.registry), m_wl.eventQueue);
-        wl_registry_add_listener(m_wl.registry, &s_registryListener, this);
-        wl_display_roundtrip_queue(display, m_wl.eventQueue);
-
-        m_wl.surface = wl_compositor_create_surface(m_wl.compositor);
-        wl_proxy_set_queue(reinterpret_cast<struct wl_proxy*>(m_wl.surface), m_wl.eventQueue);
-        m_wl.window = wl_egl_window_create(m_wl.surface, width, height);
-
-        m_glib.wlSource = g_source_new(&Source::s_sourceFuncs, sizeof(Source));
-        {
-            auto& source = *reinterpret_cast<Source*>(m_glib.wlSource);
-            source.pfd.fd = wl_display_get_fd(display);
-            source.pfd.events = G_IO_IN | G_IO_ERR | G_IO_HUP;
-            source.pfd.revents = 0;
-            source.display = display;
-            source.queue = m_wl.eventQueue;
-            source.isReading = false;
-
-            g_source_add_poll(m_glib.wlSource, &source.pfd);
-            g_source_set_name(m_glib.wlSource, "WPEBackend-fdo::wayland");
-            g_source_set_can_recurse(m_glib.wlSource, TRUE);
-            g_source_attach(m_glib.wlSource, g_main_context_get_thread_default());
-        }
-
-        wpe_bridge_add_listener(m_wl.wpeBridge, &s_bridgeListener, this);
-        wpe_bridge_connect(m_wl.wpeBridge, m_wl.surface);
-        wl_display_roundtrip_queue(display, m_wl.eventQueue);
+        WS::BaseTarget::initialize(backend.display());
+        m_egl.window = wl_egl_window_create(surface(), width, height);
     }
 
-    void requestFrame()
-    {
-        if (m_wl.frameCallback)
-            std::abort();
+    using WS::BaseTarget::requestFrame;
 
-        m_wl.frameCallback = wl_surface_frame(m_wl.surface);
-        wl_callback_add_listener(m_wl.frameCallback, &s_callbackListener, this);
-    }
-
-    void dispatchFrameComplete()
-    {
-        g_clear_pointer(&m_wl.frameCallback, wl_callback_destroy);
-        wpe_renderer_backend_egl_target_dispatch_frame_complete(m_target);
-    }
-
-    void bridgeConnected(uint32_t bridgeID)
-    {
-        m_wl.wpeBridgeId = bridgeID;
-        if (m_glib.socket)
-            m_glib.socket->send(FdoIPC::Messages::RegisterSurface, bridgeID);
-    }
-
-    struct wl_egl_window* window() const { return m_wl.window; }
+    struct wl_egl_window* window() const { return m_egl.window; }
 
 private:
-    static const struct wl_registry_listener s_registryListener;
-    static const struct wl_callback_listener s_callbackListener;
-    static const struct wpe_bridge_listener s_bridgeListener;
+    // WS::BaseTarget::Impl
+    void dispatchFrameComplete() override
+    {
+        wpe_renderer_backend_egl_target_dispatch_frame_complete(m_target);
+    }
 
     struct wpe_renderer_backend_egl_target* m_target { nullptr };
 
     struct {
-        std::unique_ptr<FdoIPC::Connection> socket;
-        GSource* wlSource { nullptr };
-    } m_glib;
-
-    struct {
-        struct wl_event_queue* eventQueue { nullptr };
-        struct wl_registry* registry { nullptr };
-        struct wl_compositor* compositor { nullptr };
-        struct wpe_bridge* wpeBridge { nullptr };
-        uint32_t wpeBridgeId { 0 };
-
-        struct wl_surface* surface { nullptr };
         struct wl_egl_window* window { nullptr };
-        struct wl_callback* frameCallback { nullptr };
-    } m_wl;
-};
-
-const struct wl_registry_listener Target::s_registryListener = {
-    // global
-    [](void* data, struct wl_registry* registry, uint32_t name, const char* interface, uint32_t)
-    {
-        auto& target = *reinterpret_cast<Target*>(data);
-
-        if (!std::strcmp(interface, "wl_compositor"))
-            target.m_wl.compositor = static_cast<struct wl_compositor*>(wl_registry_bind(registry, name, &wl_compositor_interface, 1));
-        if (!std::strcmp(interface, "wpe_bridge"))
-            target.m_wl.wpeBridge = static_cast<struct wpe_bridge*>(wl_registry_bind(registry, name, &wpe_bridge_interface, 1));
-    },
-    // global_remove
-    [](void*, struct wl_registry*, uint32_t) { },
-};
-
-const struct wl_callback_listener Target::s_callbackListener = {
-    // done
-    [](void* data, struct wl_callback*, uint32_t time)
-    {
-        static_cast<Target*>(data)->dispatchFrameComplete();
-    },
-};
-
-const struct wpe_bridge_listener Target::s_bridgeListener = {
-    // connected
-    [](void* data, struct wpe_bridge*, uint32_t id)
-    {
-        static_cast<Target*>(data)->bridgeConnected(id);
-    },
+    } m_egl;
 };
 
 } // namespace
