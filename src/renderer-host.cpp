@@ -23,6 +23,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <wpe/wpe.h>
 #include "interfaces.h"
 #include "ws.h"
 

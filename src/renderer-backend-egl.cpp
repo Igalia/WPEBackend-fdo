@@ -23,6 +23,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+// Should be included early to force through the Wayland EGL platform
+#include <wayland-egl.h>
+
+#include <wpe/wpe-egl.h>
 #include "interfaces.h"
 
 #include "bridge/wpe-bridge-client-protocol.h"

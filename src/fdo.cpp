@@ -23,12 +23,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <wpe/wpe.h>
-
-#include <cstdio>
-#include <cstring>
-
 #include "interfaces.h"
+#include <cstring>
+#include <wpe/wpe.h>
 
 extern "C" {
 

@@ -25,11 +25,6 @@
 
 #pragma once
 
-#include <wayland-egl.h>
-
-#include <wpe/wpe.h>
-#include <wpe/wpe-egl.h>
-
 extern struct wpe_renderer_host_interface fdo_renderer_host;
 
 extern struct wpe_renderer_backend_egl_interface fdo_renderer_backend_egl;
