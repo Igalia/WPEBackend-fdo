@@ -45,7 +45,7 @@ struct wpe_view_backend_exportable_fdo_dmabuf_resource {
     uint32_t height;
     uint32_t format;
     uint8_t n_planes;
-    int32_t fds[4];
+    int fds[4];
     uint32_t strides[4];
     uint32_t offsets[4];
     uint64_t modifiers[4];
