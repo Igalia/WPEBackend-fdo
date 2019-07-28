@@ -16,7 +16,7 @@ struct linux_dmabuf_attributes {
     uint32_t format;
     uint32_t flags; /* enum zlinux_buffer_params_flags */
     int8_t n_planes;
-    int32_t fd[MAX_DMABUF_PLANES];
+    int fd[MAX_DMABUF_PLANES];
     uint32_t offset[MAX_DMABUF_PLANES];
     uint32_t stride[MAX_DMABUF_PLANES];
     uint64_t modifier[MAX_DMABUF_PLANES];

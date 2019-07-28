@@ -21,7 +21,7 @@ params_destroy(struct wl_client *client, struct wl_resource *resource)
 static void
 params_add(struct wl_client *client,
 	   struct wl_resource *params_resource,
-	   int32_t name_fd,
+	   int name_fd,
 	   uint32_t plane_idx,
 	   uint32_t offset,
 	   uint32_t stride,
