@@ -47,10 +47,6 @@ find_package(WaylandEGL REQUIRED)
 find_package(WaylandScanner REQUIRED)
 find_package(WPE REQUIRED)
 
-if (EGL_DEFINITIONS)
-	add_definitions(${EGL_DEFINITIONS})
-endif ()
-
 add_definitions(-DWPE_FDO_COMPILATION)
 
 if (NOT (WAYLAND_wayland-client_VERSION VERSION_LESS 1.10))
@@ -63,19 +59,18 @@ set(WPEBACKEND_FDO_INCLUDE_DIRECTORIES
     "include"
     ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/src
-    ${EGL_INCLUDE_DIRS}
     ${GLIB_INCLUDE_DIRS}
     ${WAYLAND_INCLUDE_DIRS}
     ${WAYLAND_EGL_INCLUDE_DIRS}
 )
 
 set(WPEBACKEND_FDO_LIBRARIES
-    ${EGL_LIBRARIES}
     ${GLIB_GIO_LIBRARIES}
     ${GLIB_GOBJECT_LIBRARIES}
     ${GLIB_LIBRARIES}
     ${WAYLAND_LIBRARIES}
     ${WAYLAND_EGL_LIBRARIES}
+    GL::egl
     WPE::libwpe
 )
 
