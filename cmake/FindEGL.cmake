@@ -1,10 +1,10 @@
 # - Try to Find EGL
 # Once done, this will define
 #
-   GL::egl - an imported library target.
-   EGL_FOUND - a boolean variable.
-   EGL_INCLUDE_DIR - directory containing the EGL/egl.h header.
-   EGL_LIBRARY - path to the EGL library.
+#  GL::egl - an imported library target.
+#  EGL_FOUND - a boolean variable.
+#  EGL_INCLUDE_DIR - directory containing the EGL/egl.h header.
+#  EGL_LIBRARY - path to the EGL library.
 #
 # Copyright (C) 2019 Igalia S.L.
 #
