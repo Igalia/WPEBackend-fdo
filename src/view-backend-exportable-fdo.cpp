@@ -26,6 +26,7 @@
 #include "view-backend-exportable-private.h"
 #include "ws.h"
 #include <cassert>
+#include <cstring>
 
 namespace {
 
@@ -50,7 +51,7 @@ public:
         auto* attributes = &dmabuf_buffer->attributes;
 
         struct wpe_view_backend_exportable_fdo_dmabuf_resource dmabuf_resource;
-        memset(&dmabuf_resource, 0, sizeof(struct wpe_view_backend_exportable_fdo_dmabuf_resource));
+        std::memset(&dmabuf_resource, 0, sizeof(struct wpe_view_backend_exportable_fdo_dmabuf_resource));
         dmabuf_resource.buffer_resource = dmabuf_buffer->buffer_resource;
         dmabuf_resource.width = attributes->width;
         dmabuf_resource.height = attributes->height;
