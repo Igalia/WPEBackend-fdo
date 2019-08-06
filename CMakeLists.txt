@@ -41,6 +41,7 @@ endforeach ()
 
 find_package(EGL REQUIRED)
 find_package(GLIB REQUIRED COMPONENTS gio gobject)
+find_package(Vulkan REQUIRED)
 find_package(Wayland REQUIRED client server egl)
 find_package(WaylandScanner REQUIRED)
 find_package(WPE REQUIRED)
@@ -54,12 +55,14 @@ set(WPEBACKEND_FDO_INCLUDE_DIRECTORIES
     ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/src
     ${GLIB_INCLUDE_DIRS}
+    ${VULKAN_INCLUDE_DIRS}
 )
 
 set(WPEBACKEND_FDO_LIBRARIES
     ${GLIB_GIO_LIBRARIES}
     ${GLIB_GOBJECT_LIBRARIES}
     ${GLIB_LIBRARIES}
+    ${VULKAN_LIBRARIES}
     GL::egl
     Wayland::client
     Wayland::server
@@ -88,6 +91,7 @@ set(WPEBACKEND_FDO_SOURCES
     src/initialize-egl.cpp
     src/ipc.cpp
     src/renderer-backend-egl.cpp
+    src/renderer-backend-vulkan.cpp
     src/renderer-host.cpp
     src/version.c
     src/view-backend-exportable-fdo.cpp
