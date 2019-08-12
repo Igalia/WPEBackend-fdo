@@ -1,3 +1,11 @@
+=======================
+1.2.2 - August 12, 2019
+=======================
+
+- Fix build when --no-undefined is passed to the linker. This was caused
+  due to an explicit reference to the GObject library missing in the linker
+  command line.
+
 ======================
 1.2.1 - July 1st, 2019
 ======================
