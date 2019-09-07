@@ -28,7 +28,6 @@
 #include "ipc.h"
 #include "ws.h"
 #include <gio/gio.h>
-#include <vector>
 #include <wpe-fdo/view-backend-exportable.h>
 
 class ViewBackend;
@@ -68,10 +67,21 @@ public:
     void releaseBuffer(struct wl_resource* buffer_resource);
 
 private:
+    struct FrameCallbackResource {
+        struct wl_resource* resource;
+
+        struct wl_list link;
+        struct wl_listener destroyListener;
+
+        static void destroyNotify(struct wl_listener*, void*);
+    };
+
     void didReceiveMessage(uint32_t messageId, uint32_t messageBody) override;
 
     void registerSurface(uint32_t);
     void unregisterSurface(uint32_t);
+
+    void clearFrameCallbacks();
 
     static gboolean s_socketCallback(GSocket*, GIOCondition, gpointer);
 
@@ -81,7 +91,7 @@ private:
     ClientBundle* m_clientBundle;
     struct wpe_view_backend* m_backend;
 
-    std::vector<struct wl_resource*> m_frameCallbacks;
+    struct wl_list m_frameCallbacks;
 
     std::unique_ptr<FdoIPC::Connection> m_socket;
     int m_clientFd { -1 };
