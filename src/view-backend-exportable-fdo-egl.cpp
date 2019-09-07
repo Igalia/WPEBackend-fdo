@@ -195,10 +195,19 @@ public:
         exportImage(image);
     }
 
+    void releaseImage(struct wpe_fdo_egl_exported_image* image)
+    {
+        image->exported = false;
+
+        if (image->bufferResource)
+            viewBackend->releaseBuffer(image->bufferResource);
+        else
+            deleteImage(image);
+    }
+
     const struct wpe_view_backend_exportable_fdo_egl_client* client;
 
 private:
-
     struct wpe_fdo_egl_exported_image* findImage(struct wl_resource* bufferResource)
     {
         if (auto* listener = wl_resource_get_destroy_listener(bufferResource, bufferDestroyListenerCallback)) {
@@ -211,18 +220,27 @@ private:
 
     void exportImage(struct wpe_fdo_egl_exported_image* image)
     {
-        image->locked = true;
+        image->exported = true;
         client->export_fdo_egl_image(data, image);
+    }
+
+    static void deleteImage(struct wpe_fdo_egl_exported_image* image)
+    {
+        assert(image->eglImage);
+        WS::Instance::singleton().destroyImage(image->eglImage);
+
+        delete image;
     }
 
     static void bufferDestroyListenerCallback(struct wl_listener* listener, void*)
     {
         struct wpe_fdo_egl_exported_image* image;
         image = wl_container_of(listener, image, bufferDestroyListener);
-        if (!image->locked)
-            wpe_fdo_egl_exported_image_destroy(image);
-        else
-            image->locked = false;
+
+        image->bufferResource = nullptr;
+
+        if (!image->exported)
+            deleteImage(image);
     }
 };
 
@@ -260,14 +278,7 @@ __attribute__((visibility("default")))
 void
 wpe_view_backend_exportable_fdo_egl_dispatch_release_exported_image(struct wpe_view_backend_exportable_fdo* exportable, struct wpe_fdo_egl_exported_image* image)
 {
-    if (image->locked) {
-        image->locked = false;
-        if (image->bufferResource)
-            wpe_view_backend_exportable_fdo_dispatch_release_buffer(exportable, image->bufferResource);
-        return;
-    }
-
-    wpe_fdo_egl_exported_image_destroy(image);
+    static_cast<ClientBundleEGL*>(exportable->clientBundle)->releaseImage(image);
 }
 
 }
