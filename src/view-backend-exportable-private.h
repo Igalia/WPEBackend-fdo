@@ -64,7 +64,7 @@ public:
     void frameCallback(struct wl_resource* callbackResource) override;
     void exportBufferResource(struct wl_resource* bufferResource) override;
     void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) override;
-    void dispatchFrameCallback();
+    void dispatchFrameCallbacks();
     void releaseBuffer(struct wl_resource* buffer_resource);
 
 private:
@@ -81,7 +81,7 @@ private:
     ClientBundle* m_clientBundle;
     struct wpe_view_backend* m_backend;
 
-    std::vector<struct wl_resource*> m_callbackResources;
+    std::vector<struct wl_resource*> m_frameCallbacks;
 
     std::unique_ptr<FdoIPC::Connection> m_socket;
     int m_clientFd { -1 };

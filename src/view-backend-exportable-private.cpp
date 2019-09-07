@@ -70,9 +70,9 @@ int ViewBackend::clientFd()
     return dup(m_clientFd);
 }
 
-void ViewBackend::frameCallback(struct wl_resource* callbackResource)
+void ViewBackend::frameCallback(struct wl_resource* callback)
 {
-    m_callbackResources.push_back(callbackResource);
+    m_frameCallbacks.push_back(callback);
 }
 
 void ViewBackend::exportBufferResource(struct wl_resource* bufferResource)
@@ -85,13 +85,13 @@ void ViewBackend::exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buf
     m_clientBundle->exportBuffer(dmabuf_buffer);
 }
 
-void ViewBackend::dispatchFrameCallback()
+void ViewBackend::dispatchFrameCallbacks()
 {
-    for (auto* resource : m_callbackResources) {
+    for (auto* resource : m_frameCallbacks) {
         wl_callback_send_done(resource, 0);
         wl_resource_destroy(resource);
     }
-    m_callbackResources.clear();
+    m_frameCallbacks.clear();
     wl_client_flush(m_client);
     wpe_view_backend_dispatch_frame_displayed(m_backend);
 }
@@ -113,9 +113,9 @@ void ViewBackend::unregisterSurface(uint32_t surfaceId)
     if (!surfaceId || m_surfaceId != surfaceId)
         return;
 
-    for (auto* resource : m_callbackResources)
+    for (auto* resource : m_frameCallbacks)
         wl_resource_destroy(resource);
-    m_callbackResources.clear();
+    m_frameCallbacks.clear();
 
     WS::Instance::singleton().unregisterViewBackend(m_surfaceId);
     m_surfaceId = 0;

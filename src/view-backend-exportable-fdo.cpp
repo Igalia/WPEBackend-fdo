@@ -110,7 +110,7 @@ __attribute__((visibility("default")))
 void
 wpe_view_backend_exportable_fdo_dispatch_frame_complete(struct wpe_view_backend_exportable_fdo* exportable)
 {
-    exportable->clientBundle->viewBackend->dispatchFrameCallback();
+    exportable->clientBundle->viewBackend->dispatchFrameCallbacks();
 }
 
 __attribute__((visibility("default")))
