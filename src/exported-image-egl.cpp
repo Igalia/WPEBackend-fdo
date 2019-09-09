@@ -52,13 +52,3 @@ wpe_fdo_egl_exported_image_get_egl_image(struct wpe_fdo_egl_exported_image* imag
 }
 
 }
-
-void
-wpe_fdo_egl_exported_image_destroy(struct wpe_fdo_egl_exported_image* image)
-{
-    assert(image->eglImage);
-    WS::Instance::singleton().destroyImage(image->eglImage);
-    wl_list_remove(&image->bufferDestroyListener.link);
-
-    delete image;
-}

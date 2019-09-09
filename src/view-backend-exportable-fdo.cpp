@@ -31,18 +31,47 @@ namespace {
 
 class ClientBundleBuffer final : public ClientBundle {
 public:
+    struct BufferResource {
+        struct wl_resource* resource;
+
+        struct wl_list link;
+        struct wl_listener destroyListener;
+
+        static void destroyNotify(struct wl_listener*, void*);
+    };
+
     ClientBundleBuffer(const struct wpe_view_backend_exportable_fdo_client* _client, void* data, ViewBackend* viewBackend,
                  uint32_t initialWidth, uint32_t initialHeight)
         : ClientBundle(data, viewBackend, initialWidth, initialHeight)
         , client(_client)
     {
+        wl_list_init(&bufferResources);
     }
 
-    virtual ~ClientBundleBuffer() = default;
-
-    void exportBuffer(struct wl_resource *bufferResource) override
+    virtual ~ClientBundleBuffer()
     {
-        client->export_buffer_resource(data, bufferResource);
+        BufferResource* resource;
+        BufferResource* next;
+        wl_list_for_each_safe(resource, next, &bufferResources, link) {
+            viewBackend->releaseBuffer(resource->resource);
+
+            wl_list_remove(&resource->link);
+            wl_list_remove(&resource->destroyListener.link);
+            delete resource;
+        }
+        wl_list_init(&bufferResources);
+    }
+
+    void exportBuffer(struct wl_resource *buffer) override
+    {
+        auto* resource = new BufferResource;
+        resource->resource = buffer;
+        resource->destroyListener.notify = BufferResource::destroyNotify;
+
+        wl_resource_add_destroy_listener(buffer, &resource->destroyListener);
+        wl_list_insert(&bufferResources, &resource->link);
+
+        client->export_buffer_resource(data, buffer);
     }
 
     void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer) override
@@ -65,11 +94,50 @@ public:
             dmabuf_resource.modifiers[i] = attributes->modifier[i];
         }
 
+        auto* resource = new BufferResource;
+        resource->resource = dmabuf_buffer->buffer_resource;
+        resource->destroyListener.notify = BufferResource::destroyNotify;
+
+        wl_resource_add_destroy_listener(dmabuf_buffer->buffer_resource, &resource->destroyListener);
+        wl_list_insert(&bufferResources, &resource->link);
+
         client->export_dmabuf_resource(data, &dmabuf_resource);
     }
 
+    void releaseBuffer(struct wl_resource* buffer)
+    {
+        BufferResource* matchingResource = nullptr;
+        BufferResource* resource;
+        wl_list_for_each(resource, &bufferResources, link) {
+            if (resource->resource == buffer) {
+                matchingResource = resource;
+                break;
+            }
+        }
+
+        if (!matchingResource)
+            return;
+
+        viewBackend->releaseBuffer(buffer);
+
+        wl_list_remove(&matchingResource->link);
+        wl_list_remove(&matchingResource->destroyListener.link);
+        delete matchingResource;
+    }
+
     const struct wpe_view_backend_exportable_fdo_client* client;
+
+    struct wl_list bufferResources;
 };
+
+void ClientBundleBuffer::BufferResource::destroyNotify(struct wl_listener* listener, void*)
+{
+    BufferResource* resource;
+    resource = wl_container_of(listener, resource, destroyListener);
+
+    wl_list_remove(&resource->link);
+    delete resource;
+}
 
 } // namespace
 
@@ -109,14 +177,14 @@ __attribute__((visibility("default")))
 void
 wpe_view_backend_exportable_fdo_dispatch_frame_complete(struct wpe_view_backend_exportable_fdo* exportable)
 {
-    exportable->clientBundle->viewBackend->dispatchFrameCallback();
+    exportable->clientBundle->viewBackend->dispatchFrameCallbacks();
 }
 
 __attribute__((visibility("default")))
 void
-wpe_view_backend_exportable_fdo_dispatch_release_buffer(struct wpe_view_backend_exportable_fdo* exportable, struct wl_resource* buffer_resource)
+wpe_view_backend_exportable_fdo_dispatch_release_buffer(struct wpe_view_backend_exportable_fdo* exportable, struct wl_resource* buffer)
 {
-    exportable->clientBundle->viewBackend->releaseBuffer(buffer_resource);
+    static_cast<ClientBundleBuffer*>(exportable->clientBundle)->releaseBuffer(buffer);
 }
 
 }
