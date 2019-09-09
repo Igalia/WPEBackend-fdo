@@ -27,7 +27,6 @@
 
 #include "ws.h"
 #include <gio/gio.h>
-#include <vector>
 #include <wpe-fdo/view-backend-exportable.h>
 
 class ViewBackend;
@@ -63,10 +62,21 @@ public:
     void frameCallback(struct wl_resource* callbackResource) override;
     void exportBufferResource(struct wl_resource* bufferResource) override;
     void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) override;
-    void dispatchFrameCallback();
+    void dispatchFrameCallbacks();
     void releaseBuffer(struct wl_resource* buffer_resource);
 
 private:
+    struct FrameCallbackResource {
+        struct wl_resource* resource;
+
+        struct wl_list link;
+        struct wl_listener destroyListener;
+
+        static void destroyNotify(struct wl_listener*, void*);
+    };
+
+    void clearFrameCallbacks();
+
     static gboolean s_socketCallback(GSocket*, GIOCondition, gpointer);
 
     uint32_t m_id { 0 };
@@ -75,7 +85,7 @@ private:
     ClientBundle* m_clientBundle;
     struct wpe_view_backend* m_backend;
 
-    std::vector<struct wl_resource*> m_callbackResources;
+    struct wl_list m_frameCallbacks;
 
     GSocket* m_socket;
     GSource* m_source;
