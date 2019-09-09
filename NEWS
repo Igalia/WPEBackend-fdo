@@ -1,3 +1,12 @@
+==========================
+1.3.91 - September 9, 2019
+==========================
+
+- Support DMA-BUF resource exports through a new callback in the API.
+- Improve management and cleanup of Wayland resources.
+- Make the build more reliable using CMake imported library targets.
+- Enable compiler warnings.
+
 =====================
 1.3.1 - June 13, 2019
 =====================
