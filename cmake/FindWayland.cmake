@@ -1,11 +1,4 @@
-# - Try to find Wayland.
-# Once done, this will define
-#
-#  WAYLAND_FOUND - system has Wayland.
-#  WAYLAND_INCLUDE_DIRS - the Wayland include directories
-#  WAYLAND_LIBRARIES - link these to use Wayland.
-#
-# Copyright (C) 2014 Igalia S.L.
+# Copyright (C) 2014, 2019 Igalia S.L.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -27,9 +20,136 @@
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+#[==[.rst:
+FindWayland
+===========
+
+Find Wayland libraries
+
+COMPONENTS
+----------
+
+This module supports the following ``COMPONENTS``:
+
+- ``client``
+- ``server``
+- ``egl``
+- ``cursor``
+
+If no components are specified, the ``client`` component will be searched
+for.
+
+Imported Targets
+----------------
+
+This module defines the following :prop_tgt:`IMPORTED` targets, according
+to the requested ``COMPONENTS``:
+
+``Wayland::client``
+  The ``wayland-client`` library.
+``Wayland::server``
+  The ``wayland-server`` library.
+``Wayland::egl``
+  The ``wayland-egl`` library.
+``Wayland::cursor``
+  The ``wayland-cursor`` library.
+
+Result Variables
+----------------
+
+This module will set the following variables in your project:
+
+``Wayland_FOUND``
+  The requested Wayland components are available in the system.
+``Wayland_VERSION``
+  Version of the Wayland libraries (from ``wayland-version.h``).
+``Wayland_<component>_FOUND``
+  Whether the ``<component>`` is available in the system.
+``Wayland_<component>_LIBRARY``
+  Path to the library for the ``<component>``.
+``Wayland_<component>_INCLUDE_DIR``
+  The include directory for the ``<component>``.
+
+Hints
+-----
+
+For each ``<component>``, the following may be set:
+
+``Wayland_<component>_INCLUDE_DIR``
+  Directory where to find headers.
+``Wayland_<component>_LIBRARY``
+  Path to the library.
+
+#]==]
 
 find_package(PkgConfig)
-pkg_check_modules(WAYLAND wayland-client wayland-server)
+
+set(_Wayland_VALID_COMPONENTS client server cursor egl)
+
+foreach (_comp IN LISTS _Wayland_VALID_COMPONENTS)
+    set(Wayland_${_comp}_FOUND FALSE)
+endforeach ()
+
+if (NOT Wayland_FIND_COMPONENTS)
+    # Search at least for the client library.
+    list(APPEND Wayland_FIND_COMPONENTS client)
+endif ()
+
+unset(Wayland_VERSION)
+foreach (_comp IN LISTS Wayland_FIND_COMPONENTS)
+    string(TOLOWER "${_comp}" _comp)
+
+    if (NOT _comp IN_LIST _Wayland_VALID_COMPONENTS)
+        message(WARNING "${_comp} is not a valid Wayland component")
+        set(Wayland_${_comp}_FOUND FALSE)
+        continue ()
+    endif ()
+
+    if (PkgConfig_FOUND)
+        pkg_check_modules(Wayland_PC_${_comp} IMPORTED_TARGET wayland-${_comp})
+        set(Wayland_${_comp}_VERSION "${Wayland_PC_${_comp}_VERSION}")
+    endif ()
+
+    if (NOT Wayland_VERSION)
+        find_path(Wayland_VERSION_HEADER_PATH
+            NAMES wayland-version.h
+            HINTS ${Wayland_${_comp}_INCLUDE_DIRS})
+        if (EXISTS "${Wayland_VERSION_HEADER_PATH}/wayland-version.h")
+            file(STRINGS "${Wayland_VERSION_HEADER_PATH}/wayland-version.h"
+                Wayland_VERSION REGEX
+                "#[\t ]*define[\t ]+WAYLAND_VERSION[\t ]+\"[0-9\.]+\".*")
+            string(REGEX MATCH "[0-9\.]+" Wayland_VERSION "${Wayland_VERSION}")
+        endif ()
+    endif ()
+
+    if (NOT Wayland_${_comp}_VERSION AND Wayland_VERSION)
+        set(Wayland_${_comp}_VERSION ${Wayland_VERSION})
+    endif ()
+
+    find_path(Wayland_${_comp}_INCLUDE_DIR
+        NAMES wayland-client.h
+        HINTS ${Wayland_${_comp}_INCLUDE_DIRS})
+    find_library(Wayland_${_comp}_LIBRARY
+        NAMES wayland-${_comp}
+        PATHS ${Wayland_${_comp}_LIBRARY_DIRS})
+
+    mark_as_advanced(Wayland_${_comp}_INCLUDE_DIR Wayland_${_comp}_LIBRARY)
+
+    if (Wayland_${_comp}_LIBRARY AND NOT TARGET Wayland::${_comp})
+        set(Wayland_${_comp}_FOUND TRUE)
+        add_library(Wayland::${_comp} INTERFACE IMPORTED)
+        if (TARGET PkgConfig::Wayland_PC_${_comp})
+            set_property(TARGET Wayland::${_comp} PROPERTY
+                INTERFACE_LINK_LIBRARIES PkgConfig::Wayland_PC_${_comp})
+        else ()
+            set_property(TARGET Wayland::${_comp} PROPERTY
+                INTERFACE_LINK_LIBRARIES ${Wayland_${_comp}_LIBRARY})
+            set_property(TARGET Wayland::${_comp} PROPERTY
+                INTERFACE_INCLUDE_DIRECTORIES ${Wayland_${_comp}_INCLUDE_DIR})
+        endif ()
+    endif ()
+endforeach ()
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(WAYLAND DEFAULT_MSG WAYLAND_LIBRARIES)
+find_package_handle_standard_args(Wayland REQUIRED_VARS Wayland_VERSION HANDLE_COMPONENTS)

@@ -1,5 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
-cmake_policy(VERSION 3.0)
+cmake_minimum_required(VERSION 3.3)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(VersioningUtils)
@@ -42,8 +41,7 @@ endforeach ()
 
 find_package(EGL REQUIRED)
 find_package(GLIB REQUIRED COMPONENTS gio gobject)
-find_package(Wayland REQUIRED)
-find_package(WaylandEGL REQUIRED)
+find_package(Wayland REQUIRED client server egl)
 find_package(WaylandScanner REQUIRED)
 find_package(WPE REQUIRED)
 
@@ -60,17 +58,16 @@ set(WPEBACKEND_FDO_INCLUDE_DIRECTORIES
     ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/src
     ${GLIB_INCLUDE_DIRS}
-    ${WAYLAND_INCLUDE_DIRS}
-    ${WAYLAND_EGL_INCLUDE_DIRS}
 )
 
 set(WPEBACKEND_FDO_LIBRARIES
     ${GLIB_GIO_LIBRARIES}
     ${GLIB_GOBJECT_LIBRARIES}
     ${GLIB_LIBRARIES}
-    ${WAYLAND_LIBRARIES}
-    ${WAYLAND_EGL_LIBRARIES}
     GL::egl
+    Wayland::client
+    Wayland::server
+    Wayland::egl
     WPE::libwpe
 )
 
