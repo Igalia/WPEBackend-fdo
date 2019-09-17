@@ -48,7 +48,8 @@ mark_as_advanced(WPE_INCLUDE_DIR WPE_LIBRARY)
 if (WPE_LIBRARY AND NOT TARGET WPE::libwpe)
     add_library(WPE::libwpe INTERFACE IMPORTED)
     if (TARGET PkgConfig::WPE)
-        target_link_libraries(WPE::libwpe INTERFACE PkgConfig::WPE)
+        set_property(TARGET WPE::libwpe PROPERTY
+            INTERFACE_LINK_LIBRARIES PkgConfig::WPE)
     else ()
         set_property(TARGET WPE::libwpe PROPERTY
             INTERFACE_LINK_LIBRARIES "${WPE_LIBRARY}")
