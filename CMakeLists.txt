@@ -47,10 +47,6 @@ find_package(WPE REQUIRED)
 
 add_definitions(-DWPE_FDO_COMPILATION)
 
-if (NOT (WAYLAND_wayland-client_VERSION VERSION_LESS 1.10))
-    add_definitions(-DWAYLAND_1_10_OR_GREATER)
-endif ()
-
 configure_file(include/wpe-fdo/version.h.cmake "${CMAKE_BINARY_DIR}/wpe-fdo/version.h" @ONLY)
 
 set(WPEBACKEND_FDO_INCLUDE_DIRECTORIES
