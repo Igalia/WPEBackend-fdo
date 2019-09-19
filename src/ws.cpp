@@ -191,7 +191,7 @@ static const struct wl_surface_interface s_surfaceInterface = {
     [](struct wl_client*, struct wl_resource*, int32_t) { },
     // set_buffer_scale
     [](struct wl_client*, struct wl_resource*, int32_t) { },
-#ifdef WAYLAND_1_10_OR_GREATER
+#if (WAYLAND_VERSION_MAJOR > 1) || (WAYLAND_VERSION_MAJOR == 1 && WAYLAND_VERSION_MINOR >= 10)
     // damage_buffer
     [](struct wl_client*, struct wl_resource*, int32_t, int32_t, int32_t, int32_t) { },
 #endif
