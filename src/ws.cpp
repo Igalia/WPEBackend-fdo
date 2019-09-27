@@ -339,7 +339,7 @@ bool Instance::initialize(EGLDisplay eglDisplay)
         return true;
 
     if (m_eglDisplay != EGL_NO_DISPLAY) {
-        fprintf(stderr, "WPE fdo doesn't support multiple EGL displays\n");
+        g_warning("Multiple EGL displays are not supported.\n");
         return false;
     }
 
@@ -550,7 +550,7 @@ struct wl_client* Instance::registerViewBackend(uint32_t surfaceId, ExportableCl
 {
     auto it = m_viewBackendMap.find(surfaceId);
     if (it == m_viewBackendMap.end())
-        std::abort();
+        g_error("Instance::registerViewBackend(): " "Cannot find surface %" PRIu32 " in view backend map.", surfaceId);
 
     it->second->exportableClient = &exportableClient;
     return it->second->client;
