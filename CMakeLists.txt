@@ -45,7 +45,7 @@ find_package(Wayland REQUIRED client server egl)
 find_package(WaylandScanner REQUIRED)
 find_package(WPE REQUIRED)
 
-add_definitions(-DWPE_FDO_COMPILATION)
+add_definitions(-DWPE_FDO_COMPILATION -DG_LOG_DOMAIN=\"WPE-FDO\")
 
 configure_file(include/wpe-fdo/version.h.cmake "${CMAKE_BINARY_DIR}/wpe-fdo/version.h" @ONLY)
 

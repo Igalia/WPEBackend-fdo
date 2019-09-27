@@ -191,7 +191,7 @@ void BaseTarget::initialize(struct wl_display* display)
 void BaseTarget::requestFrame()
 {
     if (m_wl.frameCallback)
-        std::abort();
+        g_error("BaseTarget::requestFrame(): A frame callback was already installed.");
 
     m_wl.frameCallback = wl_surface_frame(m_wl.surface);
     wl_callback_add_listener(m_wl.frameCallback, &s_callbackListener, this);
