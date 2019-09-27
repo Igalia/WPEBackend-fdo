@@ -68,4 +68,33 @@
     (WPE_FDO_MAJOR_VERSION == (major) && WPE_FDO_MINOR_VERSION == (minor) && \
      WPE_FDO_MICRO_VERSION >= (micro)))
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * wpe_fdo_get_major_version:
+ *
+ * Returns: Major version of the `WPEBackend-fdo` library.
+ */
+unsigned wpe_fdo_get_major_version(void);
+
+/**
+ * wpe_fdo_get_minor_version:
+ *
+ * Returns: Minor version of the `WPEBackend-fdo` library.
+ */
+unsigned wpe_fdo_get_minor_version(void);
+
+/**
+ * wpe_fdo_get_micro_version:
+ *
+ * Returns: Micro version of the `WPEBackend-fdo` library.
+ */
+unsigned wpe_fdo_get_micro_version(void);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* __wpe_fdo_version_h__ */

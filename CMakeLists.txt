@@ -89,6 +89,7 @@ set(WPEBACKEND_FDO_SOURCES
     src/ipc.cpp
     src/renderer-backend-egl.cpp
     src/renderer-host.cpp
+    src/version.c
     src/view-backend-exportable-fdo.cpp
     src/view-backend-exportable-private.cpp
     src/ws.cpp
