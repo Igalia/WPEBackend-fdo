@@ -25,6 +25,7 @@
 
 #include "ws.h"
 
+#include "wpe-audio-server-protocol.h"
 #include "wpe-bridge-server-protocol.h"
 #include "wpe-video-plane-display-dmabuf-server-protocol.h"
 #include <cassert>
@@ -33,6 +34,9 @@
 
 struct wpe_video_plane_display_dmabuf_export {
     struct wl_resource* updateResource;
+};
+struct wpe_audio_packet_export {
+    struct wl_resource* exportResource;
 };
 
 namespace WS {
@@ -174,6 +178,12 @@ struct DmaBufUpdate {
     struct wl_client* client;
 };
 
+struct AudioPacketUpdate {
+    uint32_t id { 0 };
+    struct wl_client* client;
+};
+
+
 static const struct wpe_video_plane_display_dmabuf_update_interface s_videoPlaneDisplayUpdateInterface = {
     // destroy
     [](struct wl_client*, struct wl_resource* resource)
@@ -212,6 +222,61 @@ static const struct wpe_video_plane_display_dmabuf_interface s_wpeDmaBufInterfac
     {
         Instance::singleton().handleVideoPlaneDisplayDmaBufEndOfStream(video_id);
     },
+};
+
+  static const struct wpe_audio_packet_export_interface s_audioPacketExportInterface = {
+    // destroy
+    [](struct wl_client*, struct wl_resource* resource)
+    {
+        wl_resource_destroy(resource);
+    },
+};
+
+static const struct wpe_audio_interface s_wpeAudioInterface = {
+    // stream_started
+    [](struct wl_client*, struct wl_resource*, uint32_t id, int32_t channels, const char* layout, int32_t sampleRate)
+    {
+        Instance::singleton().handleAudioStart(id, channels, layout, sampleRate);
+    },
+    // stream_packet
+    [](struct wl_client* client, struct wl_resource* resource, uint32_t id, uint32_t audio_stream_id, int32_t fd, uint32_t frames)
+    {
+        struct wl_resource* exportResource = wl_resource_create(client, &wpe_audio_packet_export_interface,
+            wl_resource_get_version(resource), id);
+        if (!exportResource) {
+          wl_resource_post_no_memory(resource);
+          return;
+        }
+
+        auto* update = new AudioPacketUpdate;
+        update->id = id;
+        update->client = client;
+        wl_resource_set_implementation(exportResource, &s_audioPacketExportInterface, update,
+            [](struct wl_resource* resource)
+            {
+                auto* update = static_cast<AudioPacketUpdate*>(wl_resource_get_user_data(resource));
+                delete update;
+            });
+
+        auto* audio_packet_export = new struct wpe_audio_packet_export;
+        audio_packet_export->exportResource = exportResource;
+        Instance::singleton().handleAudioPacket(audio_packet_export, audio_stream_id, fd, frames);
+    },
+    // stream_stopped
+    [](struct wl_client*, struct wl_resource*, uint32_t id)
+    {
+        Instance::singleton().handleAudioStop(id);
+    },
+    // stream_paused
+    [](struct wl_client*, struct wl_resource*, uint32_t id)
+    {
+        Instance::singleton().handleAudioPause(id);
+    },
+    // stream_resumed
+    [](struct wl_client*, struct wl_resource*, uint32_t id)
+    {
+        Instance::singleton().handleAudioResume(id);
+    }
 };
 
 static Instance* s_singleton;
@@ -294,6 +359,9 @@ Instance::~Instance()
     if (m_videoPlaneDisplayDmaBuf.object)
         wl_global_destroy(m_videoPlaneDisplayDmaBuf.object);
 
+    if (m_audio.object)
+        wl_global_destroy(m_audio.object);
+
     if (m_display)
         wl_display_destroy(m_display);
 }
@@ -361,6 +429,76 @@ void Instance::handleVideoPlaneDisplayDmaBufEndOfStream(uint32_t id)
 void Instance::releaseVideoPlaneDisplayDmaBufExport(struct wpe_video_plane_display_dmabuf_export* dmabuf_export)
 {
     wpe_video_plane_display_dmabuf_update_send_release(dmabuf_export->updateResource);
+}
+
+
+void Instance::initializeAudio(AudioStartCallback startCallback, AudioPacketCallback packetCallback, AudioStopCallback stopCallback, AudioPauseCallback pauseCallback, AudioResumeCallback resumeCallback)
+{
+    if (m_audio.object)
+        return;
+
+    m_audio.object = wl_global_create(m_display, &wpe_audio_interface, 1, this,
+        [](struct wl_client* client, void*, uint32_t version, uint32_t id)
+        {
+            struct wl_resource* resource = wl_resource_create(client, &wpe_audio_interface, version, id);
+            if (!resource) {
+                wl_client_post_no_memory(client);
+                return;
+            }
+            wl_resource_set_implementation(resource, &s_wpeAudioInterface, nullptr, nullptr);
+    });
+    m_audio.startCallback = startCallback;
+    m_audio.packetCallback = packetCallback;
+    m_audio.stopCallback = stopCallback;
+    m_audio.pauseCallback = pauseCallback;
+    m_audio.resumeCallback = resumeCallback;
+}
+
+void Instance::handleAudioStart(uint32_t id, int32_t channels, const char* layout, int32_t sampleRate)
+{
+    if (!m_audio.startCallback)
+        return;
+
+    m_audio.startCallback(id, channels, layout, sampleRate);
+}
+
+void Instance::handleAudioPacket(struct wpe_audio_packet_export* packet_export, uint32_t id, int32_t fd, uint32_t frames)
+{
+    if (!m_audio.packetCallback) {
+        close(fd);
+        return;
+    }
+
+    m_audio.packetCallback(packet_export, id, fd, frames);
+}
+
+void Instance::handleAudioStop(uint32_t id)
+{
+    if (!m_audio.stopCallback)
+        return;
+
+    m_audio.stopCallback(id);
+}
+
+void Instance::handleAudioPause(uint32_t id)
+{
+    if (!m_audio.pauseCallback)
+        return;
+
+    m_audio.pauseCallback(id);
+}
+
+void Instance::handleAudioResume(uint32_t id)
+{
+  if (!m_audio.resumeCallback)
+    return;
+
+  m_audio.resumeCallback(id);
+}
+
+void Instance::releaseAudioPacketExport(struct wpe_audio_packet_export* packet_export)
+{
+    wpe_audio_packet_export_send_release(packet_export->exportResource);
 }
 
 struct wl_client* Instance::registerViewBackend(uint32_t surfaceId, ExportableClient& exportableClient)
