@@ -105,6 +105,31 @@ public:
         client->export_dmabuf_resource(data, &dmabuf_resource);
     }
 
+    void exportBuffer(const struct gbm_buffer* buffer) override
+    {
+        struct wpe_view_backend_exportable_fdo_dmabuf_resource dmabuf_resource;
+        std::memset(&dmabuf_resource, 0, sizeof(struct wpe_view_backend_exportable_fdo_dmabuf_resource));
+
+        dmabuf_resource.buffer_resource = buffer->resource;
+        dmabuf_resource.width = buffer->width;
+        dmabuf_resource.height = buffer->height;
+        dmabuf_resource.format = buffer->format;
+
+        dmabuf_resource.n_planes = 1;
+        dmabuf_resource.fds[0] = buffer->fd;
+        dmabuf_resource.strides[0] = buffer->stride;
+
+        auto* resource = new BufferResource;
+        resource->resource = buffer->resource;
+        resource->destroyListener.notify = BufferResource::destroyNotify;
+
+        wl_resource_add_destroy_listener(buffer->resource, &resource->destroyListener);
+        wl_list_insert(&bufferResources, &resource->link);
+
+        //fprintf(stderr, "exportBuffer() gbm_buffer %p\n", buffer);
+        client->export_dmabuf_resource(data, &dmabuf_resource);
+    }
+
     void releaseBuffer(struct wl_resource* buffer)
     {
         BufferResource* matchingResource = nullptr;
@@ -116,6 +141,7 @@ public:
             }
         }
 
+        //fprintf(stderr, "releaseBuffer() buffer %p matchingResource %p\n", buffer, matchingResource);
         if (!matchingResource)
             return;
 

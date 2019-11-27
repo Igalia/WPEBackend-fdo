@@ -103,6 +103,10 @@ public:
         client->export_egl_image(data, image);
     }
 
+    void exportBuffer(const struct gbm_buffer*) override
+    {
+    }
+
     void releaseImage(EGLImageKHR image)
     {
         BufferResource* matchingResource = nullptr;
@@ -193,6 +197,10 @@ public:
         wl_resource_add_destroy_listener(dmabufBuffer->buffer_resource, &image->bufferDestroyListener);
 
         exportImage(image);
+    }
+
+    void exportBuffer(const struct gbm_buffer*) override
+    {
     }
 
     void releaseImage(struct wpe_fdo_egl_exported_image* image)

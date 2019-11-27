@@ -93,8 +93,14 @@ void ViewBackend::exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buf
     m_clientBundle->exportBuffer(dmabuf_buffer);
 }
 
+void ViewBackend::exportGBMBuffer(const struct gbm_buffer* buffer)
+{
+    m_clientBundle->exportBuffer(buffer);
+}
+
 void ViewBackend::dispatchFrameCallbacks()
 {
+    //fprintf(stderr, "ViewBackend::dispatchFrameCallbacks()\n");
     FrameCallbackResource* resource;
     wl_list_for_each(resource, &m_frameCallbacks, link) {
         wl_callback_send_done(resource->resource, 0);

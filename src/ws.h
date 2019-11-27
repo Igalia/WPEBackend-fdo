@@ -29,8 +29,10 @@
 #include <functional>
 #include <unordered_map>
 #include <wayland-server.h>
+#include "gbm-buffer.h"
 #include "linux-dmabuf/linux-dmabuf.h"
 
+struct gbm_device;
 typedef void *EGLDisplay;
 typedef void *EGLImageKHR;
 
@@ -40,6 +42,7 @@ struct ExportableClient {
     virtual void frameCallback(struct wl_resource*) = 0;
     virtual void exportBufferResource(struct wl_resource*) = 0;
     virtual void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) = 0;
+    virtual void exportGBMBuffer(const struct gbm_buffer*) = 0;
 };
 
 struct Surface;
@@ -49,7 +52,8 @@ public:
     static Instance& singleton();
     ~Instance();
 
-    bool initialize(EGLDisplay);
+    bool initializeEGL(EGLDisplay);
+    bool initializeGBM(struct gbm_device*);
 
     int createClient();
 
@@ -62,6 +66,11 @@ public:
         return m_eglDisplay;
     }
 
+    struct gbm_device* gbmDevice()
+    {
+        return m_gbmDevice;
+    }
+
     EGLImageKHR createImage(struct wl_resource*);
     EGLImageKHR createImage(const struct linux_dmabuf_buffer*);
     void destroyImage(EGLImageKHR);
@@ -72,6 +81,9 @@ public:
     const struct linux_dmabuf_buffer* getDmaBufBuffer(struct wl_resource*) const;
     void foreachDmaBufModifier(std::function<void (int format, uint64_t modifier)>);
 
+    void importGBMBuffer(struct gbm_buffer*);
+    const struct gbm_buffer* getGBMBuffer(struct wl_resource*) const;
+
 private:
     Instance();
 
@@ -79,12 +91,15 @@ private:
     struct wl_global* m_compositor { nullptr };
     struct wl_global* m_wpeBridge { nullptr };
     struct wl_global* m_linuxDmabuf { nullptr };
+    struct wl_global* m_wpeGBM { nullptr };
     struct wl_list m_dmabufBuffers;
+    struct wl_list m_gbmBuffers;
     GSource* m_source { nullptr };
 
     std::unordered_map<uint32_t, Surface*> m_viewBackendMap;
 
     EGLDisplay m_eglDisplay;
+    struct gbm_device* m_gbmDevice;
 };
 
 } // namespace WS

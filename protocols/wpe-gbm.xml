@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="wpe_gbm">
+
+  <copyright>
+    Copyright © 2019 Igalia S.L.
+
+    Permission to use, copy, modify, distribute, and sell this
+    software and its documentation for any purpose is hereby granted
+    without fee, provided that the above copyright notice appear in
+    all copies and that both that copyright notice and this permission
+    notice appear in supporting documentation, and that the name of
+    the copyright holders not be used in advertising or publicity
+    pertaining to distribution of the software without specific,
+    written prior permission.  The copyright holders make no
+    representations about the suitability of this software for any
+    purpose.  It is provided "as is" without express or implied
+    warranty.
+
+    THE COPYRIGHT HOLDERS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS
+    SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+    FITNESS, IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN
+    AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+    ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+    THIS SOFTWARE.
+  </copyright>
+
+  <interface name="wpe_gbm" version="1">
+    <request name="request_device">
+      <description summary="requests the gbm device file descriptor"/>
+    </request>
+
+    <event name="device_fd">
+      <description summary="passes the gbm device file descriptor"/>
+      <arg name="fd" type="fd" summary="gbm device file descriptor"/>
+    </event>
+
+    <request name="authenticate">
+        <arg name="id" type="uint"/>
+    </request>
+
+    <request name="create_buffer">
+      <description summary="create a wl_buffer for a given gbm data set"/>
+      <arg name="buffer_id" type="new_id" interface="wl_buffer"
+           summary="id for the newly created wl_buffer"/>
+      <arg name="fd" type="fd" summary="gbm bo file descriptor"/>
+      <arg name="width" type="uint" summary="gbm bo width"/>
+      <arg name="height" type="uint" summary="gbm bo height"/>
+      <arg name="stride" type="uint" summary="gbm bo stride"/>
+      <arg name="format" type="uint" summary="format code"/>
+    </request>
+  </interface>
+
+</protocol>

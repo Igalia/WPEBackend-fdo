@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017, 2018 Igalia S.L.
+ * Copyright (C) 2019 Igalia S.L.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,13 +23,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "wpe-fdo/initialize-egl.h"
+#include "wpe-fdo/initialize-gbm.h"
 
 #include "ws.h"
 
 __attribute__((visibility("default")))
 bool
-wpe_fdo_initialize_for_egl_display(EGLDisplay display)
+wpe_fdo_initialize_for_gbm_device(struct gbm_device* device)
 {
-    return WS::Instance::singleton().initializeEGL(display);
+    return WS::Instance::singleton().initializeGBM(device);
 }

@@ -62,7 +62,7 @@ protected:
 
     struct wl_surface* surface() const { return m_wl.surface; }
 
-private:
+protected:
     void frameComplete();
     void bridgeConnected(uint32_t bridgeID);
 

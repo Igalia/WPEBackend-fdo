@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017, 2018 Igalia S.L.
+ * Copyright (C) 2019 Igalia S.L.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,13 +23,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "wpe-fdo/initialize-egl.h"
+#ifdef __WEBKIT_WEB_EXTENSION_H__
+#error "Headers <wpe/fdo-gbm.h> and <wpe/webkit-web-extension.h> cannot be included together."
+#endif
 
-#include "ws.h"
+#ifndef __wpe_fdo_gbm_h__
+#define __wpe_fdo_gbm_h__
 
-__attribute__((visibility("default")))
-bool
-wpe_fdo_initialize_for_egl_display(EGLDisplay display)
-{
-    return WS::Instance::singleton().initializeEGL(display);
-}
+#define __WPE_FDO_GBM_H_INSIDE__
+
+#include <wpe/initialize-gbm.h>
+//#include <wpe/view-backend-exportable-egl.h>
+
+#undef __WPE_FDO_GBM_H_INSIDE__
+
+#endif /* __wpe_fdo_gbm_h__ */

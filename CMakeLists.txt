@@ -44,6 +44,8 @@ find_package(GLIB REQUIRED COMPONENTS gio gobject)
 find_package(Wayland REQUIRED client server egl)
 find_package(WaylandScanner REQUIRED)
 find_package(WPE REQUIRED)
+pkg_check_modules(GBM REQUIRED gbm)
+pkg_check_modules(LIBDRM REQUIRED libdrm)
 
 add_definitions(-DWPE_FDO_COMPILATION -DG_LOG_DOMAIN=\"WPE-FDO\")
 
@@ -53,13 +55,17 @@ set(WPEBACKEND_FDO_INCLUDE_DIRECTORIES
     "include"
     ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/src
+    ${GBM_INCLUDE_DIRS}
     ${GLIB_INCLUDE_DIRS}
+    ${LIBDRM_INCLUDE_DIRS}
 )
 
 set(WPEBACKEND_FDO_LIBRARIES
+    ${GBM_LIBRARIES}
     ${GLIB_GIO_LIBRARIES}
     ${GLIB_GOBJECT_LIBRARIES}
     ${GLIB_LIBRARIES}
+    ${LIBDRM_LIBRARIES}
     GL::egl
     Wayland::client
     Wayland::server
@@ -71,13 +77,16 @@ set(WPEBACKEND_FDO_PUBLIC_HEADERS
     ${CMAKE_BINARY_DIR}/wpe-fdo/version.h
     include/wpe-fdo/exported-image-egl.h
     include/wpe-fdo/initialize-egl.h
+    include/wpe-fdo/initialize-gbm.h
     include/wpe-fdo/view-backend-exportable.h
     include/wpe-fdo/fdo-egl.h
+    include/wpe-fdo/fdo-gbm.h
     include/wpe-fdo/fdo.h
 )
 
 set(WPEBACKEND_FDO_GENERATED_SOURCES
     ${CMAKE_BINARY_DIR}/bridge/wpe-bridge-protocol.c
+    ${CMAKE_BINARY_DIR}/protocols/wpe-gbm-protocol.c
 )
 
 set(WPEBACKEND_FDO_SOURCES
@@ -86,6 +95,7 @@ set(WPEBACKEND_FDO_SOURCES
     src/exported-image-egl.cpp
     src/fdo.cpp
     src/initialize-egl.cpp
+    src/initialize-gbm.cpp
     src/ipc.cpp
     src/renderer-backend-egl.cpp
     src/renderer-host.cpp
@@ -108,6 +118,18 @@ add_custom_command(
     COMMAND ${WAYLAND_SCANNER} ${WAYLAND_SCANNER_CODE_ARG} < ${CMAKE_SOURCE_DIR}/src/bridge/wpe-bridge.xml > ${CMAKE_BINARY_DIR}/bridge/wpe-bridge-protocol.c
     COMMAND ${WAYLAND_SCANNER} client-header < ${CMAKE_SOURCE_DIR}/src/bridge/wpe-bridge.xml > ${CMAKE_BINARY_DIR}/bridge/wpe-bridge-client-protocol.h
     COMMAND ${WAYLAND_SCANNER} server-header < ${CMAKE_SOURCE_DIR}/src/bridge/wpe-bridge.xml > ${CMAKE_BINARY_DIR}/bridge/wpe-bridge-server-protocol.h
+    VERBATIM
+)
+
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/protocols)
+add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/protocols/wpe-gbm-protocol.c
+           ${CMAKE_BINARY_DIR}/protocols/wpe-gbm-client-protocol.h
+           ${CMAKE_BINARY_DIR}/protocols/wpe-gbm-server-protocol.h
+    DEPENDS ${CMAKE_SOURCE_DIR}/protocols/wpe-gbm.xml
+    COMMAND ${WAYLAND_SCANNER} ${WAYLAND_SCANNER_CODE_ARG} < ${CMAKE_SOURCE_DIR}/protocols/wpe-gbm.xml > ${CMAKE_BINARY_DIR}/protocols/wpe-gbm-protocol.c
+    COMMAND ${WAYLAND_SCANNER} client-header < ${CMAKE_SOURCE_DIR}/protocols/wpe-gbm.xml > ${CMAKE_BINARY_DIR}/protocols/wpe-gbm-client-protocol.h
+    COMMAND ${WAYLAND_SCANNER} server-header < ${CMAKE_SOURCE_DIR}/protocols/wpe-gbm.xml > ${CMAKE_BINARY_DIR}/protocols/wpe-gbm-server-protocol.h
     VERBATIM
 )
 

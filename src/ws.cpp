@@ -25,15 +25,18 @@
 
 #include "ws.h"
 
+#include <gbm.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include "linux-dmabuf/linux-dmabuf.h"
 #include "bridge/wpe-bridge-server-protocol.h"
+#include "protocols/wpe-gbm-server-protocol.h"
 #include <cassert>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <xf86drm.h>
 
 #ifndef EGL_WL_bind_wayland_display
 #define EGL_WAYLAND_BUFFER_WL 0x31D5
@@ -134,6 +137,7 @@ struct Surface {
 
     struct wl_resource* bufferResource { nullptr };
     const struct linux_dmabuf_buffer* dmabufBuffer { nullptr };
+    const struct gbm_buffer* gbmBuffer { nullptr };
 };
 
 static const struct wl_surface_interface s_surfaceInterface = {
@@ -142,9 +146,11 @@ static const struct wl_surface_interface s_surfaceInterface = {
     // attach
     [](struct wl_client*, struct wl_resource* surfaceResource, struct wl_resource* bufferResource, int32_t, int32_t)
     {
+        //fprintf(stderr, "s_surfaceInterface::attach(): bufferResource %p\n", bufferResource);
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
 
         surface.dmabufBuffer = Instance::singleton().getDmaBufBuffer(bufferResource);
+        surface.gbmBuffer = Instance::singleton().getGBMBuffer(bufferResource);
 
         if (surface.bufferResource)
             wl_buffer_send_release(surface.bufferResource);
@@ -182,8 +188,13 @@ static const struct wl_surface_interface s_surfaceInterface = {
         struct wl_resource* bufferResource = surface.bufferResource;
         surface.bufferResource = nullptr;
 
+        //fprintf(stderr, "Surface::commit(): buffer resource %p, dmabufBuffer %p, gbmBuffer %p\n",
+        //    bufferResource, surface.dmabufBuffer, surface.gbmBuffer);
+
         if (surface.dmabufBuffer)
             surface.exportableClient->exportLinuxDmabuf(surface.dmabufBuffer);
+        else if (surface.gbmBuffer)
+            surface.exportableClient->exportGBMBuffer(surface.gbmBuffer);
         else
             surface.exportableClient->exportBufferResource(bufferResource);
     },
@@ -237,6 +248,62 @@ static const struct wpe_bridge_interface s_wpeBridgeInterface = {
     },
 };
 
+static const struct wl_buffer_interface wpe_gbm_buffer_implementation = {
+    // destroy
+    [](struct wl_client*, struct wl_resource* resource)
+    {
+        wl_resource_destroy(resource);
+    },
+};
+
+
+
+static const struct wpe_gbm_interface s_wpeGBMInterface = {
+    // request_device
+    [](struct wl_client*, struct wl_resource* resource)
+    {
+        wpe_gbm_send_device_fd(resource, gbm_device_get_fd(Instance::singleton().gbmDevice()));
+    },
+    // authenticate
+    [](struct wl_client*, struct wl_resource*, uint32_t magic)
+    {
+        fprintf(stderr, "s_wpeGBMInterface::authenticate() magic %u\n", magic);
+        int ret = drmAuthMagic(gbm_device_get_fd(Instance::singleton().gbmDevice()), magic);
+        fprintf(stderr, "\tret %d\n", ret);
+    },
+    // create_buffer
+    [](struct wl_client* client, struct wl_resource*, uint32_t bufferID, int32_t fd,
+        uint32_t width, uint32_t height, uint32_t stride, uint32_t format)
+    {
+        struct wl_resource* bufferResource = wl_resource_create(client, &wl_buffer_interface, 1, bufferID);
+        if (!bufferResource) {
+            wl_client_post_no_memory(client);
+            return;
+        }
+
+        lseek(fd, 0, SEEK_END);
+
+        auto* buffer = static_cast<struct gbm_buffer*>(calloc(1, sizeof(struct gbm_buffer)));
+        buffer->resource = bufferResource;
+        buffer->fd = fd;
+        buffer->width = width;
+        buffer->height = height;
+        buffer->stride = stride;
+        buffer->format = format;
+
+        wl_resource_set_implementation(bufferResource, &wpe_gbm_buffer_implementation, buffer,
+            [](struct wl_resource* bufferResource)
+            {
+                auto* buffer = static_cast<struct gbm_buffer*>(wl_resource_get_user_data(bufferResource));
+                delete buffer;
+            });
+
+        Instance::singleton().importGBMBuffer(buffer);
+
+        //fprintf(stderr, "\tcreate_buffer(): resource %p impl %p\n", bufferResource, buffer);
+    },
+};
+
 Instance& Instance::singleton()
 {
     static Instance* s_singleton;
@@ -272,8 +339,21 @@ Instance::Instance()
 
             wl_resource_set_implementation(resource, &s_wpeBridgeInterface, nullptr, nullptr);
         });
+    m_wpeGBM = wl_global_create(m_display, &wpe_gbm_interface, 1, this,
+        [](struct wl_client* client, void*, uint32_t version, uint32_t id)
+        {
+            struct wl_resource* resource = wl_resource_create(client, &wpe_gbm_interface, version, id);
+            if (!resource) {
+                wl_client_post_no_memory(client);
+                return;
+
+            }
+
+            wl_resource_set_implementation(resource, &s_wpeGBMInterface, nullptr, nullptr);
+        });
 
     wl_list_init(&m_dmabufBuffers);
+    wl_list_init(&m_gbmBuffers);
 
     auto& source = *reinterpret_cast<ServerSource*>(m_source);
 
@@ -301,6 +381,9 @@ Instance::~Instance()
 
     if (m_wpeBridge)
         wl_global_destroy(m_wpeBridge);
+
+    if (m_wpeGBM)
+        wl_global_destroy(m_wpeGBM);
 
     if (m_linuxDmabuf) {
         struct linux_dmabuf_buffer *buffer;
@@ -333,7 +416,7 @@ static bool isEGLExtensionSupported(const char* extensionList, const char* exten
     return false;
 }
 
-bool Instance::initialize(EGLDisplay eglDisplay)
+bool Instance::initializeEGL(EGLDisplay eglDisplay)
 {
     if (m_eglDisplay == eglDisplay)
         return true;
@@ -385,10 +468,18 @@ bool Instance::initialize(EGLDisplay eglDisplay)
     return true;
 }
 
+bool Instance::initializeGBM(struct gbm_device* device)
+{
+    fprintf(stderr, "Instance::initializeGBM() device %p\n", device);
+    m_gbmDevice = device;
+    return true;
+}
+
 int Instance::createClient()
 {
-    if (m_eglDisplay == EGL_NO_DISPLAY)
-        return -1;
+    fprintf(stderr, "Instance::createClient()\n");
+    //if (m_eglDisplay == EGL_NO_DISPLAY)
+    //    return -1;
 
     int pair[2];
     if (socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, pair) < 0)
@@ -515,6 +606,21 @@ const struct linux_dmabuf_buffer* Instance::getDmaBufBuffer(struct wl_resource* 
     }
 
     return NULL;
+}
+
+void Instance::importGBMBuffer(struct gbm_buffer* buffer)
+{
+    wl_list_insert(&m_gbmBuffers, &buffer->link);
+}
+
+const struct gbm_buffer* Instance::getGBMBuffer(struct wl_resource* bufferResource) const
+{
+    struct gbm_buffer* buffer;
+    wl_list_for_each(buffer, &m_gbmBuffers, link) {
+        if (buffer->resource == bufferResource)
+            return buffer;
+    }
+    return nullptr;
 }
 
 void Instance::foreachDmaBufModifier(std::function<void (int format, uint64_t modifier)> callback)
