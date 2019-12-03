@@ -146,7 +146,6 @@ static const struct wl_surface_interface s_surfaceInterface = {
     // attach
     [](struct wl_client*, struct wl_resource* surfaceResource, struct wl_resource* bufferResource, int32_t, int32_t)
     {
-        //fprintf(stderr, "s_surfaceInterface::attach(): bufferResource %p\n", bufferResource);
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
 
         surface.dmabufBuffer = Instance::singleton().getDmaBufBuffer(bufferResource);
@@ -187,9 +186,6 @@ static const struct wl_surface_interface s_surfaceInterface = {
 
         struct wl_resource* bufferResource = surface.bufferResource;
         surface.bufferResource = nullptr;
-
-        //fprintf(stderr, "Surface::commit(): buffer resource %p, dmabufBuffer %p, gbmBuffer %p\n",
-        //    bufferResource, surface.dmabufBuffer, surface.gbmBuffer);
 
         if (surface.dmabufBuffer)
             surface.exportableClient->exportLinuxDmabuf(surface.dmabufBuffer);
@@ -299,8 +295,6 @@ static const struct wpe_gbm_interface s_wpeGBMInterface = {
             });
 
         Instance::singleton().importGBMBuffer(buffer);
-
-        //fprintf(stderr, "\tcreate_buffer(): resource %p impl %p\n", bufferResource, buffer);
     },
 };
 

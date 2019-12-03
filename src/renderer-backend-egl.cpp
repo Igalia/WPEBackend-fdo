@@ -140,16 +140,13 @@ public:
 
         m_gbm.surface = gbm_surface_create(backend.gbmDevice(), width, height,
             GBM_FORMAT_RGB565, GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
-        fprintf(stderr, "surface: %p\n", m_gbm.surface);
     }
 
     using WS::BaseTarget::requestFrame;
 
     void frameRendered()
     {
-        //fprintf(stderr, "frameRendered(): locking ...\n");
         struct gbm_bo* bo = gbm_surface_lock_front_buffer(m_gbm.surface);
-        //fprintf(stderr, "\tlocked %p\n", bo);
         assert(bo);
 
         uint32_t handle = gbm_bo_get_handle(bo).u32;
@@ -170,14 +167,10 @@ public:
             gbm_bo_set_user_data(bo, cachedBuffer, nullptr);
         }
 
-        //fprintf(stderr, "frameRendered(): bo %p handle %u, cachedBuffer %p, buffer %p\n",
-        //    bo, handle, cachedBuffer, cachedBuffer->buffer);
         assert(handle == cachedBuffer->handle);
 
         wl_surface_attach(surface(), cachedBuffer->buffer, 0, 0);
         wl_surface_commit(surface());
-
-        //fprintf(stderr, "\n");
     }
 
     struct gbm_surface* gbmSurface() const { return m_gbm.surface; }
@@ -234,13 +227,9 @@ const struct wl_buffer_listener Target::s_bufferListener = {
             if (cachedBuffer->buffer == buffer)
                 break;
         }
-        //fprintf(stderr, "Target::s_bufferListener: buffer %p cached obj %p\n", buffer, cachedBuffer);
         if (!cachedBuffer)
             return;
 
-        //fprintf(stderr, "Target::s_bufferListener::release(), buffer %p, cachedBuffer %p, bo %p handle %u\n",
-        //    buffer, cachedBuffer, cachedBuffer->bo, cachedBuffer->handle);
-        //fprintf(stderr, "\treleasing bo %p on surface %p\n", cachedBuffer->bo, target.m_gbm.surface);
         gbm_surface_release_buffer(target.m_gbm.surface, cachedBuffer->bo);
     },
 };
