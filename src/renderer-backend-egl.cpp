@@ -92,23 +92,22 @@ const struct wpe_gbm_listener Backend::s_wpeGBMListener = {
 	[](void* data, struct wpe_gbm* wpe_gbm, int fd)
     {
         auto& backend = *reinterpret_cast<Backend*>(data);
-        int ffd = open("/dev/dri/card0", DRM_RDWR | DRM_CLOEXEC);
 
         drm_magic_t magic;
-        int ret = drmGetMagic(ffd, &magic);
-        fprintf(stderr, "s_wpeGBMListener::dev(): got magic %u, ret %d\n", magic, ret);
+        int ret = drmGetMagic(fd, &magic);
+        fprintf(stderr, "s_wpeGBMListener::devic_fd(): got magic %u, ret %d\n", magic, ret);
 
         wpe_gbm_authenticate(backend.m_wl.wpeGBM, magic);
         wl_display_roundtrip(backend.display());
 
-        drmVersionPtr v = drmGetVersion(ffd);
-        fprintf(stderr, "\t%d.%d.%d, name %s date %s desc %s\n",
+        drmVersionPtr v = drmGetVersion(fd);
+        fprintf(stderr, "\tversion: %d.%d.%d, name %s date %s desc %s\n",
             v->version_major, v->version_minor, v->version_patchlevel,
             v->name, v->date, v->desc);
 
-        backend.m_gbmDevice = gbm_create_device(ffd);
-        fprintf(stderr, "s_wpeGBMListener::device_fd() %d dev %p its fd %d\n",
-            fd, backend.m_gbmDevice, gbm_device_get_fd(backend.m_gbmDevice));
+        backend.m_gbmDevice = gbm_create_device(fd);
+        fprintf(stderr, "s_wpeGBMListener::device_fd() finally created device %p its fd %d\n",
+            backend.m_gbmDevice, gbm_device_get_fd(backend.m_gbmDevice));
     },
 };
 
