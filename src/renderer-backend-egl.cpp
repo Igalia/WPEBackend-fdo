@@ -139,7 +139,7 @@ public:
         }
 
         m_gbm.surface = gbm_surface_create(backend.gbmDevice(), width, height,
-            GBM_FORMAT_RGB565, GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
+            GBM_FORMAT_XRGB8888, GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
     }
 
     using WS::BaseTarget::requestFrame;
