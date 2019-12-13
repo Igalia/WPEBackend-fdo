@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017, 2018 Igalia S.L.
+ * Copyright (C) 2019 Igalia S.L.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,17 +23,44 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "wpe-fdo/initialize-egl.h"
+#include "wpe-fdo/extensions/video-plane-display-dmabuf.h"
 
 #include "ws.h"
+#include <unistd.h>
+
+static struct {
+    const struct wpe_video_plane_display_dmabuf_receiver* receiver;
+    void* data;
+} s_registered_receiver;
 
 extern "C" {
 
 __attribute__((visibility("default")))
-bool
-wpe_fdo_initialize_for_egl_display(EGLDisplay display)
+void
+wpe_video_plane_display_dmabuf_register_receiver(const struct wpe_video_plane_display_dmabuf_receiver* receiver, void* data)
 {
-    return WS::Instance::singleton().initialize(display);
+    s_registered_receiver.receiver = receiver;
+    s_registered_receiver.data = data;
+
+    WS::Instance::singleton().initializeVideoPlaneDisplayDmaBuf([](struct wpe_video_plane_display_dmabuf_export* dmabuf_export, uint32_t id, int fd, int32_t x, int32_t y, int32_t width, int32_t height, uint32_t stride) {
+        if (s_registered_receiver.receiver) {
+            s_registered_receiver.receiver->handle_dmabuf(s_registered_receiver.data, dmabuf_export, id, fd, x, y, width, height, stride);
+            return;
+        }
+
+        if (fd >= 0)
+            close(fd);
+    }, [](uint32_t id) {
+        if (s_registered_receiver.receiver)
+            s_registered_receiver.receiver->end_of_stream(s_registered_receiver.data, id);
+    });
+}
+
+__attribute__((visibility("default")))
+void
+wpe_video_plane_display_dmabuf_export_release(struct wpe_video_plane_display_dmabuf_export* dmabuf_export)
+{
+    WS::Instance::singleton().releaseVideoPlaneDisplayDmaBufExport(dmabuf_export);
 }
 
 }

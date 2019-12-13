@@ -154,6 +154,23 @@ BaseTarget::~BaseTarget()
     }
 }
 
+GSource* ws_polling_source_new(const char* name, struct wl_display* display, struct wl_event_queue* eventQueue)
+{
+    GSource* wlSource = g_source_new(&TargetSource::s_sourceFuncs, sizeof(TargetSource));
+    auto& source = *reinterpret_cast<TargetSource*>(wlSource);
+    source.pfd.fd = wl_display_get_fd(display);
+    source.pfd.events = G_IO_IN | G_IO_ERR | G_IO_HUP;
+    source.pfd.revents = 0;
+    source.display = display;
+    source.queue = eventQueue;
+    source.isReading = false;
+
+    g_source_add_poll(wlSource, &source.pfd);
+    g_source_set_name(wlSource, name);
+    g_source_set_can_recurse(wlSource, TRUE);
+    return wlSource;
+}
+
 void BaseTarget::initialize(struct wl_display* display)
 {
     m_wl.eventQueue = wl_display_create_queue(display);
@@ -167,21 +184,8 @@ void BaseTarget::initialize(struct wl_display* display)
     m_wl.surface = wl_compositor_create_surface(m_wl.compositor);
     wl_proxy_set_queue(reinterpret_cast<struct wl_proxy*>(m_wl.surface), m_wl.eventQueue);
 
-    m_glib.wlSource = g_source_new(&TargetSource::s_sourceFuncs, sizeof(TargetSource));
-    {
-        auto& source = *reinterpret_cast<TargetSource*>(m_glib.wlSource);
-        source.pfd.fd = wl_display_get_fd(display);
-        source.pfd.events = G_IO_IN | G_IO_ERR | G_IO_HUP;
-        source.pfd.revents = 0;
-        source.display = display;
-        source.queue = m_wl.eventQueue;
-        source.isReading = false;
-
-        g_source_add_poll(m_glib.wlSource, &source.pfd);
-        g_source_set_name(m_glib.wlSource, "WPEBackend-fdo::wayland");
-        g_source_set_can_recurse(m_glib.wlSource, TRUE);
-        g_source_attach(m_glib.wlSource, g_main_context_get_thread_default());
-    }
+    m_glib.wlSource = ws_polling_source_new("WPEBackend-fdo::wayland", display, m_wl.eventQueue);
+    g_source_attach(m_glib.wlSource, g_main_context_get_thread_default());
 
     wpe_bridge_add_listener(m_wl.wpeBridge, &s_bridgeListener, this);
     wpe_bridge_connect(m_wl.wpeBridge, m_wl.surface);

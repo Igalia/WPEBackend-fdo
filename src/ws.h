@@ -34,6 +34,8 @@
 typedef void *EGLDisplay;
 typedef void *EGLImageKHR;
 
+struct wpe_video_plane_display_dmabuf_export;
+
 namespace WS {
 
 struct ExportableClient {
@@ -72,6 +74,13 @@ public:
     const struct linux_dmabuf_buffer* getDmaBufBuffer(struct wl_resource*) const;
     void foreachDmaBufModifier(std::function<void (int format, uint64_t modifier)>);
 
+    using VideoPlaneDisplayDmaBufCallback = std::function<void(struct wpe_video_plane_display_dmabuf_export*, uint32_t, int, int32_t, int32_t, int32_t, int32_t, uint32_t)>;
+    using VideoPlaneDisplayDmaBufEndOfStreamCallback = std::function<void(uint32_t)>;
+    void initializeVideoPlaneDisplayDmaBuf(VideoPlaneDisplayDmaBufCallback, VideoPlaneDisplayDmaBufEndOfStreamCallback);
+    void handleVideoPlaneDisplayDmaBuf(struct wpe_video_plane_display_dmabuf_export*, uint32_t id, int fd, int32_t x, int32_t y, int32_t width, int32_t height, uint32_t stride);
+    void handleVideoPlaneDisplayDmaBufEndOfStream(uint32_t id);
+    void releaseVideoPlaneDisplayDmaBufExport(struct wpe_video_plane_display_dmabuf_export*);
+
 private:
     Instance();
 
@@ -85,6 +94,12 @@ private:
     std::unordered_map<uint32_t, Surface*> m_viewBackendMap;
 
     EGLDisplay m_eglDisplay;
+
+    struct {
+        struct wl_global* object { nullptr };
+        VideoPlaneDisplayDmaBufCallback updateCallback;
+        VideoPlaneDisplayDmaBufEndOfStreamCallback endOfStreamCallback;
+    } m_videoPlaneDisplayDmaBuf;
 };
 
 } // namespace WS
