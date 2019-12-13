@@ -37,6 +37,7 @@ protected:
     BaseBackend(int hostFD);
     ~BaseBackend();
 
+public:
     struct wl_display* display() const { return m_wl.display; }
 
 private:
@@ -87,5 +88,7 @@ private:
         struct wl_callback* frameCallback { nullptr };
     } m_wl;
 };
+
+GSource* ws_polling_source_new(const char* name, struct wl_display*, struct wl_event_queue*);
 
 } // namespace WS
