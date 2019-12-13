@@ -37,6 +37,7 @@ protected:
     BaseBackend(int hostFD);
     ~BaseBackend();
 
+public:
     struct wl_display* display() const { return m_wl.display; }
 
 private:

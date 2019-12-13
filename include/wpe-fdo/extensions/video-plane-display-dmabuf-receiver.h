@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017, 2018 Igalia S.L.
+ * Copyright (C) 2019 Igalia S.L.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,17 +23,31 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "wpe-fdo/initialize-egl.h"
+#pragma once
 
-#include "ws.h"
+#ifndef __video_plane_display_dmabuf_receiver_h__
+#define __video_plane_display_dmabuf_receiver_h__
 
+#include <stdint.h>
+
+#ifdef __cplusplus
 extern "C" {
+#endif
 
-__attribute__((visibility("default")))
-bool
-wpe_fdo_initialize_for_egl_display(EGLDisplay display)
-{
-    return WS::Instance::singleton().initialize(display);
-}
+struct wpe_video_plane_display_dmabuf_export;
 
+struct wpe_video_plane_display_dmabuf_receiver {
+    void (*handle_dmabuf)(void* data, struct wpe_video_plane_display_dmabuf_export*, uint32_t id, int fd, int32_t x, int32_t y, int32_t width, int32_t height, uint32_t stride);
+};
+
+void
+wpe_video_plane_display_dmabuf_register_receiver(const struct wpe_video_plane_display_dmabuf_receiver*, void* data);
+
+void
+wpe_video_plane_display_dmabuf_export_release(struct wpe_video_plane_display_dmabuf_export*);
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif // __video_plane_display_dmabuf_receiver_h__

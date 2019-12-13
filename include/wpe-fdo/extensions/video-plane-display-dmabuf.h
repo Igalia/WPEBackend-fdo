@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017, 2018 Igalia S.L.
+ * Copyright (C) 2019 Igalia S.L.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,17 +23,34 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "wpe-fdo/initialize-egl.h"
+#pragma once
 
-#include "ws.h"
+#ifndef __video_plane_display_dmabuf_source_h__
+#define __video_plane_display_dmabuf_source_h__
 
+#include <stdint.h>
+
+#ifdef __cplusplus
 extern "C" {
+#endif
 
-__attribute__((visibility("default")))
-bool
-wpe_fdo_initialize_for_egl_display(EGLDisplay display)
-{
-    return WS::Instance::singleton().initialize(display);
-}
+struct wpe_renderer_backend_egl;
+struct wpe_video_plane_display_dmabuf_source;
 
+struct wpe_video_plane_display_dmabuf_source*
+wpe_video_plane_display_dmabuf_source_create(struct wpe_renderer_backend_egl*);
+
+void
+wpe_video_plane_display_dmabuf_source_destroy(struct wpe_video_plane_display_dmabuf_source*);
+
+typedef void (*wpe_video_plane_display_dmabuf_source_update_release_notify_t)(void *data);
+
+void
+wpe_video_plane_display_dmabuf_source_update(struct wpe_video_plane_display_dmabuf_source*, int fd, int32_t x, int32_t y, int32_t width, int32_t height, uint32_t stride,
+    wpe_video_plane_display_dmabuf_source_update_release_notify_t notify, void* notify_data);
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif // __video_plane_display_dmabuf_source_h__

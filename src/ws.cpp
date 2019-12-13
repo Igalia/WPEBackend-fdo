@@ -29,6 +29,7 @@
 #include <EGL/eglext.h>
 #include "linux-dmabuf/linux-dmabuf.h"
 #include "bridge/wpe-bridge-server-protocol.h"
+#include "video-plane-display-dmabuf/wpe-video-plane-display-dmabuf-server-protocol.h"
 #include <cassert>
 #include <stdio.h>
 #include <string.h>
@@ -78,6 +79,10 @@ static PFNEGLCREATEIMAGEKHRPROC s_eglCreateImageKHR;
 static PFNEGLDESTROYIMAGEKHRPROC s_eglDestroyImageKHR;
 static PFNEGLQUERYDMABUFFORMATSEXTPROC s_eglQueryDmaBufFormatsEXT;
 static PFNEGLQUERYDMABUFMODIFIERSEXTPROC s_eglQueryDmaBufModifiersEXT;
+
+struct wpe_video_plane_display_dmabuf_export {
+    struct wl_resource* updateResource;
+};
 
 namespace WS {
 
@@ -237,6 +242,46 @@ static const struct wpe_bridge_interface s_wpeBridgeInterface = {
     },
 };
 
+struct DmaBufUpdate {
+    uint32_t id { 0 };
+    struct wl_client* client;
+};
+
+static const struct wpe_video_plane_display_dmabuf_update_interface s_videoPlaneDisplayUpdateInterface = {
+    // destroy
+    [](struct wl_client*, struct wl_resource* resource)
+    {
+        wl_resource_destroy(resource);
+    },
+};
+
+static const struct wpe_video_plane_display_dmabuf_interface s_wpeDmaBufInterface = {
+    // create_update
+    [](struct wl_client* client, struct wl_resource* resource, uint32_t id, uint32_t video_id, int32_t fd, int32_t x, int32_t y, int32_t width, int32_t height, uint32_t stride)
+    {
+        struct wl_resource* updateResource = wl_resource_create(client, &wpe_video_plane_display_dmabuf_update_interface,
+            wl_resource_get_version(resource), id);
+        if (!updateResource) {
+            wl_resource_post_no_memory(resource);
+            return;
+        }
+
+        auto* update = new DmaBufUpdate;
+        update->id = id;
+        update->client = client;
+        wl_resource_set_implementation(updateResource, &s_videoPlaneDisplayUpdateInterface, update,
+            [](struct wl_resource* resource)
+            {
+                auto* update = static_cast<DmaBufUpdate*>(wl_resource_get_user_data(resource));
+                delete update;
+            });
+
+        auto* dmabuf_export = new struct wpe_video_plane_display_dmabuf_export;
+        dmabuf_export->updateResource = updateResource;
+        Instance::singleton().handleVideoPlaneDisplayDmaBuf(dmabuf_export, video_id, fd, x, y, width, height, stride);
+    }
+};
+
 Instance& Instance::singleton()
 {
     static Instance* s_singleton;
@@ -313,6 +358,9 @@ Instance::~Instance()
         }
         wl_global_destroy(m_linuxDmabuf);
     }
+
+    if (m_videoPlaneDisplayDmaBuf.object)
+        wl_global_destroy(m_videoPlaneDisplayDmaBuf.object);
 
     if (m_display)
         wl_display_destroy(m_display);
@@ -544,6 +592,41 @@ void Instance::foreachDmaBufModifier(std::function<void (int format, uint64_t mo
         for (int j = 0; j < numModifiers; j++)
             callback(formats[i], modifiers[j]);
     }
+}
+
+void Instance::initializeVideoPlaneDisplayDmaBuf(VideoPlaneDisplayDmaBufCallback* callback)
+{
+    if (m_videoPlaneDisplayDmaBuf.object)
+        return;
+
+    m_videoPlaneDisplayDmaBuf.object = wl_global_create(m_display, &wpe_video_plane_display_dmabuf_interface, 1, this,
+        [](struct wl_client* client, void*, uint32_t version, uint32_t id)
+        {
+            struct wl_resource* resource = wl_resource_create(client, &wpe_video_plane_display_dmabuf_interface, version, id);
+            if (!resource) {
+                wl_client_post_no_memory(client);
+                return;
+            }
+
+            wl_resource_set_implementation(resource, &s_wpeDmaBufInterface, nullptr, nullptr);
+        });
+    m_videoPlaneDisplayDmaBuf.callback = callback;
+}
+
+void Instance::handleVideoPlaneDisplayDmaBuf(struct wpe_video_plane_display_dmabuf_export* dmabuf_export, uint32_t id, int fd, int32_t x, int32_t y, int32_t width, int32_t height, uint32_t stride)
+{
+    if (!m_videoPlaneDisplayDmaBuf.callback) {
+        if (fd >= 0)
+            close(fd);
+        return;
+    }
+
+    (*m_videoPlaneDisplayDmaBuf.callback)(dmabuf_export, id, fd, x, y, width, height, stride);
+}
+
+void Instance::releaseVideoPlaneDisplayDmaBufExport(struct wpe_video_plane_display_dmabuf_export* dmabuf_export)
+{
+    wpe_video_plane_display_dmabuf_update_send_release(dmabuf_export->updateResource);
 }
 
 struct wl_client* Instance::registerViewBackend(uint32_t surfaceId, ExportableClient& exportableClient)
