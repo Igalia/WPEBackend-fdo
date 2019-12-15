@@ -27,6 +27,7 @@
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#include <EGL/eglmesaext.h>
 #include "linux-dmabuf/linux-dmabuf.h"
 #include "bridge/wpe-bridge-server-protocol.h"
 #include <cassert>
