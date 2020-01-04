@@ -336,11 +336,17 @@ static bool isEGLExtensionSupported(const char* extensionList, const char* exten
 
 bool Instance::initialize(EGLDisplay eglDisplay)
 {
+    /* FIXME: Replace g_error() with g_warning() after https://bugs.webkit.org/show_bug.cgi?id=201507
+     * has been debugged and resolved. g_error() does not return, so the "return false" statements
+     * below are all currently unreachable dead code. They are kept so that you can simply replace
+     * each g_error() with g_warning() in the future without otherwise modifying the code.
+     */
+
     if (m_eglDisplay == eglDisplay)
         return true;
 
     if (m_eglDisplay != EGL_NO_DISPLAY) {
-        g_warning("Multiple EGL displays are not supported.\n");
+        g_error("Failed to initialize WS::Instance: multiple EGL displays are not supported.");
         return false;
     }
 
@@ -351,8 +357,10 @@ bool Instance::initialize(EGLDisplay eglDisplay)
         s_eglQueryWaylandBufferWL = reinterpret_cast<PFNEGLQUERYWAYLANDBUFFERWL>(eglGetProcAddress("eglQueryWaylandBufferWL"));
         assert(s_eglQueryWaylandBufferWL);
     }
-    if (!s_eglBindWaylandDisplayWL || !s_eglQueryWaylandBufferWL)
+    if (!s_eglBindWaylandDisplayWL || !s_eglQueryWaylandBufferWL) {
+        g_error("Failed to initialize WS::Instance: EGL_WL_bind_wayland_display not supported");
         return false;
+    }
 
     if (isEGLExtensionSupported(extensions, "EGL_KHR_image_base")) {
         s_eglCreateImageKHR = reinterpret_cast<PFNEGLCREATEIMAGEKHRPROC>(eglGetProcAddress("eglCreateImageKHR"));
@@ -360,11 +368,15 @@ bool Instance::initialize(EGLDisplay eglDisplay)
         s_eglDestroyImageKHR = reinterpret_cast<PFNEGLDESTROYIMAGEKHRPROC>(eglGetProcAddress("eglDestroyImageKHR"));
         assert(s_eglDestroyImageKHR);
     }
-    if (!s_eglCreateImageKHR || !s_eglDestroyImageKHR)
+    if (!s_eglCreateImageKHR || !s_eglDestroyImageKHR) {
+        g_error("Failed to initialize WS::Instance: EGL_KHR_image_base not supported");
         return false;
+    }
 
-    if (!s_eglBindWaylandDisplayWL(eglDisplay, m_display))
+    if (!s_eglBindWaylandDisplayWL(eglDisplay, m_display)) {
+        g_error("Failed to initialize WS::Instance: eglBindWaylandDisplayWL failed");
         return false;
+    }
 
     m_eglDisplay = eglDisplay;
 
