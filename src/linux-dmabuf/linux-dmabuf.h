@@ -38,5 +38,8 @@ struct linux_dmabuf_buffer {
 struct wl_global *
 linux_dmabuf_setup(struct wl_display *wl_display);
 
+bool
+linux_dmabuf_buffer_implements_resource(struct wl_resource*);
+
 void
 linux_dmabuf_buffer_destroy(struct linux_dmabuf_buffer *buffer);
