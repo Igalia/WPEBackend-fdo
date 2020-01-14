@@ -559,7 +559,10 @@ void Instance::importDmaBufBuffer(struct linux_dmabuf_buffer* buffer)
 
 const struct linux_dmabuf_buffer* Instance::getDmaBufBuffer(struct wl_resource* bufferResource) const
 {
-    if (!m_linuxDmabuf)
+    if (!m_linuxDmabuf || !bufferResource)
+        return nullptr;
+
+    if (!linux_dmabuf_buffer_implements_resource(bufferResource))
         return nullptr;
 
     struct linux_dmabuf_buffer* buffer;

@@ -397,6 +397,18 @@ linux_dmabuf_setup(struct wl_display *wl_display)
                             NULL, bind_linux_dmabuf);
 }
 
+bool
+linux_dmabuf_buffer_implements_resource(struct wl_resource *resource)
+{
+    if (resource == NULL)
+        return 0;
+
+    if (wl_resource_instance_of(resource, &wl_buffer_interface,
+                                &linux_dmabuf_buffer_implementation))
+        return 1;
+    return 0;
+}
+
 void
 linux_dmabuf_buffer_destroy(struct linux_dmabuf_buffer *buffer)
 {
