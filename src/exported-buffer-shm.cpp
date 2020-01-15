@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017, 2018 Igalia S.L.
+ * Copyright (C) 2020 Igalia S.L.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,20 +23,15 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef __WEBKIT_WEB_EXTENSION_H__
-#error "Headers <wpe/fdo-egl.h> and <wpe/webkit-web-extension.h> cannot be included together."
-#endif
+#include "exported-buffer-shm-private.h"
 
-#ifndef __wpe_fdo_egl_h__
-#define __wpe_fdo_egl_h__
+extern "C" {
 
-#define __WPE_FDO_EGL_H_INSIDE__
+__attribute__((visibility("default")))
+struct wl_shm_buffer*
+wpe_fdo_shm_exported_buffer_get_shm_buffer(struct wpe_fdo_shm_exported_buffer* buffer)
+{
+    return buffer->shm_buffer;
+}
 
-#include <wpe/exported-buffer-shm.h>
-#include <wpe/exported-image-egl.h>
-#include <wpe/initialize-egl.h>
-#include <wpe/view-backend-exportable-egl.h>
-
-#undef __WPE_FDO_EGL_H_INSIDE__
-
-#endif /* __wpe_fdo_egl_h__ */
+}

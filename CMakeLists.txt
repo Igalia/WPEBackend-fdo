@@ -70,6 +70,7 @@ set(WPEBACKEND_FDO_LIBRARIES
 set(WPEBACKEND_FDO_PUBLIC_HEADERS
     ${CMAKE_BINARY_DIR}/wpe-fdo/version.h
     include/wpe-fdo/exported-image-egl.h
+    include/wpe-fdo/exported-buffer-shm.h
     include/wpe-fdo/initialize-egl.h
     include/wpe-fdo/view-backend-exportable.h
     include/wpe-fdo/fdo-egl.h
@@ -83,6 +84,7 @@ set(WPEBACKEND_FDO_GENERATED_SOURCES
 set(WPEBACKEND_FDO_SOURCES
     ${WPEBACKEND_FDO_GENERATED_SOURCES}
 
+    src/exported-buffer-shm.cpp
     src/exported-image-egl.cpp
     src/fdo.cpp
     src/initialize-egl.cpp
