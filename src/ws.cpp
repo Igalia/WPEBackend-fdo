@@ -140,6 +140,7 @@ struct Surface {
 
     struct wl_resource* bufferResource { nullptr };
     const struct linux_dmabuf_buffer* dmabufBuffer { nullptr };
+    struct wl_shm_buffer* shmBuffer { nullptr };
 };
 
 static const struct wl_surface_interface s_surfaceInterface = {
@@ -151,6 +152,7 @@ static const struct wl_surface_interface s_surfaceInterface = {
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
 
         surface.dmabufBuffer = Instance::singleton().getDmaBufBuffer(bufferResource);
+        surface.shmBuffer = wl_shm_buffer_get(bufferResource);
 
         if (surface.bufferResource)
             wl_buffer_send_release(surface.bufferResource);
@@ -190,6 +192,8 @@ static const struct wl_surface_interface s_surfaceInterface = {
 
         if (surface.dmabufBuffer)
             surface.exportableClient->exportLinuxDmabuf(surface.dmabufBuffer);
+        else if (surface.shmBuffer)
+            surface.exportableClient->exportShmBuffer(bufferResource, surface.shmBuffer);
         else
             surface.exportableClient->exportBufferResource(bufferResource);
     },

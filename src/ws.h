@@ -42,6 +42,7 @@ struct ExportableClient {
     virtual void frameCallback(struct wl_resource*) = 0;
     virtual void exportBufferResource(struct wl_resource*) = 0;
     virtual void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) = 0;
+    virtual void exportShmBuffer(struct wl_resource*, struct wl_shm_buffer*) = 0;
 };
 
 struct Surface;

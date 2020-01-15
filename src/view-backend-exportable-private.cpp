@@ -93,6 +93,10 @@ void ViewBackend::exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buf
     m_clientBundle->exportBuffer(dmabuf_buffer);
 }
 
+void ViewBackend::exportShmBuffer(struct wl_resource*, struct wl_shm_buffer*)
+{
+}
+
 void ViewBackend::dispatchFrameCallbacks()
 {
     FrameCallbackResource* resource;
