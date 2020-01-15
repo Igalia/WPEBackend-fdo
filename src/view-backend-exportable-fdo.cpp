@@ -105,6 +105,11 @@ public:
         client->export_dmabuf_resource(data, &dmabuf_resource);
     }
 
+    void exportBuffer(struct wl_resource*, struct wl_shm_buffer*) override
+    {
+        assert(!"noop");
+    }
+
     void releaseBuffer(struct wl_resource* buffer)
     {
         BufferResource* matchingResource = nullptr;
