@@ -46,6 +46,7 @@ public:
 
     virtual void exportBuffer(struct wl_resource *bufferResource) = 0;
     virtual void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer) = 0;
+    virtual void exportBuffer(struct wl_resource* bufferResource, struct wl_shm_buffer* shmBuffer) = 0;
 
     void* data;
     ViewBackend* viewBackend;
