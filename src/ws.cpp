@@ -348,7 +348,8 @@ bool Instance::initialize(EGLDisplay eglDisplay)
         return false;
     }
 
-    if (wl_display_init_shm(m_display))
+    // wl_display_init_shm() returns `0` on success.
+    if (wl_display_init_shm(m_display) != 0)
         return false;
 
     const char* extensions = eglQueryString(eglDisplay, EGL_EXTENSIONS);
