@@ -367,7 +367,7 @@ bool Instance::initialize(EGLDisplay eglDisplay)
         assert(s_eglDestroyImageKHR);
     }
 
-    if (s_eglBindWaylandDisplayWL) {
+    if (s_eglBindWaylandDisplayWL && s_eglQueryWaylandBufferWL) {
         if (!s_eglCreateImageKHR || !s_eglDestroyImageKHR)
             return false;
         if (!s_eglBindWaylandDisplayWL(eglDisplay, m_display))
