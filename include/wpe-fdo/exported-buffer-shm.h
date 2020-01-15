@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017, 2018 Igalia S.L.
+ * Copyright (C) 2020 Igalia S.L.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,20 +23,29 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef __WEBKIT_WEB_EXTENSION_H__
-#error "Headers <wpe/fdo-egl.h> and <wpe/webkit-web-extension.h> cannot be included together."
+#if !defined(__WPE_FDO_EGL_H_INSIDE__) && !defined(__WPE_FDO_H_INSIDE__) && !defined(WPE_FDO_COMPILATION)
+#error "Only <wpe/fdo-egl.h> or <wpe/fdo.h> can be included directly."
 #endif
 
-#ifndef __wpe_fdo_egl_h__
-#define __wpe_fdo_egl_h__
+#ifndef __exported_buffer_shm_h__
+#define __exported_buffer_shm_h__
 
-#define __WPE_FDO_EGL_H_INSIDE__
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#include <wpe/exported-buffer-shm.h>
-#include <wpe/exported-image-egl.h>
-#include <wpe/initialize-egl.h>
-#include <wpe/view-backend-exportable-egl.h>
+#include <wpe/wpe.h>
 
-#undef __WPE_FDO_EGL_H_INSIDE__
+struct wpe_fdo_shm_exported_buffer;
 
-#endif /* __wpe_fdo_egl_h__ */
+struct wl_resource;
+struct wl_shm_buffer;
+
+struct wl_shm_buffer*
+wpe_fdo_shm_exported_buffer_get_shm_buffer(struct wpe_fdo_shm_exported_buffer*);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __exported_buffer_shm_h__ */
