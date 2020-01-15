@@ -37,6 +37,8 @@ extern "C" {
 #include <wpe/wpe.h>
 
 struct wl_resource;
+
+struct wpe_fdo_shm_exported_buffer;
 struct wpe_view_backend_exportable_fdo;
 
 struct wpe_view_backend_exportable_fdo_dmabuf_resource {
@@ -54,9 +56,9 @@ struct wpe_view_backend_exportable_fdo_dmabuf_resource {
 struct wpe_view_backend_exportable_fdo_client {
     void (*export_buffer_resource)(void* data, struct wl_resource* buffer_resource);
     void (*export_dmabuf_resource)(void* data, struct wpe_view_backend_exportable_fdo_dmabuf_resource* dmabuf_resource);
+    void (*export_shm_buffer)(void* data, struct wpe_fdo_shm_exported_buffer*);
+    void (*_wpe_reserved0)(void);
     void (*_wpe_reserved1)(void);
-    void (*_wpe_reserved2)(void);
-    void (*_wpe_reserved3)(void);
 };
 
 struct wpe_view_backend_exportable_fdo*
@@ -73,6 +75,9 @@ wpe_view_backend_exportable_fdo_dispatch_frame_complete(struct wpe_view_backend_
 
 void
 wpe_view_backend_exportable_fdo_dispatch_release_buffer(struct wpe_view_backend_exportable_fdo*, struct wl_resource*);
+
+void
+wpe_view_backend_exportable_fdo_dispatch_release_shm_exported_buffer(struct wpe_view_backend_exportable_fdo*, struct wpe_fdo_shm_exported_buffer*);
 
 #ifdef __cplusplus
 }
