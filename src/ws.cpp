@@ -401,6 +401,9 @@ bool Instance::initialize(EGLDisplay eglDisplay)
         return false;
     }
 
+    if (wl_display_init_shm(m_display))
+        return false;
+
     const char* extensions = eglQueryString(eglDisplay, EGL_EXTENSIONS);
     if (isEGLExtensionSupported(extensions, "EGL_WL_bind_wayland_display")) {
         s_eglBindWaylandDisplayWL = reinterpret_cast<PFNEGLBINDWAYLANDDISPLAYWL>(eglGetProcAddress("eglBindWaylandDisplayWL"));
@@ -408,8 +411,6 @@ bool Instance::initialize(EGLDisplay eglDisplay)
         s_eglQueryWaylandBufferWL = reinterpret_cast<PFNEGLQUERYWAYLANDBUFFERWL>(eglGetProcAddress("eglQueryWaylandBufferWL"));
         assert(s_eglQueryWaylandBufferWL);
     }
-    if (!s_eglBindWaylandDisplayWL || !s_eglQueryWaylandBufferWL)
-        return false;
 
     if (isEGLExtensionSupported(extensions, "EGL_KHR_image_base")) {
         s_eglCreateImageKHR = reinterpret_cast<PFNEGLCREATEIMAGEKHRPROC>(eglGetProcAddress("eglCreateImageKHR"));
@@ -417,11 +418,13 @@ bool Instance::initialize(EGLDisplay eglDisplay)
         s_eglDestroyImageKHR = reinterpret_cast<PFNEGLDESTROYIMAGEKHRPROC>(eglGetProcAddress("eglDestroyImageKHR"));
         assert(s_eglDestroyImageKHR);
     }
-    if (!s_eglCreateImageKHR || !s_eglDestroyImageKHR)
-        return false;
 
-    if (!s_eglBindWaylandDisplayWL(eglDisplay, m_display))
-        return false;
+    if (s_eglBindWaylandDisplayWL) {
+        if (!s_eglCreateImageKHR || !s_eglDestroyImageKHR)
+            return false;
+        if (!s_eglBindWaylandDisplayWL(eglDisplay, m_display))
+            return false;
+    }
 
     m_eglDisplay = eglDisplay;
 
