@@ -23,6 +23,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "exported-buffer-shm-private.h"
 #include "view-backend-exportable-private.h"
 #include "ws.h"
 #include <cassert>
@@ -105,9 +106,12 @@ public:
         client->export_dmabuf_resource(data, &dmabuf_resource);
     }
 
-    void exportBuffer(struct wl_resource*, struct wl_shm_buffer*) override
+    void exportBuffer(struct wl_resource* bufferResource, struct wl_shm_buffer* shmBuffer) override
     {
-        assert(!"noop");
+        auto* buffer = new struct wpe_fdo_shm_exported_buffer;
+        buffer->resource = bufferResource;
+        buffer->shm_buffer = shmBuffer;
+        client->export_shm_buffer(data, buffer);
     }
 
     void releaseBuffer(struct wl_resource* buffer)
@@ -129,6 +133,13 @@ public:
         wl_list_remove(&matchingResource->link);
         wl_list_remove(&matchingResource->destroyListener.link);
         delete matchingResource;
+    }
+
+    void releaseBuffer(struct wpe_fdo_shm_exported_buffer* buffer)
+    {
+        if (buffer->resource)
+            viewBackend->releaseBuffer(buffer->resource);
+        delete buffer;
     }
 
     const struct wpe_view_backend_exportable_fdo_client* client;
@@ -189,6 +200,13 @@ wpe_view_backend_exportable_fdo_dispatch_frame_complete(struct wpe_view_backend_
 __attribute__((visibility("default")))
 void
 wpe_view_backend_exportable_fdo_dispatch_release_buffer(struct wpe_view_backend_exportable_fdo* exportable, struct wl_resource* buffer)
+{
+    static_cast<ClientBundleBuffer*>(exportable->clientBundle)->releaseBuffer(buffer);
+}
+
+__attribute__((visibility("default")))
+void
+wpe_view_backend_exportable_fdo_dispatch_release_shm_exported_buffer(struct wpe_view_backend_exportable_fdo* exportable, struct wpe_fdo_shm_exported_buffer* buffer)
 {
     static_cast<ClientBundleBuffer*>(exportable->clientBundle)->releaseBuffer(buffer);
 }
