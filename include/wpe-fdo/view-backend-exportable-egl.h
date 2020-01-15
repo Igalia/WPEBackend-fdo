@@ -38,16 +38,16 @@ extern "C" {
 
 typedef void* EGLImageKHR;
 
-struct wpe_view_backend_exportable_fdo;
-
 struct wpe_fdo_egl_exported_image;
+struct wpe_fdo_shm_exported_buffer;
+struct wpe_view_backend_exportable_fdo;
 
 struct wpe_view_backend_exportable_fdo_egl_client {
     void (*export_egl_image)(void* data, EGLImageKHR image);
     void (*export_fdo_egl_image)(void* data, struct wpe_fdo_egl_exported_image* image);
+    void (*export_shm_buffer)(void* data, struct wpe_fdo_shm_exported_buffer* buffer);
     void (*_wpe_reserved0)(void);
     void (*_wpe_reserved1)(void);
-    void (*_wpe_reserved2)(void);
 };
 
 struct wpe_view_backend_exportable_fdo*
@@ -58,6 +58,9 @@ wpe_view_backend_exportable_fdo_egl_dispatch_release_image(struct wpe_view_backe
 
 void
 wpe_view_backend_exportable_fdo_egl_dispatch_release_exported_image(struct wpe_view_backend_exportable_fdo*, struct wpe_fdo_egl_exported_image*);
+
+void
+wpe_view_backend_exportable_fdo_egl_dispatch_release_shm_exported_buffer(struct wpe_view_backend_exportable_fdo*, struct wpe_fdo_shm_exported_buffer*);
 
 #ifdef __cplusplus
 }
