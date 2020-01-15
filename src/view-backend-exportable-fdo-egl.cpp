@@ -23,6 +23,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "exported-buffer-shm-private.h"
 #include "view-backend-exportable-fdo-egl-private.h"
 #include "view-backend-exportable-private.h"
 #include "ws.h"
@@ -103,9 +104,12 @@ public:
         client->export_egl_image(data, image);
     }
 
-    void exportBuffer(struct wl_resource*, struct wl_shm_buffer*) override
+    void exportBuffer(struct wl_resource* bufferResource, struct wl_shm_buffer* shmBuffer) override
     {
-        assert(!"noop");
+        auto* buffer = new struct wpe_fdo_shm_exported_buffer;
+        buffer->resource = bufferResource;
+        buffer->shm_buffer = shmBuffer;
+        client->export_shm_buffer(data, buffer);
     }
 
     void releaseImage(EGLImageKHR image)
@@ -200,9 +204,12 @@ public:
         exportImage(image);
     }
 
-    void exportBuffer(struct wl_resource*, struct wl_shm_buffer*) override
+    void exportBuffer(struct wl_resource* bufferResource, struct wl_shm_buffer* shmBuffer) override
     {
-        assert(!"noop");
+        auto* buffer = new struct wpe_fdo_shm_exported_buffer;
+        buffer->resource = bufferResource;
+        buffer->shm_buffer = shmBuffer;
+        client->export_shm_buffer(data, buffer);
     }
 
     void releaseImage(struct wpe_fdo_egl_exported_image* image)
@@ -213,6 +220,13 @@ public:
             viewBackend->releaseBuffer(image->bufferResource);
         else
             deleteImage(image);
+    }
+
+    void releaseShmBuffer(struct wpe_fdo_shm_exported_buffer* buffer)
+    {
+        if (buffer->resource)
+            viewBackend->releaseBuffer(buffer->resource);
+        delete buffer;
     }
 
     const struct wpe_view_backend_exportable_fdo_egl_client* client;
@@ -289,6 +303,13 @@ void
 wpe_view_backend_exportable_fdo_egl_dispatch_release_exported_image(struct wpe_view_backend_exportable_fdo* exportable, struct wpe_fdo_egl_exported_image* image)
 {
     static_cast<ClientBundleEGL*>(exportable->clientBundle)->releaseImage(image);
+}
+
+__attribute__((visibility("default")))
+void
+wpe_view_backend_exportable_fdo_egl_dispatch_release_shm_exported_buffer(struct wpe_view_backend_exportable_fdo* exportable, struct wpe_fdo_shm_exported_buffer* buffer)
+{
+    static_cast<ClientBundleEGL*>(exportable->clientBundle)->releaseShmBuffer(buffer);
 }
 
 }
