@@ -169,6 +169,11 @@ public:
     void update(uint32_t id, int fd, int32_t x, int32_t y, int32_t width, int32_t height, uint32_t stride,
         wpe_video_plane_display_dmabuf_source_update_release_notify_t notify, void* notify_data)
     {
+        if (!m_wl.videoPlaneDisplayDmaBuf) {
+            notify(notify_data);
+            return;
+        }
+
         auto* update = wpe_video_plane_display_dmabuf_create_update(m_wl.videoPlaneDisplayDmaBuf, id, fd, x, y, width, height, stride);
 
         wl_proxy_set_queue(reinterpret_cast<struct wl_proxy*>(update), DmaBufThread::singleton().eventQueue());
@@ -177,7 +182,8 @@ public:
 
     void end_of_stream(uint32_t id)
     {
-        wpe_video_plane_display_dmabuf_end_of_stream(m_wl.videoPlaneDisplayDmaBuf, id);
+        if (m_wl.videoPlaneDisplayDmaBuf)
+            wpe_video_plane_display_dmabuf_end_of_stream(m_wl.videoPlaneDisplayDmaBuf, id);
     }
 
 private:
