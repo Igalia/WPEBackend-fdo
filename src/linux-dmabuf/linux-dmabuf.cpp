@@ -7,6 +7,7 @@
 #include "linux-dmabuf.h"
 #include "linux-dmabuf-unstable-v1-server-protocol.h"
 #include "ws.h"
+#include <mutex>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -356,6 +357,18 @@ static const struct zwp_linux_dmabuf_v1_interface linux_dmabuf_implementation = 
     .create_params = linux_dmabuf_create_params,
 };
 
+static bool forceDMABufLinearModifiers()
+{
+    static bool s_forceDMABufLinearModifiers;
+    static std::once_flag s_onceFlag;
+    std::call_once(s_onceFlag,
+        [&] {
+            s_forceDMABufLinearModifiers = !!getenv("WPEBACKEND_FDO_FORCE_DMABUF_LINEAR_MODIFIERS");
+        });
+
+    return s_forceDMABufLinearModifiers;
+}
+
 static void
 bind_linux_dmabuf(struct wl_client *client, void *data, uint32_t version, uint32_t id)
 {
@@ -371,6 +384,11 @@ bind_linux_dmabuf(struct wl_client *client, void *data, uint32_t version, uint32
                                    data, NULL);
 
     WS::Instance::singleton().foreachDmaBufModifier([version, resource] (int format, uint64_t modifier) {
+        // Don't advertise non-linear and non-invalid modifiers if forced to do so.
+        if (modifier != DRM_FORMAT_MOD_LINEAR && modifier != DRM_FORMAT_MOD_INVALID
+            && forceDMABufLinearModifiers())
+            return;
+
         if (version >= ZWP_LINUX_DMABUF_V1_MODIFIER_SINCE_VERSION) {
             uint32_t modifier_lo = modifier & 0xFFFFFFFF;
             uint32_t modifier_hi = modifier >> 32;
