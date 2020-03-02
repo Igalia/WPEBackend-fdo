@@ -117,7 +117,7 @@ GSourceFuncs ServerSource::s_sourceFuncs = {
 
         if (source.pfd.revents & G_IO_IN) {
             struct wl_event_loop* eventLoop = wl_display_get_event_loop(source.display);
-            wl_event_loop_dispatch(eventLoop, -1);
+            wl_event_loop_dispatch(eventLoop, 0);
             wl_display_flush_clients(source.display);
         }
 
