@@ -37,6 +37,7 @@ struct wpe_video_plane_display_dmabuf_export;
 namespace WS {
 
 struct ExportableClient {
+    virtual ~ExportableClient() = default;
     virtual void frameCallback(struct wl_resource*) = 0;
     virtual void exportBufferResource(struct wl_resource*) = 0;
     virtual void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) = 0;
