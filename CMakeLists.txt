@@ -43,7 +43,7 @@ find_package(EGL REQUIRED)
 find_package(GLIB REQUIRED COMPONENTS gio gobject)
 find_package(Wayland REQUIRED client server egl)
 find_package(WaylandScanner REQUIRED)
-find_package(WPE REQUIRED)
+find_package(WPE 1.5.90 REQUIRED)
 
 add_definitions(-DWPE_FDO_COMPILATION -DG_LOG_DOMAIN=\"WPE-FDO\")
 
