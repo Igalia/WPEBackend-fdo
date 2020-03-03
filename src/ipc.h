@@ -32,6 +32,7 @@ namespace FdoIPC {
 
 class MessageReceiver {
 public:
+    virtual ~MessageReceiver() = default;
     virtual void didReceiveMessage(uint32_t messageId, uint32_t messageBody) = 0;
 };
 
