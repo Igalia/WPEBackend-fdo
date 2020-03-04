@@ -1,3 +1,10 @@
+=====================
+1.4.2 - March 4, 2020
+=====================
+
+- Fix build failures with EGL implementations which do not provide an
+  EGL/eglmesaext.h header.
+
 ========================
 1.4.1 - February 4, 2020
 ========================
