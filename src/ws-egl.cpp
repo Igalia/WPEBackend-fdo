@@ -29,6 +29,7 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <cassert>
+#include <cstring>
 
 #ifndef EGL_WL_bind_wayland_display
 #define EGL_WAYLAND_BUFFER_WL 0x31D5
