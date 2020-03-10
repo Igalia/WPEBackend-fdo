@@ -24,6 +24,7 @@
  */
 
 #include "exported-buffer-shm-private.h"
+#include "linux-dmabuf/linux-dmabuf.h"
 #include "view-backend-exportable-private.h"
 #include "ws.h"
 #include <cassert>
