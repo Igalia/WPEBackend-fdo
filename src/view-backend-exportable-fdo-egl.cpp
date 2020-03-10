@@ -24,9 +24,10 @@
  */
 
 #include "exported-buffer-shm-private.h"
+#include "linux-dmabuf/linux-dmabuf.h"
 #include "view-backend-exportable-fdo-egl-private.h"
 #include "view-backend-exportable-private.h"
-#include "ws.h"
+#include "ws-egl.h"
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <cassert>
@@ -60,7 +61,7 @@ public:
         BufferResource* resource;
         BufferResource* next;
         wl_list_for_each_safe(resource, next, &bufferResources, link) {
-            WS::Instance::singleton().destroyImage(resource->image);
+            WS::instanceImpl<WS::ImplEGL>().destroyImage(resource->image);
             viewBackend->releaseBuffer(resource->resource);
 
             wl_list_remove(&resource->link);
@@ -72,7 +73,7 @@ public:
 
     void exportBuffer(struct wl_resource *buffer) override
     {
-        EGLImageKHR image = WS::Instance::singleton().createImage(buffer);
+        EGLImageKHR image = WS::instanceImpl<WS::ImplEGL>().createImage(buffer);
         if (!image)
             return;
 
@@ -89,7 +90,7 @@ public:
 
     void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer) override
     {
-        EGLImageKHR image = WS::Instance::singleton().createImage(dmabuf_buffer);
+        EGLImageKHR image = WS::instanceImpl<WS::ImplEGL>().createImage(dmabuf_buffer);
         if (!image)
             return;
 
@@ -123,7 +124,7 @@ public:
             }
         }
 
-        WS::Instance::singleton().destroyImage(image);
+        WS::instanceImpl<WS::ImplEGL>().destroyImage(image);
 
         if (matchingResource) {
             viewBackend->releaseBuffer(matchingResource->resource);
@@ -166,14 +167,14 @@ public:
             return;
         }
 
-        EGLImageKHR eglImage = WS::Instance::singleton().createImage(bufferResource);
+        EGLImageKHR eglImage = WS::instanceImpl<WS::ImplEGL>().createImage(bufferResource);
         if (!eglImage)
             return;
 
         auto* image = new struct wpe_fdo_egl_exported_image;
         image->eglImage = eglImage;
         image->bufferResource = bufferResource;
-        WS::Instance::singleton().queryBufferSize(bufferResource, &image->width, &image->height);
+        WS::instanceImpl<WS::ImplEGL>().queryBufferSize(bufferResource, &image->width, &image->height);
         wl_list_init(&image->bufferDestroyListener.link);
         image->bufferDestroyListener.notify = bufferDestroyListenerCallback;
         wl_resource_add_destroy_listener(bufferResource, &image->bufferDestroyListener);
@@ -188,7 +189,7 @@ public:
             return;
         }
 
-        EGLImageKHR eglImage = WS::Instance::singleton().createImage(dmabufBuffer);
+        EGLImageKHR eglImage = WS::instanceImpl<WS::ImplEGL>().createImage(dmabufBuffer);
         if (!eglImage)
             return;
 
@@ -251,7 +252,7 @@ private:
     static void deleteImage(struct wpe_fdo_egl_exported_image* image)
     {
         assert(image->eglImage);
-        WS::Instance::singleton().destroyImage(image->eglImage);
+        WS::instanceImpl<WS::ImplEGL>().destroyImage(image->eglImage);
 
         delete image;
     }

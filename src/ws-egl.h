@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017, 2018 Igalia S.L.
+ * Copyright (C) 2020 Igalia S.L.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,20 +23,53 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "wpe-fdo/initialize-egl.h"
+#pragma once
 
-#include "ws-egl.h"
+#include "ws.h"
+#include <functional>
 
-extern "C" {
+typedef void *EGLDisplay;
+typedef void *EGLImageKHR;
 
-__attribute__((visibility("default")))
-bool
-wpe_fdo_initialize_for_egl_display(EGLDisplay display)
+namespace WS {
+
+class ImplEGL final : public Instance::Impl {
+public:
+    ImplEGL();
+    virtual ~ImplEGL();
+
+    Type type() const override { return Instance::Impl::Type::EGL; }
+    bool initialized() const override { return m_initialized; }
+
+    void surfaceAttach(Surface&, struct wl_resource*) override;
+    void surfaceCommit(Surface&) override;
+
+    bool initialize(EGLDisplay);
+
+    EGLImageKHR createImage(struct wl_resource*);
+    EGLImageKHR createImage(const struct linux_dmabuf_buffer*);
+    void destroyImage(EGLImageKHR);
+    void queryBufferSize(struct wl_resource*, uint32_t* width, uint32_t* height);
+
+    void importDmaBufBuffer(struct linux_dmabuf_buffer*);
+    const struct linux_dmabuf_buffer* getDmaBufBuffer(struct wl_resource*) const;
+    void foreachDmaBufModifier(std::function<void (int format, uint64_t modifier)>);
+
+private:
+    bool m_initialized { false };
+    EGLDisplay m_eglDisplay;
+
+    struct {
+        struct wl_global* global;
+        struct wl_list buffers;
+    } m_dmabuf;
+};
+
+template<>
+auto inline instanceImpl<ImplEGL>() -> ImplEGL&
 {
-    WS::Instance::construct(std::unique_ptr<WS::ImplEGL>(new WS::ImplEGL));
-
     auto& instance = WS::Instance::singleton();
-    return static_cast<WS::ImplEGL&>(instance.impl()).initialize(display);
+    return static_cast<ImplEGL&>(instance.impl());
 }
 
-}
+} // namespace WS

@@ -6,7 +6,7 @@
 #include <assert.h>
 #include "linux-dmabuf.h"
 #include "linux-dmabuf-unstable-v1-server-protocol.h"
-#include "ws.h"
+#include "ws-egl.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -104,7 +104,7 @@ import_dmabuf(struct linux_dmabuf_buffer *dmabuf)
     }
 
     /* Accept the buffer. */
-    WS::Instance::singleton().importDmaBufBuffer(dmabuf);
+    WS::instanceImpl<WS::ImplEGL>().importDmaBufBuffer(dmabuf);
 
     return true;
 }
@@ -370,15 +370,16 @@ bind_linux_dmabuf(struct wl_client *client, void *data, uint32_t version, uint32
     wl_resource_set_implementation(resource, &linux_dmabuf_implementation,
                                    data, NULL);
 
-    WS::Instance::singleton().foreachDmaBufModifier([version, resource] (int format, uint64_t modifier) {
-        if (version >= ZWP_LINUX_DMABUF_V1_MODIFIER_SINCE_VERSION) {
-            uint32_t modifier_lo = modifier & 0xFFFFFFFF;
-            uint32_t modifier_hi = modifier >> 32;
-            zwp_linux_dmabuf_v1_send_modifier(resource, format, modifier_hi, modifier_lo);
-        } else if (modifier == DRM_FORMAT_MOD_LINEAR || modifier == DRM_FORMAT_MOD_INVALID) {
-            zwp_linux_dmabuf_v1_send_format(resource, format);
-        }
-    });
+    WS::instanceImpl<WS::ImplEGL>().foreachDmaBufModifier(
+        [version, resource] (int format, uint64_t modifier) {
+            if (version >= ZWP_LINUX_DMABUF_V1_MODIFIER_SINCE_VERSION) {
+                uint32_t modifier_lo = modifier & 0xFFFFFFFF;
+                uint32_t modifier_hi = modifier >> 32;
+                zwp_linux_dmabuf_v1_send_modifier(resource, format, modifier_hi, modifier_lo);
+            } else if (modifier == DRM_FORMAT_MOD_LINEAR || modifier == DRM_FORMAT_MOD_INVALID) {
+                zwp_linux_dmabuf_v1_send_format(resource, format);
+            }
+        });
 }
 
 /** Advertise linux_dmabuf support.

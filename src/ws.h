@@ -25,15 +25,13 @@
 
 #pragma once
 
-#include <glib.h>
 #include <functional>
+#include <glib.h>
+#include <memory>
 #include <unordered_map>
 #include <wayland-server.h>
-#include "linux-dmabuf/linux-dmabuf.h"
 
-typedef void *EGLDisplay;
-typedef void *EGLImageKHR;
-
+struct linux_dmabuf_buffer;
 struct wpe_video_plane_display_dmabuf_export;
 
 namespace WS {
@@ -46,34 +44,52 @@ struct ExportableClient {
 };
 
 struct Surface;
+struct Surface {
+    uint32_t id { 0 };
+    struct wl_client* client { nullptr };
+
+    ExportableClient* exportableClient { nullptr };
+
+    struct wl_resource* bufferResource { nullptr };
+    const struct linux_dmabuf_buffer* dmabufBuffer { nullptr };
+    struct wl_shm_buffer* shmBuffer { nullptr };
+};
 
 class Instance {
 public:
+    class Impl {
+    public:
+        enum class Type {
+            EGL,
+        };
+
+        Impl() = default;
+        virtual ~Impl() = default;
+
+        void setInstance(Instance& instance) { m_instance = &instance; }
+        struct wl_display* display() { return m_instance->m_display; }
+
+        virtual Type type() const = 0;
+        virtual bool initialized() const = 0;
+
+        virtual void surfaceAttach(Surface&, struct wl_resource*) = 0;
+        virtual void surfaceCommit(Surface&) = 0;
+
+    private:
+        Instance* m_instance { nullptr };
+    };
+
+    static void construct(std::unique_ptr<Impl>&&);
     static Instance& singleton();
     ~Instance();
 
-    bool initialize(EGLDisplay);
+    Impl& impl() { return *m_impl; }
 
     int createClient();
 
     void registerSurface(uint32_t, Surface*);
     struct wl_client* registerViewBackend(uint32_t, ExportableClient&);
     void unregisterViewBackend(uint32_t);
-
-    EGLDisplay getEGLDisplay()
-    {
-        return m_eglDisplay;
-    }
-
-    EGLImageKHR createImage(struct wl_resource*);
-    EGLImageKHR createImage(const struct linux_dmabuf_buffer*);
-    void destroyImage(EGLImageKHR);
-
-    void queryBufferSize(struct wl_resource*, uint32_t* width, uint32_t* height);
-
-    void importDmaBufBuffer(struct linux_dmabuf_buffer*);
-    const struct linux_dmabuf_buffer* getDmaBufBuffer(struct wl_resource*) const;
-    void foreachDmaBufModifier(std::function<void (int format, uint64_t modifier)>);
 
     using VideoPlaneDisplayDmaBufCallback = std::function<void(struct wpe_video_plane_display_dmabuf_export*, uint32_t, int, int32_t, int32_t, int32_t, int32_t, uint32_t)>;
     using VideoPlaneDisplayDmaBufEndOfStreamCallback = std::function<void(uint32_t)>;
@@ -83,18 +99,18 @@ public:
     void releaseVideoPlaneDisplayDmaBufExport(struct wpe_video_plane_display_dmabuf_export*);
 
 private:
-    Instance();
+    friend class Impl;
+
+    Instance(std::unique_ptr<Impl>&&);
+
+    std::unique_ptr<Impl> m_impl;
 
     struct wl_display* m_display { nullptr };
     struct wl_global* m_compositor { nullptr };
     struct wl_global* m_wpeBridge { nullptr };
-    struct wl_global* m_linuxDmabuf { nullptr };
-    struct wl_list m_dmabufBuffers;
     GSource* m_source { nullptr };
 
     std::unordered_map<uint32_t, Surface*> m_viewBackendMap;
-
-    EGLDisplay m_eglDisplay;
 
     struct {
         struct wl_global* object { nullptr };
@@ -102,5 +118,8 @@ private:
         VideoPlaneDisplayDmaBufEndOfStreamCallback endOfStreamCallback;
     } m_videoPlaneDisplayDmaBuf;
 };
+
+template<typename T>
+auto instanceImpl() -> T& = delete;
 
 } // namespace WS

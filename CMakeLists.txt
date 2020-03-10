@@ -101,6 +101,7 @@ set(WPEBACKEND_FDO_SOURCES
     src/view-backend-exportable-private.cpp
     src/ws.cpp
     src/ws-client.cpp
+    src/ws-egl.cpp
 
     src/extensions/video-plane-display-dmabuf.cpp
     src/extensions/video-plane-display-dmabuf-receiver.cpp
