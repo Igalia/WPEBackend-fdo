@@ -32,10 +32,10 @@
 
 #define __WPE_FDO_EGL_H_INSIDE__
 
-#include <wpe/exported-buffer-shm.h>
-#include <wpe/exported-image-egl.h>
-#include <wpe/initialize-egl.h>
-#include <wpe/view-backend-exportable-egl.h>
+#include "exported-buffer-shm.h"
+#include "exported-image-egl.h"
+#include "initialize-egl.h"
+#include "view-backend-exportable-egl.h"
 
 #undef __WPE_FDO_EGL_H_INSIDE__
 

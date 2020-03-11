@@ -33,8 +33,8 @@
 #define __WPE_FDO_H_INSIDE__
 
 #include "version.h"
-#include <wpe/exported-buffer-shm.h>
-#include <wpe/view-backend-exportable.h>
+#include "exported-buffer-shm.h"
+#include "view-backend-exportable.h"
 
 #undef __WPE_FDO_H_INSIDE__
 
