@@ -1,4 +1,11 @@
 ======================
+1.6.0 - March 12, 2020
+======================
+
+- Fix building the documentation.
+- Ensure that only symbols marked as public are exported.
+
+======================
 1.5.90 - March 2, 2020
 ======================
 
