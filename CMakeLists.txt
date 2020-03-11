@@ -197,7 +197,9 @@ if (BUILD_DOCS)
                     ${CMAKE_SOURCE_DIR}/include/wpe-fdo/extensions/*.h
                 --c-include-directories
                     ${CMAKE_SOURCE_DIR}/include
+                    ${CMAKE_BINARY_DIR}/wpe-fdo
                     ${WPEBACKEND_FDO_INCLUDE_DIRECTORIES}
+                    ${WPE_INCLUDE_DIR}
         )
     else ()
         message(FATAL_ERROR "Hotdoc C extension not found, can't build documentation.")
