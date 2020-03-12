@@ -151,5 +151,11 @@ foreach (_comp IN LISTS Wayland_FIND_COMPONENTS)
     endif ()
 endforeach ()
 
+if (Wayland_FIND_VERSION AND
+        Wayland_VERSION VERSION_LESS Wayland_FIND_VERSION)
+    message(FATAL_ERROR "Package Wayland has version '${Wayland_VERSION}', "
+                        "required version is '>= ${Wayland_FIND_VERSION}'")
+endif ()
+
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Wayland REQUIRED_VARS Wayland_VERSION HANDLE_COMPONENTS)
