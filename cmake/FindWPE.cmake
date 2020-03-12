@@ -31,6 +31,11 @@
 find_package(PkgConfig)
 pkg_check_modules(WPE IMPORTED_TARGET wpe-1.0)
 
+if (WPE_FIND_VERSION AND WPE_VERSION VERSION_LESS WPE_FIND_VERSION)
+    message(FATAL_ERROR "Package WPE has version '${WPE_VERSION}', "
+                        "required version is '>= '${WPE_FIND_VERSION}'")
+endif ()
+
 find_path(WPE_INCLUDE_DIR
     NAMES wpe/wpe.h
     HINTS ${WPE_INCLUDEDIR} ${WPE_INCLUDE_DIRS}
