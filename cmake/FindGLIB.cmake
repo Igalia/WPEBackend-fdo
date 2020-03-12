@@ -44,6 +44,11 @@
 find_package(PkgConfig)
 pkg_check_modules(PC_GLIB QUIET glib-2.0)
 
+if (GLIB_FIND_VERSION AND PC_GLIB_VERSION VERSION_LESS GLIB_FIND_VERSION)
+    message(FATAL_ERROR "Package GLIB has version '${PC_GLIB_VERSION}', "
+                        "required version is '>= ${GLIB_FIND_VERSION}'")
+endif ()
+
 find_library(GLIB_LIBRARIES
     NAMES glib-2.0
     HINTS ${PC_GLIB_LIBDIR}
