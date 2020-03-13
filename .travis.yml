@@ -37,6 +37,7 @@ install: |-
     git reset --hard
     git clean -qxdff
     git checkout -f master
+    git pull
   else
     echo 'Cloning libwpe afresh...'
     rm -rf ~/libwpe/
