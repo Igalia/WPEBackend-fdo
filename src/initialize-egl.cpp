@@ -33,7 +33,8 @@ __attribute__((visibility("default")))
 bool
 wpe_fdo_initialize_for_egl_display(EGLDisplay display)
 {
-    WS::Instance::construct(std::unique_ptr<WS::ImplEGL>(new WS::ImplEGL));
+    if (!WS::Instance::isConstructed())
+        WS::Instance::construct(std::unique_ptr<WS::ImplEGL>(new WS::ImplEGL));
 
     auto& instance = WS::Instance::singleton();
     return static_cast<WS::ImplEGL&>(instance.impl()).initialize(display);
