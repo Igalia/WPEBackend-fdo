@@ -79,6 +79,7 @@ public:
         Instance* m_instance { nullptr };
     };
 
+    static bool isConstructed();
     static void construct(std::unique_ptr<Impl>&&);
     static Instance& singleton();
     ~Instance();

@@ -221,9 +221,14 @@ void Instance::construct(std::unique_ptr<Impl>&& impl)
     s_singleton = new Instance(std::move(impl));
 }
 
+bool Instance::isConstructed()
+{
+    return !!s_singleton;
+}
+
 Instance& Instance::singleton()
 {
-    assert(!!s_singleton);
+    assert(isConstructed());
     return *s_singleton;
 }
 
