@@ -60,7 +60,7 @@ private:
     EGLDisplay m_eglDisplay;
 
     struct {
-        struct wl_global* global;
+        struct wl_global* global { nullptr };
         struct wl_list buffers;
     } m_dmabuf;
 };
