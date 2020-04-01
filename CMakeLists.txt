@@ -76,6 +76,10 @@ set(WPEBACKEND_FDO_PUBLIC_HEADERS
     include/wpe-fdo/fdo-egl.h
     include/wpe-fdo/fdo.h
 )
+set(WPEBACKEND_FDO_UNSTABLE_PUBLIC_HEADERS
+    include/wpe-fdo/unstable/fdo-shm.h
+    include/wpe-fdo/unstable/initialize-shm.h
+)
 
 set(WPEBACKEND_FDO_EXTENSIONS_PUBLIC_HEADERS
     include/wpe-fdo/extensions/video-plane-display-dmabuf.h
@@ -93,6 +97,7 @@ set(WPEBACKEND_FDO_SOURCES
     src/exported-image-egl.cpp
     src/fdo.cpp
     src/initialize-egl.cpp
+    src/initialize-shm.cpp
     src/ipc.cpp
     src/renderer-backend-egl.cpp
     src/renderer-host.cpp
@@ -102,6 +107,7 @@ set(WPEBACKEND_FDO_SOURCES
     src/ws.cpp
     src/ws-client.cpp
     src/ws-egl.cpp
+    src/ws-shm.cpp
 
     src/extensions/video-plane-display-dmabuf.cpp
     src/extensions/video-plane-display-dmabuf-receiver.cpp
@@ -161,6 +167,10 @@ install(
 install(
     FILES ${WPEBACKEND_FDO_PUBLIC_HEADERS}
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wpe-fdo-${WPEBACKEND_FDO_API_VERSION}/wpe
+)
+install(
+    FILES ${WPEBACKEND_FDO_UNSTABLE_PUBLIC_HEADERS}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wpe-fdo-${WPEBACKEND_FDO_API_VERSION}/wpe/unstable
 )
 install(
     FILES ${WPEBACKEND_FDO_EXTENSIONS_PUBLIC_HEADERS}

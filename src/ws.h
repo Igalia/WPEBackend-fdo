@@ -61,6 +61,7 @@ public:
     public:
         enum class Type {
             EGL,
+            SHM,
         };
 
         Impl() = default;
