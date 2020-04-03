@@ -23,29 +23,24 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if !defined(__WPE_FDO_EGL_H_INSIDE__) && !defined(__WPE_FDO_SHM_H_INSIDE__) && !defined(__WPE_FDO_H_INSIDE__) && !defined(WPE_FDO_COMPILATION)
-#error "Only <wpe/fdo-egl.h>, <wpe/unstable/fdo-shm.h> or <wpe/fdo.h> can be included directly."
+#if !defined(__WPE_FDO_SHM_H_INSIDE__) && !defined(WPE_FDO_COMPILATION)
+#error "Only <wpe/unstable/fdo-shm.h> can be included directly."
 #endif
 
-#ifndef __exported_buffer_shm_h__
-#define __exported_buffer_shm_h__
+#ifndef __initialize_shm_h__
+#define __initialize_shm_h__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <wpe/wpe.h>
+#include <stdbool.h>
 
-struct wpe_fdo_shm_exported_buffer;
-
-struct wl_resource;
-struct wl_shm_buffer;
-
-struct wl_shm_buffer*
-wpe_fdo_shm_exported_buffer_get_shm_buffer(struct wpe_fdo_shm_exported_buffer*);
+bool
+wpe_fdo_initialize_shm(void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __exported_buffer_shm_h__ */
+#endif /* __initialize_shm_h__ */
