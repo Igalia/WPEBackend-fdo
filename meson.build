@@ -90,6 +90,7 @@ unstable_api_headers = [
 add_project_arguments(
 	'-DWPE_FDO_COMPILATION=1',
 	'-DG_LOG_DOMAIN="WPE-FDO"',
+	'-D_LARGEFILE64_SOURCE=1',
 	language: ['c', 'cpp']
 )
 

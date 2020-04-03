@@ -49,6 +49,7 @@ add_compile_definitions(
     WPE_FDO_COMPILATION
     G_LOG_DOMAIN=\"WPE-FDO\"
     _FILE_OFFSET_BITS=64
+    _LARGEFILE64_SOURCE=1
 )
 
 configure_file(include/wpe-fdo/version.h.cmake "${CMAKE_BINARY_DIR}/version.h" @ONLY)
