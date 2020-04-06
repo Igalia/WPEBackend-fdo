@@ -11,6 +11,7 @@ addons:
     packages:
       - cmake
       - libegl1-mesa-dev
+      - libepoxy-dev
       - libglib2.0-dev
       - libxkbcommon-dev
       - libwayland-dev
