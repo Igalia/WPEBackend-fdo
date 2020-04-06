@@ -26,8 +26,7 @@
 #include "ws-egl.h"
 
 #include "linux-dmabuf/linux-dmabuf.h"
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
+#include <epoxy/egl.h>
 #include <cassert>
 #include <cstring>
 
@@ -77,21 +76,6 @@ static PFNEGLQUERYDMABUFFORMATSEXTPROC s_eglQueryDmaBufFormatsEXT;
 static PFNEGLQUERYDMABUFMODIFIERSEXTPROC s_eglQueryDmaBufModifiersEXT;
 
 namespace WS {
-
-static bool isEGLExtensionSupported(const char* extensionList, const char* extension)
-{
-    if (!extensionList)
-        return false;
-
-    int extensionLen = strlen(extension);
-    const char* extensionListPtr = extensionList;
-    while ((extensionListPtr = strstr(extensionListPtr, extension))) {
-        if (extensionListPtr[extensionLen] == ' ' || extensionListPtr[extensionLen] == '\0')
-            return true;
-        extensionListPtr += extensionLen;
-    }
-    return false;
-}
 
 ImplEGL::ImplEGL()
     : m_eglDisplay(EGL_NO_DISPLAY)
@@ -154,15 +138,14 @@ bool ImplEGL::initialize(EGLDisplay eglDisplay)
     if (wl_display_init_shm(display()) != 0)
         return false;
 
-    const char* extensions = eglQueryString(eglDisplay, EGL_EXTENSIONS);
-    if (isEGLExtensionSupported(extensions, "EGL_WL_bind_wayland_display")) {
+    if (epoxy_has_egl_extension(eglDisplay, "EGL_WL_bind_wayland_display")) {
         s_eglBindWaylandDisplayWL = reinterpret_cast<PFNEGLBINDWAYLANDDISPLAYWL>(eglGetProcAddress("eglBindWaylandDisplayWL"));
         assert(s_eglBindWaylandDisplayWL);
         s_eglQueryWaylandBufferWL = reinterpret_cast<PFNEGLQUERYWAYLANDBUFFERWL>(eglGetProcAddress("eglQueryWaylandBufferWL"));
         assert(s_eglQueryWaylandBufferWL);
     }
 
-    if (isEGLExtensionSupported(extensions, "EGL_KHR_image_base")) {
+    if (epoxy_has_egl_extension(eglDisplay, "EGL_KHR_image_base")) {
         s_eglCreateImageKHR = reinterpret_cast<PFNEGLCREATEIMAGEKHRPROC>(eglGetProcAddress("eglCreateImageKHR"));
         assert(s_eglCreateImageKHR);
         s_eglDestroyImageKHR = reinterpret_cast<PFNEGLDESTROYIMAGEKHRPROC>(eglGetProcAddress("eglDestroyImageKHR"));
@@ -180,8 +163,8 @@ bool ImplEGL::initialize(EGLDisplay eglDisplay)
     m_eglDisplay = eglDisplay;
 
     /* Initialize Linux dmabuf subsystem. */
-    if (isEGLExtensionSupported(extensions, "EGL_EXT_image_dma_buf_import")
-        && isEGLExtensionSupported(extensions, "EGL_EXT_image_dma_buf_import_modifiers")) {
+    if (epoxy_has_egl_extension(eglDisplay, "EGL_EXT_image_dma_buf_import")
+        && epoxy_has_egl_extension(eglDisplay, "EGL_EXT_image_dma_buf_import_modifiers")) {
         s_eglQueryDmaBufFormatsEXT = reinterpret_cast<PFNEGLQUERYDMABUFFORMATSEXTPROC>(eglGetProcAddress("eglQueryDmaBufFormatsEXT"));
         assert(s_eglQueryDmaBufFormatsEXT);
         s_eglQueryDmaBufModifiersEXT = reinterpret_cast<PFNEGLQUERYDMABUFMODIFIERSEXTPROC>(eglGetProcAddress("eglQueryDmaBufModifiersEXT"));
