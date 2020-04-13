@@ -78,8 +78,9 @@ static PFNEGLQUERYDMABUFMODIFIERSEXTPROC s_eglQueryDmaBufModifiersEXT;
 namespace WS {
 
 ImplEGL::ImplEGL()
-    : m_eglDisplay(EGL_NO_DISPLAY)
 {
+    m_egl.display = EGL_NO_DISPLAY;
+
     wl_list_init(&m_dmabuf.buffers);
 }
 
@@ -126,10 +127,10 @@ void ImplEGL::surfaceCommit(Surface& surface)
 
 bool ImplEGL::initialize(EGLDisplay eglDisplay)
 {
-    if (m_eglDisplay == eglDisplay)
+    if (m_egl.display == eglDisplay)
         return true;
 
-    if (m_eglDisplay != EGL_NO_DISPLAY) {
+    if (m_egl.display != EGL_NO_DISPLAY) {
         g_warning("Multiple EGL displays are not supported.\n");
         return false;
     }
@@ -160,7 +161,7 @@ bool ImplEGL::initialize(EGLDisplay eglDisplay)
     }
 
     m_initialized = true;
-    m_eglDisplay = eglDisplay;
+    m_egl.display = eglDisplay;
 
     /* Initialize Linux dmabuf subsystem. */
     if (epoxy_has_egl_extension(eglDisplay, "EGL_EXT_image_dma_buf_import")
@@ -182,9 +183,9 @@ bool ImplEGL::initialize(EGLDisplay eglDisplay)
 
 EGLImageKHR ImplEGL::createImage(struct wl_resource* resourceBuffer)
 {
-    if (m_eglDisplay == EGL_NO_DISPLAY)
+    if (m_egl.display == EGL_NO_DISPLAY)
         return EGL_NO_IMAGE_KHR;
-    return s_eglCreateImageKHR(m_eglDisplay, EGL_NO_CONTEXT, EGL_WAYLAND_BUFFER_WL, resourceBuffer, nullptr);
+    return s_eglCreateImageKHR(m_egl.display, EGL_NO_CONTEXT, EGL_WAYLAND_BUFFER_WL, resourceBuffer, nullptr);
 }
 
 EGLImageKHR ImplEGL::createImage(const struct linux_dmabuf_buffer* dmabufBuffer)
@@ -242,19 +243,19 @@ EGLImageKHR ImplEGL::createImage(const struct linux_dmabuf_buffer* dmabufBuffer)
 
     attribs[atti++] = EGL_NONE;
 
-    return s_eglCreateImageKHR(m_eglDisplay, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, nullptr, attribs);
+    return s_eglCreateImageKHR(m_egl.display, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, nullptr, attribs);
 }
 
 void ImplEGL::destroyImage(EGLImageKHR image)
 {
-    if (m_eglDisplay == EGL_NO_DISPLAY)
+    if (m_egl.display == EGL_NO_DISPLAY)
         return;
-    s_eglDestroyImageKHR(m_eglDisplay, image);
+    s_eglDestroyImageKHR(m_egl.display, image);
 }
 
 void ImplEGL::queryBufferSize(struct wl_resource* bufferResource, uint32_t* width, uint32_t* height)
 {
-    if (m_eglDisplay == EGL_NO_DISPLAY) {
+    if (m_egl.display == EGL_NO_DISPLAY) {
         if (width)
             *width = 0;
         if (height)
@@ -264,13 +265,13 @@ void ImplEGL::queryBufferSize(struct wl_resource* bufferResource, uint32_t* widt
 
     if (width) {
         int w;
-        s_eglQueryWaylandBufferWL(m_eglDisplay, bufferResource, EGL_WIDTH, &w);
+        s_eglQueryWaylandBufferWL(m_egl.display, bufferResource, EGL_WIDTH, &w);
         *width = w;
     }
 
     if (height) {
         int h;
-        s_eglQueryWaylandBufferWL(m_eglDisplay, bufferResource, EGL_HEIGHT, &h);
+        s_eglQueryWaylandBufferWL(m_egl.display, bufferResource, EGL_HEIGHT, &h);
         *height = h;
     }
 }
@@ -301,18 +302,18 @@ const struct linux_dmabuf_buffer* ImplEGL::getDmaBufBuffer(struct wl_resource* b
 
 void ImplEGL::foreachDmaBufModifier(std::function<void (int format, uint64_t modifier)> callback)
 {
-    if (m_eglDisplay == EGL_NO_DISPLAY)
+    if (m_egl.display == EGL_NO_DISPLAY)
         return;
 
     EGLint formats[128];
     EGLint numFormats;
-    if (!s_eglQueryDmaBufFormatsEXT(m_eglDisplay, 128, formats, &numFormats))
+    if (!s_eglQueryDmaBufFormatsEXT(m_egl.display, 128, formats, &numFormats))
         assert(!"Linux-dmabuf: Failed to query formats");
 
     for (int i = 0; i < numFormats; i++) {
         uint64_t modifiers[64];
         EGLint numModifiers;
-        if (!s_eglQueryDmaBufModifiersEXT(m_eglDisplay, formats[i], 64, modifiers, NULL, &numModifiers))
+        if (!s_eglQueryDmaBufModifiersEXT(m_egl.display, formats[i], 64, modifiers, NULL, &numModifiers))
             assert(!"Linux-dmabuf: Failed to query modifiers of a format");
 
         /* Send DRM_FORMAT_MOD_INVALID token when no modifiers are supported

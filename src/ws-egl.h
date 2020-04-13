@@ -57,7 +57,10 @@ public:
 
 private:
     bool m_initialized { false };
-    EGLDisplay m_eglDisplay;
+
+    struct {
+        EGLDisplay display;
+    } m_egl;
 
     struct {
         struct wl_global* global { nullptr };
