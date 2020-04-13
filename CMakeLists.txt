@@ -39,7 +39,7 @@ foreach (cflag -Wall)
     endif ()
 endforeach ()
 
-find_package(EGL REQUIRED)
+find_package(LibEpoxy REQUIRED)
 find_package(GLIB REQUIRED COMPONENTS gio gobject)
 find_package(Wayland REQUIRED client server egl)
 find_package(WaylandScanner REQUIRED)
@@ -60,7 +60,7 @@ set(WPEBACKEND_FDO_LIBRARIES
     ${GLIB_GIO_LIBRARIES}
     ${GLIB_GOBJECT_LIBRARIES}
     ${GLIB_LIBRARIES}
-    GL::egl
+    Epoxy::libepoxy
     Wayland::client
     Wayland::server
     Wayland::egl

@@ -26,8 +26,7 @@
 #include "ws-egl.h"
 
 #include "linux-dmabuf/linux-dmabuf.h"
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
+#include <epoxy/egl.h>
 #include <cassert>
 #include <cstring>
 
@@ -37,65 +36,15 @@ typedef EGLBoolean (EGLAPIENTRYP PFNEGLBINDWAYLANDDISPLAYWL) (EGLDisplay dpy, st
 typedef EGLBoolean (EGLAPIENTRYP PFNEGLQUERYWAYLANDBUFFERWL) (EGLDisplay dpy, struct wl_resource *buffer, EGLint attribute, EGLint *value);
 #endif
 
-#ifndef EGL_EXT_image_dma_buf_import_modifiers
-typedef EGLBoolean (* PFNEGLQUERYDMABUFFORMATSEXTPROC) (EGLDisplay dpy, EGLint max_formats, EGLint *formats, EGLint *num_formats);
-typedef EGLBoolean (* PFNEGLQUERYDMABUFMODIFIERSEXTPROC) (EGLDisplay dpy, EGLint format, EGLint max_modifiers, EGLuint64KHR *modifiers, EGLBoolean *external_only, EGLint *num_modifiers);
-#endif /* EGL_EXT_image_dma_buf_import_modifiers */
-
-#ifndef EGL_EXT_image_dma_buf_import
-#define EGL_LINUX_DMA_BUF_EXT             0x3270
-#define EGL_DMA_BUF_PLANE0_FD_EXT         0x3272
-#define EGL_DMA_BUF_PLANE0_OFFSET_EXT     0x3273
-#define EGL_DMA_BUF_PLANE0_PITCH_EXT      0x3274
-#define EGL_DMA_BUF_PLANE1_FD_EXT         0x3275
-#define EGL_DMA_BUF_PLANE1_OFFSET_EXT     0x3276
-#define EGL_DMA_BUF_PLANE1_PITCH_EXT      0x3277
-#define EGL_DMA_BUF_PLANE2_FD_EXT         0x3278
-#define EGL_DMA_BUF_PLANE2_OFFSET_EXT     0x3279
-#define EGL_DMA_BUF_PLANE2_PITCH_EXT      0x327A
-#endif /* EGL_EXT_image_dma_buf_import */
-
-#ifndef EGL_EXT_image_dma_buf_import_modifiers
-#define EGL_DMA_BUF_PLANE3_FD_EXT         0x3440
-#define EGL_DMA_BUF_PLANE3_OFFSET_EXT     0x3441
-#define EGL_DMA_BUF_PLANE3_PITCH_EXT      0x3442
-#define EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT 0x3443
-#define EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT 0x3444
-#define EGL_DMA_BUF_PLANE1_MODIFIER_LO_EXT 0x3445
-#define EGL_DMA_BUF_PLANE1_MODIFIER_HI_EXT 0x3446
-#define EGL_DMA_BUF_PLANE2_MODIFIER_LO_EXT 0x3447
-#define EGL_DMA_BUF_PLANE2_MODIFIER_HI_EXT 0x3448
-#define EGL_DMA_BUF_PLANE3_MODIFIER_LO_EXT 0x3449
-#define EGL_DMA_BUF_PLANE3_MODIFIER_HI_EXT 0x344A
-#endif /* EGL_EXT_image_dma_buf_import_modifiers */
-
 static PFNEGLBINDWAYLANDDISPLAYWL s_eglBindWaylandDisplayWL;
 static PFNEGLQUERYWAYLANDBUFFERWL s_eglQueryWaylandBufferWL;
-static PFNEGLCREATEIMAGEKHRPROC s_eglCreateImageKHR;
-static PFNEGLDESTROYIMAGEKHRPROC s_eglDestroyImageKHR;
-static PFNEGLQUERYDMABUFFORMATSEXTPROC s_eglQueryDmaBufFormatsEXT;
-static PFNEGLQUERYDMABUFMODIFIERSEXTPROC s_eglQueryDmaBufModifiersEXT;
 
 namespace WS {
 
-static bool isEGLExtensionSupported(const char* extensionList, const char* extension)
-{
-    if (!extensionList)
-        return false;
-
-    int extensionLen = strlen(extension);
-    const char* extensionListPtr = extensionList;
-    while ((extensionListPtr = strstr(extensionListPtr, extension))) {
-        if (extensionListPtr[extensionLen] == ' ' || extensionListPtr[extensionLen] == '\0')
-            return true;
-        extensionListPtr += extensionLen;
-    }
-    return false;
-}
-
 ImplEGL::ImplEGL()
-    : m_eglDisplay(EGL_NO_DISPLAY)
 {
+    m_egl.display = EGL_NO_DISPLAY;
+
     wl_list_init(&m_dmabuf.buffers);
 }
 
@@ -142,53 +91,44 @@ void ImplEGL::surfaceCommit(Surface& surface)
 
 bool ImplEGL::initialize(EGLDisplay eglDisplay)
 {
-    if (m_eglDisplay == eglDisplay)
+    if (m_egl.display == eglDisplay)
         return true;
 
-    if (m_eglDisplay != EGL_NO_DISPLAY) {
+    if (m_egl.display != EGL_NO_DISPLAY) {
         g_warning("Multiple EGL displays are not supported.\n");
         return false;
     }
+
+    m_egl.WL_bind_wayland_display = epoxy_has_egl_extension(m_egl.display, "EGL_WL_bind_wayland_display");
+    m_egl.KHR_image_base = epoxy_has_egl_extension(m_egl.display, "EGL_KHR_image_base");
+    m_egl.EXT_image_dma_buf_import = epoxy_has_egl_extension(m_egl.display, "EGL_EXT_image_dma_buf_import");
+    m_egl.EXT_image_dma_buf_import_modifiers = epoxy_has_egl_extension(m_egl.display, "EGL_EXT_image_dma_buf_import_modifiers");
 
     // wl_display_init_shm() returns `0` on success.
     if (wl_display_init_shm(display()) != 0)
         return false;
 
-    const char* extensions = eglQueryString(eglDisplay, EGL_EXTENSIONS);
-    if (isEGLExtensionSupported(extensions, "EGL_WL_bind_wayland_display")) {
+    if (m_egl.WL_bind_wayland_display) {
         s_eglBindWaylandDisplayWL = reinterpret_cast<PFNEGLBINDWAYLANDDISPLAYWL>(eglGetProcAddress("eglBindWaylandDisplayWL"));
         assert(s_eglBindWaylandDisplayWL);
         s_eglQueryWaylandBufferWL = reinterpret_cast<PFNEGLQUERYWAYLANDBUFFERWL>(eglGetProcAddress("eglQueryWaylandBufferWL"));
         assert(s_eglQueryWaylandBufferWL);
     }
 
-    if (isEGLExtensionSupported(extensions, "EGL_KHR_image_base")) {
-        s_eglCreateImageKHR = reinterpret_cast<PFNEGLCREATEIMAGEKHRPROC>(eglGetProcAddress("eglCreateImageKHR"));
-        assert(s_eglCreateImageKHR);
-        s_eglDestroyImageKHR = reinterpret_cast<PFNEGLDESTROYIMAGEKHRPROC>(eglGetProcAddress("eglDestroyImageKHR"));
-        assert(s_eglDestroyImageKHR);
-    }
-
     if (s_eglBindWaylandDisplayWL && s_eglQueryWaylandBufferWL) {
-        if (!s_eglCreateImageKHR || !s_eglDestroyImageKHR)
+        // Bail if EGL_KHR_image_base is not present, which is needed to create EGLImages from the received wl_resources.
+        // TODO: this is not really accurate -- we can still export raw wl_resources without having to spawn EGLImages.
+        if (!m_egl.KHR_image_base)
             return false;
+
         if (!s_eglBindWaylandDisplayWL(eglDisplay, display()))
             return false;
     }
 
     m_initialized = true;
-    m_eglDisplay = eglDisplay;
+    m_egl.display = eglDisplay;
 
-    /* Initialize Linux dmabuf subsystem. */
-    if (isEGLExtensionSupported(extensions, "EGL_EXT_image_dma_buf_import")
-        && isEGLExtensionSupported(extensions, "EGL_EXT_image_dma_buf_import_modifiers")) {
-        s_eglQueryDmaBufFormatsEXT = reinterpret_cast<PFNEGLQUERYDMABUFFORMATSEXTPROC>(eglGetProcAddress("eglQueryDmaBufFormatsEXT"));
-        assert(s_eglQueryDmaBufFormatsEXT);
-        s_eglQueryDmaBufModifiersEXT = reinterpret_cast<PFNEGLQUERYDMABUFMODIFIERSEXTPROC>(eglGetProcAddress("eglQueryDmaBufModifiersEXT"));
-        assert(s_eglQueryDmaBufModifiersEXT);
-    }
-
-    if (s_eglQueryDmaBufFormatsEXT && s_eglQueryDmaBufModifiersEXT) {
+    if (m_egl.EXT_image_dma_buf_import && m_egl.EXT_image_dma_buf_import_modifiers) {
         if (m_dmabuf.global)
             assert(!"Linux-dmabuf has already been initialized");
         m_dmabuf.global = linux_dmabuf_setup(display());
@@ -199,9 +139,11 @@ bool ImplEGL::initialize(EGLDisplay eglDisplay)
 
 EGLImageKHR ImplEGL::createImage(struct wl_resource* resourceBuffer)
 {
-    if (m_eglDisplay == EGL_NO_DISPLAY)
+    if (m_egl.display == EGL_NO_DISPLAY)
         return EGL_NO_IMAGE_KHR;
-    return s_eglCreateImageKHR(m_eglDisplay, EGL_NO_CONTEXT, EGL_WAYLAND_BUFFER_WL, resourceBuffer, nullptr);
+
+    assert(m_egl.KHR_image_base);
+    return eglCreateImageKHR(m_egl.display, EGL_NO_CONTEXT, EGL_WAYLAND_BUFFER_WL, resourceBuffer, nullptr);
 }
 
 EGLImageKHR ImplEGL::createImage(const struct linux_dmabuf_buffer* dmabufBuffer)
@@ -259,19 +201,22 @@ EGLImageKHR ImplEGL::createImage(const struct linux_dmabuf_buffer* dmabufBuffer)
 
     attribs[atti++] = EGL_NONE;
 
-    return s_eglCreateImageKHR(m_eglDisplay, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, nullptr, attribs);
+    assert(m_egl.KHR_image_base);
+    return eglCreateImageKHR(m_egl.display, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, nullptr, attribs);
 }
 
 void ImplEGL::destroyImage(EGLImageKHR image)
 {
-    if (m_eglDisplay == EGL_NO_DISPLAY)
+    if (m_egl.display == EGL_NO_DISPLAY)
         return;
-    s_eglDestroyImageKHR(m_eglDisplay, image);
+
+    assert(m_egl.KHR_image_base);
+    eglDestroyImageKHR(m_egl.display, image);
 }
 
 void ImplEGL::queryBufferSize(struct wl_resource* bufferResource, uint32_t* width, uint32_t* height)
 {
-    if (m_eglDisplay == EGL_NO_DISPLAY) {
+    if (m_egl.display == EGL_NO_DISPLAY) {
         if (width)
             *width = 0;
         if (height)
@@ -281,13 +226,13 @@ void ImplEGL::queryBufferSize(struct wl_resource* bufferResource, uint32_t* widt
 
     if (width) {
         int w;
-        s_eglQueryWaylandBufferWL(m_eglDisplay, bufferResource, EGL_WIDTH, &w);
+        s_eglQueryWaylandBufferWL(m_egl.display, bufferResource, EGL_WIDTH, &w);
         *width = w;
     }
 
     if (height) {
         int h;
-        s_eglQueryWaylandBufferWL(m_eglDisplay, bufferResource, EGL_HEIGHT, &h);
+        s_eglQueryWaylandBufferWL(m_egl.display, bufferResource, EGL_HEIGHT, &h);
         *height = h;
     }
 }
@@ -318,18 +263,20 @@ const struct linux_dmabuf_buffer* ImplEGL::getDmaBufBuffer(struct wl_resource* b
 
 void ImplEGL::foreachDmaBufModifier(std::function<void (int format, uint64_t modifier)> callback)
 {
-    if (m_eglDisplay == EGL_NO_DISPLAY)
+    if (m_egl.display == EGL_NO_DISPLAY)
         return;
+
+    assert(m_egl.EXT_image_dma_buf_import && m_egl.EXT_image_dma_buf_import_modifiers);
 
     EGLint formats[128];
     EGLint numFormats;
-    if (!s_eglQueryDmaBufFormatsEXT(m_eglDisplay, 128, formats, &numFormats))
+    if (!eglQueryDmaBufFormatsEXT(m_egl.display, 128, formats, &numFormats))
         assert(!"Linux-dmabuf: Failed to query formats");
 
     for (int i = 0; i < numFormats; i++) {
         uint64_t modifiers[64];
         EGLint numModifiers;
-        if (!s_eglQueryDmaBufModifiersEXT(m_eglDisplay, formats[i], 64, modifiers, NULL, &numModifiers))
+        if (!eglQueryDmaBufModifiersEXT(m_egl.display, formats[i], 64, modifiers, NULL, &numModifiers))
             assert(!"Linux-dmabuf: Failed to query modifiers of a format");
 
         /* Send DRM_FORMAT_MOD_INVALID token when no modifiers are supported

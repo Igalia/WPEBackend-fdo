@@ -28,8 +28,7 @@
 #include "view-backend-exportable-fdo-egl-private.h"
 #include "view-backend-exportable-private.h"
 #include "ws-egl.h"
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
+#include <epoxy/egl.h>
 #include <cassert>
 #include <list>
 #include <wpe-fdo/view-backend-exportable-egl.h>
