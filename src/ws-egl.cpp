@@ -36,42 +36,8 @@ typedef EGLBoolean (EGLAPIENTRYP PFNEGLBINDWAYLANDDISPLAYWL) (EGLDisplay dpy, st
 typedef EGLBoolean (EGLAPIENTRYP PFNEGLQUERYWAYLANDBUFFERWL) (EGLDisplay dpy, struct wl_resource *buffer, EGLint attribute, EGLint *value);
 #endif
 
-#ifndef EGL_EXT_image_dma_buf_import_modifiers
-typedef EGLBoolean (* PFNEGLQUERYDMABUFFORMATSEXTPROC) (EGLDisplay dpy, EGLint max_formats, EGLint *formats, EGLint *num_formats);
-typedef EGLBoolean (* PFNEGLQUERYDMABUFMODIFIERSEXTPROC) (EGLDisplay dpy, EGLint format, EGLint max_modifiers, EGLuint64KHR *modifiers, EGLBoolean *external_only, EGLint *num_modifiers);
-#endif /* EGL_EXT_image_dma_buf_import_modifiers */
-
-#ifndef EGL_EXT_image_dma_buf_import
-#define EGL_LINUX_DMA_BUF_EXT             0x3270
-#define EGL_DMA_BUF_PLANE0_FD_EXT         0x3272
-#define EGL_DMA_BUF_PLANE0_OFFSET_EXT     0x3273
-#define EGL_DMA_BUF_PLANE0_PITCH_EXT      0x3274
-#define EGL_DMA_BUF_PLANE1_FD_EXT         0x3275
-#define EGL_DMA_BUF_PLANE1_OFFSET_EXT     0x3276
-#define EGL_DMA_BUF_PLANE1_PITCH_EXT      0x3277
-#define EGL_DMA_BUF_PLANE2_FD_EXT         0x3278
-#define EGL_DMA_BUF_PLANE2_OFFSET_EXT     0x3279
-#define EGL_DMA_BUF_PLANE2_PITCH_EXT      0x327A
-#endif /* EGL_EXT_image_dma_buf_import */
-
-#ifndef EGL_EXT_image_dma_buf_import_modifiers
-#define EGL_DMA_BUF_PLANE3_FD_EXT         0x3440
-#define EGL_DMA_BUF_PLANE3_OFFSET_EXT     0x3441
-#define EGL_DMA_BUF_PLANE3_PITCH_EXT      0x3442
-#define EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT 0x3443
-#define EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT 0x3444
-#define EGL_DMA_BUF_PLANE1_MODIFIER_LO_EXT 0x3445
-#define EGL_DMA_BUF_PLANE1_MODIFIER_HI_EXT 0x3446
-#define EGL_DMA_BUF_PLANE2_MODIFIER_LO_EXT 0x3447
-#define EGL_DMA_BUF_PLANE2_MODIFIER_HI_EXT 0x3448
-#define EGL_DMA_BUF_PLANE3_MODIFIER_LO_EXT 0x3449
-#define EGL_DMA_BUF_PLANE3_MODIFIER_HI_EXT 0x344A
-#endif /* EGL_EXT_image_dma_buf_import_modifiers */
-
 static PFNEGLBINDWAYLANDDISPLAYWL s_eglBindWaylandDisplayWL;
 static PFNEGLQUERYWAYLANDBUFFERWL s_eglQueryWaylandBufferWL;
-static PFNEGLQUERYDMABUFFORMATSEXTPROC s_eglQueryDmaBufFormatsEXT;
-static PFNEGLQUERYDMABUFMODIFIERSEXTPROC s_eglQueryDmaBufModifiersEXT;
 
 namespace WS {
 
@@ -162,15 +128,7 @@ bool ImplEGL::initialize(EGLDisplay eglDisplay)
     m_initialized = true;
     m_egl.display = eglDisplay;
 
-    /* Initialize Linux dmabuf subsystem. */
     if (m_egl.EXT_image_dma_buf_import && m_egl.EXT_image_dma_buf_import_modifiers) {
-        s_eglQueryDmaBufFormatsEXT = reinterpret_cast<PFNEGLQUERYDMABUFFORMATSEXTPROC>(eglGetProcAddress("eglQueryDmaBufFormatsEXT"));
-        assert(s_eglQueryDmaBufFormatsEXT);
-        s_eglQueryDmaBufModifiersEXT = reinterpret_cast<PFNEGLQUERYDMABUFMODIFIERSEXTPROC>(eglGetProcAddress("eglQueryDmaBufModifiersEXT"));
-        assert(s_eglQueryDmaBufModifiersEXT);
-    }
-
-    if (s_eglQueryDmaBufFormatsEXT && s_eglQueryDmaBufModifiersEXT) {
         if (m_dmabuf.global)
             assert(!"Linux-dmabuf has already been initialized");
         m_dmabuf.global = linux_dmabuf_setup(display());
@@ -308,15 +266,17 @@ void ImplEGL::foreachDmaBufModifier(std::function<void (int format, uint64_t mod
     if (m_egl.display == EGL_NO_DISPLAY)
         return;
 
+    assert(m_egl.EXT_image_dma_buf_import && m_egl.EXT_image_dma_buf_import_modifiers);
+
     EGLint formats[128];
     EGLint numFormats;
-    if (!s_eglQueryDmaBufFormatsEXT(m_egl.display, 128, formats, &numFormats))
+    if (!eglQueryDmaBufFormatsEXT(m_egl.display, 128, formats, &numFormats))
         assert(!"Linux-dmabuf: Failed to query formats");
 
     for (int i = 0; i < numFormats; i++) {
         uint64_t modifiers[64];
         EGLint numModifiers;
-        if (!s_eglQueryDmaBufModifiersEXT(m_egl.display, formats[i], 64, modifiers, NULL, &numModifiers))
+        if (!eglQueryDmaBufModifiersEXT(m_egl.display, formats[i], 64, modifiers, NULL, &numModifiers))
             assert(!"Linux-dmabuf: Failed to query modifiers of a format");
 
         /* Send DRM_FORMAT_MOD_INVALID token when no modifiers are supported
