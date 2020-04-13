@@ -61,10 +61,12 @@ private:
     struct {
         EGLDisplay display;
 
-        bool WL_bind_wayland_display { false };
-        bool KHR_image_base { false };
-        bool EXT_image_dma_buf_import { false };
-        bool EXT_image_dma_buf_import_modifiers { false };
+        struct {
+            bool WL_bind_wayland_display { false };
+            bool KHR_image_base { false };
+            bool EXT_image_dma_buf_import { false };
+            bool EXT_image_dma_buf_import_modifiers { false };
+        } extensions;
     } m_egl;
 
     struct {
