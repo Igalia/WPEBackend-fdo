@@ -135,18 +135,23 @@ bool ImplEGL::initialize(EGLDisplay eglDisplay)
         return false;
     }
 
+    m_egl.WL_bind_wayland_display = epoxy_has_egl_extension(m_egl.display, "EGL_WL_bind_wayland_display");
+    m_egl.KHR_image_base = epoxy_has_egl_extension(m_egl.display, "EGL_KHR_image_base");
+    m_egl.EXT_image_dma_buf_import = epoxy_has_egl_extension(m_egl.display, "EGL_EXT_image_dma_buf_import");
+    m_egl.EXT_image_dma_buf_import_modifiers = epoxy_has_egl_extension(m_egl.display, "EGL_EXT_image_dma_buf_import_modifiers");
+
     // wl_display_init_shm() returns `0` on success.
     if (wl_display_init_shm(display()) != 0)
         return false;
 
-    if (epoxy_has_egl_extension(eglDisplay, "EGL_WL_bind_wayland_display")) {
+    if (m_egl.WL_bind_wayland_display) {
         s_eglBindWaylandDisplayWL = reinterpret_cast<PFNEGLBINDWAYLANDDISPLAYWL>(eglGetProcAddress("eglBindWaylandDisplayWL"));
         assert(s_eglBindWaylandDisplayWL);
         s_eglQueryWaylandBufferWL = reinterpret_cast<PFNEGLQUERYWAYLANDBUFFERWL>(eglGetProcAddress("eglQueryWaylandBufferWL"));
         assert(s_eglQueryWaylandBufferWL);
     }
 
-    if (epoxy_has_egl_extension(eglDisplay, "EGL_KHR_image_base")) {
+    if (m_egl.KHR_image_base) {
         s_eglCreateImageKHR = reinterpret_cast<PFNEGLCREATEIMAGEKHRPROC>(eglGetProcAddress("eglCreateImageKHR"));
         assert(s_eglCreateImageKHR);
         s_eglDestroyImageKHR = reinterpret_cast<PFNEGLDESTROYIMAGEKHRPROC>(eglGetProcAddress("eglDestroyImageKHR"));
@@ -164,8 +169,7 @@ bool ImplEGL::initialize(EGLDisplay eglDisplay)
     m_egl.display = eglDisplay;
 
     /* Initialize Linux dmabuf subsystem. */
-    if (epoxy_has_egl_extension(eglDisplay, "EGL_EXT_image_dma_buf_import")
-        && epoxy_has_egl_extension(eglDisplay, "EGL_EXT_image_dma_buf_import_modifiers")) {
+    if (m_egl.EXT_image_dma_buf_import && m_egl.EXT_image_dma_buf_import_modifiers) {
         s_eglQueryDmaBufFormatsEXT = reinterpret_cast<PFNEGLQUERYDMABUFFORMATSEXTPROC>(eglGetProcAddress("eglQueryDmaBufFormatsEXT"));
         assert(s_eglQueryDmaBufFormatsEXT);
         s_eglQueryDmaBufModifiersEXT = reinterpret_cast<PFNEGLQUERYDMABUFMODIFIERSEXTPROC>(eglGetProcAddress("eglQueryDmaBufModifiersEXT"));
