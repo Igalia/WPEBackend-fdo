@@ -70,8 +70,6 @@ typedef EGLBoolean (* PFNEGLQUERYDMABUFMODIFIERSEXTPROC) (EGLDisplay dpy, EGLint
 
 static PFNEGLBINDWAYLANDDISPLAYWL s_eglBindWaylandDisplayWL;
 static PFNEGLQUERYWAYLANDBUFFERWL s_eglQueryWaylandBufferWL;
-static PFNEGLCREATEIMAGEKHRPROC s_eglCreateImageKHR;
-static PFNEGLDESTROYIMAGEKHRPROC s_eglDestroyImageKHR;
 static PFNEGLQUERYDMABUFFORMATSEXTPROC s_eglQueryDmaBufFormatsEXT;
 static PFNEGLQUERYDMABUFMODIFIERSEXTPROC s_eglQueryDmaBufModifiersEXT;
 
@@ -151,16 +149,12 @@ bool ImplEGL::initialize(EGLDisplay eglDisplay)
         assert(s_eglQueryWaylandBufferWL);
     }
 
-    if (m_egl.KHR_image_base) {
-        s_eglCreateImageKHR = reinterpret_cast<PFNEGLCREATEIMAGEKHRPROC>(eglGetProcAddress("eglCreateImageKHR"));
-        assert(s_eglCreateImageKHR);
-        s_eglDestroyImageKHR = reinterpret_cast<PFNEGLDESTROYIMAGEKHRPROC>(eglGetProcAddress("eglDestroyImageKHR"));
-        assert(s_eglDestroyImageKHR);
-    }
-
     if (s_eglBindWaylandDisplayWL && s_eglQueryWaylandBufferWL) {
-        if (!s_eglCreateImageKHR || !s_eglDestroyImageKHR)
+        // Bail if EGL_KHR_image_base is not present, which is needed to create EGLImages from the received wl_resources.
+        // TODO: this is not really accurate -- we can still export raw wl_resources without having to spawn EGLImages.
+        if (!m_egl.KHR_image_base)
             return false;
+
         if (!s_eglBindWaylandDisplayWL(eglDisplay, display()))
             return false;
     }
@@ -189,7 +183,9 @@ EGLImageKHR ImplEGL::createImage(struct wl_resource* resourceBuffer)
 {
     if (m_egl.display == EGL_NO_DISPLAY)
         return EGL_NO_IMAGE_KHR;
-    return s_eglCreateImageKHR(m_egl.display, EGL_NO_CONTEXT, EGL_WAYLAND_BUFFER_WL, resourceBuffer, nullptr);
+
+    assert(m_egl.KHR_image_base);
+    return eglCreateImageKHR(m_egl.display, EGL_NO_CONTEXT, EGL_WAYLAND_BUFFER_WL, resourceBuffer, nullptr);
 }
 
 EGLImageKHR ImplEGL::createImage(const struct linux_dmabuf_buffer* dmabufBuffer)
@@ -247,14 +243,17 @@ EGLImageKHR ImplEGL::createImage(const struct linux_dmabuf_buffer* dmabufBuffer)
 
     attribs[atti++] = EGL_NONE;
 
-    return s_eglCreateImageKHR(m_egl.display, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, nullptr, attribs);
+    assert(m_egl.KHR_image_base);
+    return eglCreateImageKHR(m_egl.display, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, nullptr, attribs);
 }
 
 void ImplEGL::destroyImage(EGLImageKHR image)
 {
     if (m_egl.display == EGL_NO_DISPLAY)
         return;
-    s_eglDestroyImageKHR(m_egl.display, image);
+
+    assert(m_egl.KHR_image_base);
+    eglDestroyImageKHR(m_egl.display, image);
 }
 
 void ImplEGL::queryBufferSize(struct wl_resource* bufferResource, uint32_t* width, uint32_t* height)
