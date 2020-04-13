@@ -99,10 +99,10 @@ bool ImplEGL::initialize(EGLDisplay eglDisplay)
         return false;
     }
 
-    m_egl.WL_bind_wayland_display = epoxy_has_egl_extension(m_egl.display, "EGL_WL_bind_wayland_display");
-    m_egl.KHR_image_base = epoxy_has_egl_extension(m_egl.display, "EGL_KHR_image_base");
-    m_egl.EXT_image_dma_buf_import = epoxy_has_egl_extension(m_egl.display, "EGL_EXT_image_dma_buf_import");
-    m_egl.EXT_image_dma_buf_import_modifiers = epoxy_has_egl_extension(m_egl.display, "EGL_EXT_image_dma_buf_import_modifiers");
+    m_egl.WL_bind_wayland_display = epoxy_has_egl_extension(eglDisplay, "EGL_WL_bind_wayland_display");
+    m_egl.KHR_image_base = epoxy_has_egl_extension(eglDisplay, "EGL_KHR_image_base");
+    m_egl.EXT_image_dma_buf_import = epoxy_has_egl_extension(eglDisplay, "EGL_EXT_image_dma_buf_import");
+    m_egl.EXT_image_dma_buf_import_modifiers = epoxy_has_egl_extension(eglDisplay, "EGL_EXT_image_dma_buf_import_modifiers");
 
     // wl_display_init_shm() returns `0` on success.
     if (wl_display_init_shm(display()) != 0)
