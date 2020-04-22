@@ -83,8 +83,11 @@ set(WPEBACKEND_FDO_PUBLIC_HEADERS
     include/wpe/fdo.h
 )
 set(WPEBACKEND_FDO_UNSTABLE_PUBLIC_HEADERS
+    include/wpe/unstable/fdo-eglstream.h
     include/wpe/unstable/fdo-shm.h
+    include/wpe/unstable/initialize-eglstream.h
     include/wpe/unstable/initialize-shm.h
+    include/wpe/unstable/view-backend-exportable-eglstream.h
 )
 
 set(WPEBACKEND_FDO_EXTENSIONS_PUBLIC_HEADERS
@@ -93,6 +96,7 @@ set(WPEBACKEND_FDO_EXTENSIONS_PUBLIC_HEADERS
 )
 
 set(WPEBACKEND_FDO_GENERATED_SOURCES
+    ${CMAKE_BINARY_DIR}/wayland-eglstream-controller-protocol.c
     ${CMAKE_BINARY_DIR}/wpe-bridge-protocol.c
     ${CMAKE_BINARY_DIR}/wpe-video-plane-display-dmabuf-protocol.c
     ${CMAKE_BINARY_DIR}/wpe-audio-protocol.c
@@ -105,6 +109,7 @@ set(WPEBACKEND_FDO_SOURCES
     src/exported-image-egl.cpp
     src/fdo.cpp
     src/initialize-egl.cpp
+    src/initialize-eglstream.cpp
     src/initialize-shm.cpp
     src/ipc.cpp
     src/renderer-backend-egl.cpp
@@ -112,10 +117,12 @@ set(WPEBACKEND_FDO_SOURCES
     src/version.c
     src/view-backend-exportable-fdo.cpp
     src/view-backend-exportable-fdo-egl.cpp
+    src/view-backend-exportable-fdo-eglstream.cpp
     src/view-backend-exportable-private.cpp
     src/ws.cpp
     src/ws-client.cpp
     src/ws-egl.cpp
+    src/ws-eglstream.cpp
     src/ws-shm.cpp
 
     src/extensions/video-plane-display-dmabuf.cpp
@@ -158,6 +165,16 @@ add_custom_command(
     COMMAND ${WAYLAND_SCANNER} ${WAYLAND_SCANNER_CODE_ARG} < ${CMAKE_SOURCE_DIR}/src/extensions/wpe-audio.xml > ${CMAKE_BINARY_DIR}/wpe-audio-protocol.c
     COMMAND ${WAYLAND_SCANNER} client-header < ${CMAKE_SOURCE_DIR}/src/extensions/wpe-audio.xml > ${CMAKE_BINARY_DIR}/wpe-audio-client-protocol.h
     COMMAND ${WAYLAND_SCANNER} server-header < ${CMAKE_SOURCE_DIR}/src/extensions/wpe-audio.xml > ${CMAKE_BINARY_DIR}/wpe-audio-server-protocol.h
+    VERBATIM
+)
+
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/wayland-eglstream)
+add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/wayland-eglstream-controller-protocol.c
+    OUTPUT ${CMAKE_BINARY_DIR}/wayland-eglstream-controller-server-protocol.h
+    DEPENDS ${CMAKE_SOURCE_DIR}/src/wayland-eglstream/wayland-eglstream-controller.xml
+    COMMAND ${WAYLAND_SCANNER} ${WAYLAND_SCANNER_CODE_ARG} < ${CMAKE_SOURCE_DIR}/src/wayland-eglstream/wayland-eglstream-controller.xml > ${CMAKE_BINARY_DIR}/wayland-eglstream-controller-protocol.c
+    COMMAND ${WAYLAND_SCANNER} server-header < ${CMAKE_SOURCE_DIR}/src/wayland-eglstream/wayland-eglstream-controller.xml > ${CMAKE_BINARY_DIR}/wayland-eglstream-controller-server-protocol.h
     VERBATIM
 )
 

@@ -113,6 +113,11 @@ public:
         client->export_shm_buffer(data, buffer);
     }
 
+    void exportEGLStreamProducer(struct wl_resource* bufferResource) override
+    {
+        assert(!"should not be reached");
+    }
+
     void releaseImage(EGLImageKHR image)
     {
         BufferResource* matchingResource = nullptr;
@@ -211,6 +216,11 @@ public:
         buffer->resource = bufferResource;
         buffer->shm_buffer = shmBuffer;
         client->export_shm_buffer(data, buffer);
+    }
+
+    void exportEGLStreamProducer(struct wl_resource* bufferResource) override
+    {
+        assert(!"should not be reached");
     }
 
     void releaseImage(struct wpe_fdo_egl_exported_image* image)

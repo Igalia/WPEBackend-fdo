@@ -48,6 +48,7 @@ public:
     virtual void exportBuffer(struct wl_resource *bufferResource) = 0;
     virtual void exportBuffer(const struct linux_dmabuf_buffer *dmabuf_buffer) = 0;
     virtual void exportBuffer(struct wl_resource* bufferResource, struct wl_shm_buffer* shmBuffer) = 0;
+    virtual void exportEGLStreamProducer(struct wl_resource *bufferResource) = 0;
 
     void* data;
     ViewBackend* viewBackend;
@@ -66,6 +67,7 @@ public:
     void exportBufferResource(struct wl_resource* bufferResource) override;
     void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) override;
     void exportShmBuffer(struct wl_resource* bufferResource, struct wl_shm_buffer* shmBuffer) override;
+    void exportEGLStreamProducer(struct wl_resource*) override;
     void dispatchFrameCallbacks();
     void releaseBuffer(struct wl_resource* buffer_resource);
 
