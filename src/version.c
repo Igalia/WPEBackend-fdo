@@ -25,18 +25,21 @@
 
 #include "wpe-fdo/version.h"
 
+__attribute__((visibility("default")))
 unsigned
 wpe_fdo_get_major_version(void)
 {
     return WPE_FDO_MAJOR_VERSION;
 }
 
+__attribute__((visibility("default")))
 unsigned
 wpe_fdo_get_minor_version(void)
 {
     return WPE_FDO_MINOR_VERSION;
 }
 
+__attribute__((visibility("default")))
 unsigned
 wpe_fdo_get_micro_version(void)
 {
