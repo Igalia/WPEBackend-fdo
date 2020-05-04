@@ -78,6 +78,7 @@ set(WPEBACKEND_FDO_PUBLIC_HEADERS
     include/wpe-fdo/exported-buffer-shm.h
     include/wpe-fdo/initialize-egl.h
     include/wpe-fdo/view-backend-exportable.h
+    include/wpe-fdo/view-backend-exportable-egl.h
     include/wpe-fdo/fdo-egl.h
     include/wpe-fdo/fdo.h
 )
@@ -108,6 +109,7 @@ set(WPEBACKEND_FDO_SOURCES
     src/renderer-host.cpp
     src/version.c
     src/view-backend-exportable-fdo.cpp
+    src/view-backend-exportable-fdo-egl.cpp
     src/view-backend-exportable-private.cpp
     src/ws.cpp
     src/ws-client.cpp
@@ -142,13 +144,6 @@ add_custom_command(
     COMMAND ${WAYLAND_SCANNER} server-header < ${CMAKE_SOURCE_DIR}/src/extensions/wpe-video-plane-display-dmabuf.xml > ${CMAKE_BINARY_DIR}/wpe-video-plane-display-dmabuf-server-protocol.h
     VERBATIM
 )
-
-option(EXPORTABLE_EGL "Enable the exportable EGL interface" ON)
-
-if (EXPORTABLE_EGL)
-    list(APPEND WPEBACKEND_FDO_PUBLIC_HEADERS include/wpe-fdo/view-backend-exportable-egl.h)
-    list(APPEND WPEBACKEND_FDO_SOURCES src/view-backend-exportable-fdo-egl.cpp)
-endif ()
 
 add_library(WPEBackend-fdo SHARED ${WPEBACKEND_FDO_SOURCES})
 target_include_directories(WPEBackend-fdo PRIVATE ${WPEBACKEND_FDO_INCLUDE_DIRECTORIES})

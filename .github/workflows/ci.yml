@@ -76,8 +76,7 @@ jobs:
         run: |
           export PKG_CONFIG_PATH="${HOME}/libwpe-prefix/lib/pkgconfig/"
           mkdir -p _work/cmake/build && cd $_
-          cmake -DCMAKE_INSTALL_PREFIX=/usr \
-            -DBUILD_DOCS=OFF -DEXPORTABLE_EGL=ON ../../..
+          cmake -DCMAKE_INSTALL_PREFIX=/usr -DBUILD_DOCS=OFF ../../..
       - name: CMake - Build
         run: |
           make -C _work/cmake/build -j$(nproc)
