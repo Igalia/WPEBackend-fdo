@@ -211,19 +211,28 @@ elif not cxx.has_header('xkbcommon/xkbcommon-keysyms.h')
 	error('The <xkbcommon/xkbcommon-keysyms.h> header is missing')
 endif
 
-lib = shared_library(meson.project_name() + '-' + api_version,
-	sources,
+generated_sources = [
 	wpe_bridge_proto_source,
 	wpe_bridge_client_proto_header,
 	wpe_bridge_server_proto_header,
 	wpe_video_plane_display_dmabuf_proto_source,
 	wpe_video_plane_display_dmabuf_client_proto_header,
 	wpe_video_plane_display_dmabuf_server_proto_header,
+]
+
+lib = shared_library(meson.project_name() + '-' + api_version,
+	sources, generated_sources,
 	install: true,
 	dependencies: deps,
 	version: soversion,
 	soversion: soversion_major,
 	include_directories: include_directories('include'),
+)
+
+wpebackend_fdo_dep = declare_dependency(link_with : lib,
+  include_directories : include_directories('include'),
+  dependencies : deps,
+  sources : generated_sources,
 )
 
 install_headers(api_headers,
