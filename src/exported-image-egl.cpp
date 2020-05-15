@@ -25,8 +25,9 @@
 
 #include "view-backend-exportable-fdo-egl-private.h"
 #include "ws.h"
+#include "wpe/exported-image-egl.h"
+
 #include <cassert>
-#include <wpe-fdo/exported-image-egl.h>
 
 extern "C" {
 

@@ -62,29 +62,29 @@ sources = [
 ]
 
 api_headers = [
-	'include/wpe-fdo/exported-image-egl.h',
-	'include/wpe-fdo/exported-buffer-shm.h',
-	'include/wpe-fdo/initialize-egl.h',
-	'include/wpe-fdo/view-backend-exportable.h',
-	'include/wpe-fdo/view-backend-exportable-egl.h',
-	'include/wpe-fdo/fdo-egl.h',
-	'include/wpe-fdo/fdo.h',
+	'include/wpe/exported-image-egl.h',
+	'include/wpe/exported-buffer-shm.h',
+	'include/wpe/initialize-egl.h',
+	'include/wpe/view-backend-exportable.h',
+	'include/wpe/view-backend-exportable-egl.h',
+	'include/wpe/fdo-egl.h',
+	'include/wpe/fdo.h',
 
 	# Generated API headers.
 	configure_file(
-		input: 'include/wpe-fdo/version.h.cmake',
+		input: 'include/wpe/version.h.cmake',
 		output: 'version.h',
 		configuration: version_info,
 	),
 ]
 
 extensions_api_headers = [
-	'include/wpe-fdo/extensions/video-plane-display-dmabuf.h',
+	'include/wpe/extensions/video-plane-display-dmabuf.h',
 ]
 
 unstable_api_headers = [
-	'include/wpe-fdo/unstable/fdo-shm.h',
-	'include/wpe-fdo/unstable/initialize-shm.h',
+	'include/wpe/unstable/fdo-shm.h',
+	'include/wpe/unstable/initialize-shm.h',
 ]
 
 add_project_arguments(

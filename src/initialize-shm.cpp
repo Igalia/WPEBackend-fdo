@@ -23,7 +23,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "wpe-fdo/unstable/initialize-shm.h"
+#include "wpe/unstable/initialize-shm.h"
 
 #include "ws-shm.h"
 

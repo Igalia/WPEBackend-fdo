@@ -52,7 +52,7 @@ add_compile_definitions(
     _LARGEFILE64_SOURCE=1
 )
 
-configure_file(include/wpe-fdo/version.h.cmake "${CMAKE_BINARY_DIR}/version.h" @ONLY)
+configure_file(include/wpe/version.h.cmake "${CMAKE_BINARY_DIR}/version.h" @ONLY)
 
 set(WPEBACKEND_FDO_INCLUDE_DIRECTORIES
     "include"
@@ -74,21 +74,21 @@ set(WPEBACKEND_FDO_LIBRARIES
 
 set(WPEBACKEND_FDO_PUBLIC_HEADERS
     ${CMAKE_BINARY_DIR}/version.h
-    include/wpe-fdo/exported-image-egl.h
-    include/wpe-fdo/exported-buffer-shm.h
-    include/wpe-fdo/initialize-egl.h
-    include/wpe-fdo/view-backend-exportable.h
-    include/wpe-fdo/view-backend-exportable-egl.h
-    include/wpe-fdo/fdo-egl.h
-    include/wpe-fdo/fdo.h
+    include/wpe/exported-image-egl.h
+    include/wpe/exported-buffer-shm.h
+    include/wpe/initialize-egl.h
+    include/wpe/view-backend-exportable.h
+    include/wpe/view-backend-exportable-egl.h
+    include/wpe/fdo-egl.h
+    include/wpe/fdo.h
 )
 set(WPEBACKEND_FDO_UNSTABLE_PUBLIC_HEADERS
-    include/wpe-fdo/unstable/fdo-shm.h
-    include/wpe-fdo/unstable/initialize-shm.h
+    include/wpe/unstable/fdo-shm.h
+    include/wpe/unstable/initialize-shm.h
 )
 
 set(WPEBACKEND_FDO_EXTENSIONS_PUBLIC_HEADERS
-    include/wpe-fdo/extensions/video-plane-display-dmabuf.h
+    include/wpe/extensions/video-plane-display-dmabuf.h
 )
 
 set(WPEBACKEND_FDO_GENERATED_SOURCES
@@ -202,11 +202,11 @@ if (BUILD_DOCS)
                 --c-smart-index
                 --extra-c-flags=-DWPE_FDO_COMPILATION
                 --c-sources
-                    ${CMAKE_SOURCE_DIR}/include/wpe-fdo/*.h
-                    ${CMAKE_SOURCE_DIR}/include/wpe-fdo/extensions/*.h
+                    ${CMAKE_SOURCE_DIR}/include/wpe/*.h
+                    ${CMAKE_SOURCE_DIR}/include/wpe/extensions/*.h
                 --c-include-directories
                     ${CMAKE_SOURCE_DIR}/include
-                    ${CMAKE_BINARY_DIR}/wpe-fdo
+                    ${CMAKE_BINARY_DIR}/wpe
                     ${WPEBACKEND_FDO_INCLUDE_DIRECTORIES}
                     ${WPE_INCLUDE_DIR}
         )

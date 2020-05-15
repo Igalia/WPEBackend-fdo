@@ -27,8 +27,9 @@
 
 #include "ipc.h"
 #include "ws.h"
+#include "wpe/view-backend-exportable.h"
+
 #include <gio/gio.h>
-#include <wpe-fdo/view-backend-exportable.h>
 
 class ViewBackend;
 
