@@ -98,7 +98,7 @@ struct wpe_renderer_backend_egl_interface fdo_renderer_backend_egl = {
     [](void* data) -> EGLNativeDisplayType
     {
         auto& backend = *reinterpret_cast<Backend*>(data);
-        return backend.display();
+        return EGLNativeDisplayType(backend.display());
     },
 };
 
