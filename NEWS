@@ -1,3 +1,12 @@
+====================
+1.6.1 - May 26, 2020
+====================
+
+- Fixed build when using EGL stacks with odd EGLNativeDisplay definitions.
+- Fixed version retrieval functions not being exposed as public symbols.
+- Improve build configuration by instructing CMake to report mismatched
+  versions of dependency libraries, instead of failing to compile.
+
 ======================
 1.6.0 - March 12, 2020
 ======================
