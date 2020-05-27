@@ -55,8 +55,8 @@ sources = [
 	'src/ws-client.cpp',
 	'src/ws-egl.cpp',
 	'src/ws-shm.cpp',
-  'src/extensions/audio.cpp',
-  'src/extensions/audio-receiver.cpp',
+	'src/extensions/audio.cpp',
+	'src/extensions/audio-receiver.cpp',
 	'src/extensions/video-plane-display-dmabuf.cpp',
 	'src/extensions/video-plane-display-dmabuf-receiver.cpp',
 	'src/linux-dmabuf/linux-dmabuf.cpp',
@@ -81,7 +81,7 @@ api_headers = [
 ]
 
 extensions_api_headers = [
-  'include/wpe/extensions/audio.h',
+	'include/wpe/extensions/audio.h',
 	'include/wpe/extensions/video-plane-display-dmabuf.h',
 ]
 

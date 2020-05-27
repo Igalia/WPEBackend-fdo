@@ -138,7 +138,9 @@ gpointer DmaBufThread::s_threadEntrypoint(gpointer data)
 
     g_main_loop_run(loop);
 
+    g_main_loop_unref(loop);
     g_main_context_pop_thread_default(context);
+    g_main_context_unref(context);
     return nullptr;
 }
 

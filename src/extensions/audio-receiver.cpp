@@ -55,7 +55,6 @@ static void dispatchReceiverStop(uint32_t id)
         s_registered_receiver.receiver->handle_stop(s_registered_receiver.data, id);
 }
 
-
 static void dispatchReceiverPause(uint32_t id)
 {
   if (s_registered_receiver.receiver)
