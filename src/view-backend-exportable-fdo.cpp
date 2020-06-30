@@ -115,6 +115,11 @@ public:
         client->export_shm_buffer(data, buffer);
     }
 
+    void exportEGLStreamProducer(struct wl_resource* bufferResource) override
+    {
+        assert(!"should not be reached");
+    }
+
     void releaseBuffer(struct wl_resource* buffer)
     {
         BufferResource* matchingResource = nullptr;

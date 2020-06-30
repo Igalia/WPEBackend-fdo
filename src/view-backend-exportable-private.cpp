@@ -98,6 +98,11 @@ void ViewBackend::exportShmBuffer(struct wl_resource* bufferResource, struct wl_
     m_clientBundle->exportBuffer(bufferResource, shmBuffer);
 }
 
+void ViewBackend::exportEGLStreamProducer(struct wl_resource* bufferResource)
+{
+    m_clientBundle->exportEGLStreamProducer(bufferResource);
+}
+
 void ViewBackend::dispatchFrameCallbacks()
 {
     FrameCallbackResource* resource;

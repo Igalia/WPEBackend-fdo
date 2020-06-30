@@ -43,6 +43,7 @@ sources = [
 	'src/exported-image-egl.cpp',
 	'src/fdo.cpp',
 	'src/initialize-egl.cpp',
+	'src/initialize-eglstream.cpp',
 	'src/initialize-shm.cpp',
 	'src/ipc.cpp',
 	'src/renderer-backend-egl.cpp',
@@ -50,10 +51,12 @@ sources = [
 	'src/version.c',
 	'src/view-backend-exportable-fdo.cpp',
 	'src/view-backend-exportable-fdo-egl.cpp',
+	'src/view-backend-exportable-fdo-eglstream.cpp',
 	'src/view-backend-exportable-private.cpp',
 	'src/ws.cpp',
 	'src/ws-client.cpp',
 	'src/ws-egl.cpp',
+	'src/ws-eglstream.cpp',
 	'src/ws-shm.cpp',
 	'src/extensions/audio.cpp',
 	'src/extensions/audio-receiver.cpp',
@@ -86,8 +89,11 @@ extensions_api_headers = [
 ]
 
 unstable_api_headers = [
+	'include/wpe/unstable/fdo-eglstream.h',
 	'include/wpe/unstable/fdo-shm.h',
 	'include/wpe/unstable/initialize-shm.h',
+	'include/wpe/unstable/initialize-eglstream.h',
+	'include/wpe/unstable/view-backend-exportable-eglstream.h',
 ]
 
 add_project_arguments(
@@ -188,6 +194,21 @@ wpe_audio_proto_source = custom_target(
 	command: [wayland_scanner, wayland_scanner_code, '@INPUT@', '@OUTPUT@'],
 )
 
+# Wayland extension: EGLStream controller
+wayland_eglstream_controller_server_proto_header = custom_target(
+	'wayland-eglstream-controller-server-proto-header',
+	input: 'src/wayland-eglstream/wayland-eglstream-controller.xml',
+	output: '@BASENAME@-server-protocol.h',
+	command: [wayland_scanner, 'server-header', '@INPUT@', '@OUTPUT@'],
+)
+
+wayland_eglstream_controller_proto_source = custom_target(
+	'wayland-eglstream-controller-proto-source',
+	input: 'src/wayland-eglstream/wayland-eglstream-controller.xml',
+	output: '@BASENAME@-protocol.c',
+	command: [wayland_scanner, wayland_scanner_code, '@INPUT@', '@OUTPUT@'],
+)
+
 cxx = meson.get_compiler('cpp')
 
 # Switch to the 'cpp_eh=none' default option when updating to Meson 0.51 or newer, see
@@ -244,6 +265,8 @@ generated_sources = [
 	wpe_video_plane_display_dmabuf_proto_source,
 	wpe_video_plane_display_dmabuf_client_proto_header,
 	wpe_video_plane_display_dmabuf_server_proto_header,
+	wayland_eglstream_controller_proto_source,
+	wayland_eglstream_controller_server_proto_header,
 ]
 
 lib = shared_library(meson.project_name() + '-' + api_version,

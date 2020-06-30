@@ -43,6 +43,7 @@ struct ExportableClient {
     virtual void exportBufferResource(struct wl_resource*) = 0;
     virtual void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) = 0;
     virtual void exportShmBuffer(struct wl_resource*, struct wl_shm_buffer*) = 0;
+    virtual void exportEGLStreamProducer(struct wl_resource*) = 0;
 };
 
 struct Surface;
@@ -63,6 +64,7 @@ public:
     public:
         enum class Type {
             EGL,
+            EGLStream,
             SHM,
         };
 
