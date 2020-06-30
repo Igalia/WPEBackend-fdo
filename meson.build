@@ -55,6 +55,8 @@ sources = [
 	'src/ws-client.cpp',
 	'src/ws-egl.cpp',
 	'src/ws-shm.cpp',
+	'src/extensions/audio.cpp',
+	'src/extensions/audio-receiver.cpp',
 	'src/extensions/video-plane-display-dmabuf.cpp',
 	'src/extensions/video-plane-display-dmabuf-receiver.cpp',
 	'src/linux-dmabuf/linux-dmabuf.cpp',
@@ -79,6 +81,7 @@ api_headers = [
 ]
 
 extensions_api_headers = [
+	'include/wpe/extensions/audio.h',
 	'include/wpe/extensions/video-plane-display-dmabuf.h',
 ]
 
@@ -165,6 +168,26 @@ wpe_video_plane_display_dmabuf_proto_source = custom_target(
 	command: [wayland_scanner, wayland_scanner_code, '@INPUT@', '@OUTPUT@'],
 )
 
+# Wayland extension: Audio rendering protocol.
+wpe_audio_client_proto_header = custom_target(
+	'audio-client-proto-header',
+	input: 'src/extensions/wpe-audio.xml',
+	output: '@BASENAME@-client-protocol.h',
+	command: [wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'],
+)
+wpe_audio_server_proto_header = custom_target(
+	'audio-server-proto-header',
+	input: 'src/extensions/wpe-audio.xml',
+	output: '@BASENAME@-server-protocol.h',
+	command: [wayland_scanner, 'server-header', '@INPUT@', '@OUTPUT@'],
+)
+wpe_audio_proto_source = custom_target(
+	'audio-proto-source',
+	input: 'src/extensions/wpe-audio.xml',
+	output: '@BASENAME@-protocol.c',
+	command: [wayland_scanner, wayland_scanner_code, '@INPUT@', '@OUTPUT@'],
+)
+
 cxx = meson.get_compiler('cpp')
 
 # Switch to the 'cpp_eh=none' default option when updating to Meson 0.51 or newer, see
@@ -215,6 +238,9 @@ generated_sources = [
 	wpe_bridge_proto_source,
 	wpe_bridge_client_proto_header,
 	wpe_bridge_server_proto_header,
+	wpe_audio_proto_source,
+	wpe_audio_client_proto_header,
+	wpe_audio_server_proto_header,
 	wpe_video_plane_display_dmabuf_proto_source,
 	wpe_video_plane_display_dmabuf_client_proto_header,
 	wpe_video_plane_display_dmabuf_server_proto_header,

@@ -33,6 +33,7 @@
 
 struct linux_dmabuf_buffer;
 struct wpe_video_plane_display_dmabuf_export;
+struct wpe_audio_packet_export;
 
 namespace WS {
 
@@ -101,6 +102,19 @@ public:
     void handleVideoPlaneDisplayDmaBufEndOfStream(uint32_t id);
     void releaseVideoPlaneDisplayDmaBufExport(struct wpe_video_plane_display_dmabuf_export*);
 
+    using AudioStartCallback = std::function<void(uint32_t, int32_t, const char*, int32_t)>;
+    using AudioPacketCallback = std::function<void(struct wpe_audio_packet_export*, uint32_t, int32_t, uint32_t)>;
+    using AudioStopCallback = std::function<void(uint32_t)>;
+    using AudioPauseCallback = std::function<void(uint32_t)>;
+    using AudioResumeCallback = std::function<void(uint32_t)>;
+    void initializeAudio(AudioStartCallback, AudioPacketCallback, AudioStopCallback, AudioPauseCallback, AudioResumeCallback);
+    void handleAudioStart(uint32_t id, int32_t channels, const char* layout, int32_t sampleRate);
+    void handleAudioPacket(struct wpe_audio_packet_export*, uint32_t id, int32_t fd, uint32_t frames);
+    void handleAudioStop(uint32_t id);
+    void handleAudioPause(uint32_t id);
+    void handleAudioResume(uint32_t id);
+    void releaseAudioPacketExport(struct wpe_audio_packet_export*);
+
 private:
     friend class Impl;
 
@@ -120,6 +134,15 @@ private:
         VideoPlaneDisplayDmaBufCallback updateCallback;
         VideoPlaneDisplayDmaBufEndOfStreamCallback endOfStreamCallback;
     } m_videoPlaneDisplayDmaBuf;
+
+    struct {
+        struct wl_global* object { nullptr };
+        AudioStartCallback startCallback;
+        AudioPacketCallback packetCallback;
+        AudioStopCallback stopCallback;
+        AudioPauseCallback pauseCallback;
+        AudioResumeCallback resumeCallback;
+    } m_audio;
 };
 
 template<typename T>

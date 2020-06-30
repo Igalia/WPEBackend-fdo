@@ -89,11 +89,13 @@ set(WPEBACKEND_FDO_UNSTABLE_PUBLIC_HEADERS
 
 set(WPEBACKEND_FDO_EXTENSIONS_PUBLIC_HEADERS
     include/wpe/extensions/video-plane-display-dmabuf.h
+    include/wpe/extensions/audio.h
 )
 
 set(WPEBACKEND_FDO_GENERATED_SOURCES
     ${CMAKE_BINARY_DIR}/wpe-bridge-protocol.c
     ${CMAKE_BINARY_DIR}/wpe-video-plane-display-dmabuf-protocol.c
+    ${CMAKE_BINARY_DIR}/wpe-audio-protocol.c
 )
 
 set(WPEBACKEND_FDO_SOURCES
@@ -121,6 +123,9 @@ set(WPEBACKEND_FDO_SOURCES
 
     src/linux-dmabuf/linux-dmabuf.cpp
     src/linux-dmabuf/linux-dmabuf-protocol.c
+
+    src/extensions/audio.cpp
+    src/extensions/audio-receiver.cpp
 )
 
 add_custom_command(
@@ -142,6 +147,17 @@ add_custom_command(
     COMMAND ${WAYLAND_SCANNER} ${WAYLAND_SCANNER_CODE_ARG} < ${CMAKE_SOURCE_DIR}/src/extensions/wpe-video-plane-display-dmabuf.xml > ${CMAKE_BINARY_DIR}/wpe-video-plane-display-dmabuf-protocol.c
     COMMAND ${WAYLAND_SCANNER} client-header < ${CMAKE_SOURCE_DIR}/src/extensions/wpe-video-plane-display-dmabuf.xml > ${CMAKE_BINARY_DIR}/wpe-video-plane-display-dmabuf-client-protocol.h
     COMMAND ${WAYLAND_SCANNER} server-header < ${CMAKE_SOURCE_DIR}/src/extensions/wpe-video-plane-display-dmabuf.xml > ${CMAKE_BINARY_DIR}/wpe-video-plane-display-dmabuf-server-protocol.h
+    VERBATIM
+)
+
+add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/wpe-audio-protocol.c
+    OUTPUT ${CMAKE_BINARY_DIR}/wpe-audio-client-protocol.h
+    OUTPUT ${CMAKE_BINARY_DIR}/wpe-audio-server-protocol.h
+    DEPENDS ${CMAKE_SOURCE_DIR}/src/extensions/wpe-audio.xml
+    COMMAND ${WAYLAND_SCANNER} ${WAYLAND_SCANNER_CODE_ARG} < ${CMAKE_SOURCE_DIR}/src/extensions/wpe-audio.xml > ${CMAKE_BINARY_DIR}/wpe-audio-protocol.c
+    COMMAND ${WAYLAND_SCANNER} client-header < ${CMAKE_SOURCE_DIR}/src/extensions/wpe-audio.xml > ${CMAKE_BINARY_DIR}/wpe-audio-client-protocol.h
+    COMMAND ${WAYLAND_SCANNER} server-header < ${CMAKE_SOURCE_DIR}/src/extensions/wpe-audio.xml > ${CMAKE_BINARY_DIR}/wpe-audio-server-protocol.h
     VERBATIM
 )
 
