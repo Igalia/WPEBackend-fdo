@@ -30,6 +30,7 @@
 #include "linux-dmabuf/linux-dmabuf.h"
 #include "bridge/wpe-bridge-server-protocol.h"
 #include <cassert>
+#include <cstdio>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
