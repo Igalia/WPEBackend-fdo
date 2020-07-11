@@ -174,7 +174,7 @@ public:
             wpe_audio_stream_started(m_wl.audio, id, channels, layout, sampleRate);
     }
 
-    void packet(uint32_t id, int32_t fd, uint32_t frames)
+    void packet(uint32_t id, int32_t fd, uint32_t frames, wpe_audio_packet_export_release_notify_t notify, void* notify_data)
     {
         if (!m_wl.audio)
             return;
@@ -182,6 +182,7 @@ public:
         auto* update = wpe_audio_stream_packet(m_wl.audio, id, fd, frames);
 
         wl_proxy_set_queue(reinterpret_cast<struct wl_proxy*>(update), AudioThread::singleton().eventQueue());
+        wpe_audio_packet_export_add_listener(update, &s_audioPacketExportListener, new ListenerData { notify, notify_data });
     }
 
     void stop(uint32_t id)
@@ -201,10 +202,27 @@ public:
 
 private:
     static const struct wl_registry_listener s_registryListener;
+    static const struct wpe_audio_packet_export_listener s_audioPacketExportListener;
+
+    struct ListenerData {
+        wpe_audio_packet_export_release_notify_t notify;
+        void* notify_data;
+    };
 
     struct {
         struct wpe_audio* audio { nullptr };
     } m_wl;
+};
+
+const struct wpe_audio_packet_export_listener Audio::s_audioPacketExportListener = {
+    // release
+    [](void* data, struct wpe_audio_packet_export* update) {
+        auto* listenerData = static_cast<ListenerData*>(data);
+        if (listenerData->notify)
+            listenerData->notify(listenerData->notify_data);
+        delete listenerData;
+        wpe_audio_packet_export_destroy(update);
+    },
 };
 
 const struct wl_registry_listener Audio::s_registryListener = {
@@ -249,10 +267,10 @@ wpe_audio_source_start(struct wpe_audio_source* audio_source, uint32_t id, int32
 
 __attribute__((visibility("default")))
 void
-wpe_audio_source_packet(struct wpe_audio_source* audio_source, uint32_t id, int32_t fd, uint32_t frames)
+wpe_audio_source_packet(struct wpe_audio_source* audio_source, uint32_t id, int32_t fd, uint32_t frames, wpe_audio_packet_export_release_notify_t notify, void* notifyData)
 {
     auto& impl = *reinterpret_cast<Impl::Audio*>(audio_source);
-    impl.packet(id, fd, frames);
+    impl.packet(id, fd, frames, notify, notifyData);
 }
 
 __attribute__((visibility("default")))
