@@ -61,8 +61,10 @@ wpe_audio_source_destroy(struct wpe_audio_source*);
 void
 wpe_audio_source_start(struct wpe_audio_source* audio_source, uint32_t id, int32_t channels, const char* layout, int32_t sampleRate);
 
+typedef void (*wpe_audio_packet_export_release_notify_t)(void*);
+
 void
-wpe_audio_source_packet(struct wpe_audio_source* audio_source, uint32_t id, int32_t fd, uint32_t frames);
+wpe_audio_source_packet(struct wpe_audio_source* audio_source, uint32_t id, int32_t fd, uint32_t frames, wpe_audio_packet_export_release_notify_t notify, void* notifyData);
 
 void
 wpe_audio_source_stop(struct wpe_audio_source* audio_source, uint32_t id);
