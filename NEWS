@@ -1,4 +1,17 @@
 =====================
+1.7.1 - July 29, 2020
+=====================
+
+- Added new API for the audio rendering protocol, which allows embedders to
+  receive audio samples instead of letting WPE WebKit handle their playback.
+- Added support to export frames using EGLStreams, which can be used e.g.
+  with Nvidia GPUs.
+- New build configuration system based on Meson. The existing CMake-based
+  system is still maintained, and both produce the same outputs.
+- Expose symbols for the version retrieval functions.
+- Use libepoxy for EGL operations.
+
+=====================
 1.3.1 - June 13, 2019
 =====================
 
