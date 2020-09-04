@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.3)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(VersioningUtils)
 
-SET_PROJECT_VERSION(1 7 1)
+SET_PROJECT_VERSION(1 7 90)
 set(WPEBACKEND_FDO_API_VERSION 1.0)
 
 # Before making a release, the LT_VERSION string should be modified.
@@ -13,7 +13,7 @@ set(WPEBACKEND_FDO_API_VERSION 1.0)
 # - If binary compatibility has been broken (eg removed or changed interfaces)
 #   change to C+1:0:0
 # - If the interface is the same as the previous version, change to C:R+1:A
-CALCULATE_LIBRARY_VERSIONS_FROM_LIBTOOL_TRIPLE(LIBWPEBACKEND_FDO 7 1 6)
+CALCULATE_LIBRARY_VERSIONS_FROM_LIBTOOL_TRIPLE(LIBWPEBACKEND_FDO 7 2 6)
 
 project(wpebackend-fdo VERSION "${PROJECT_VERSION}")
 
