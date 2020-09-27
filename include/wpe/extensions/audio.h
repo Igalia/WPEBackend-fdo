@@ -55,6 +55,9 @@ struct wpe_audio_packet_export;
 struct wpe_audio_source*
 wpe_audio_source_create(struct wpe_renderer_backend_egl*);
 
+bool
+wpe_audio_source_has_receiver(struct wpe_audio_source*);
+
 void
 wpe_audio_source_destroy(struct wpe_audio_source*);
 
