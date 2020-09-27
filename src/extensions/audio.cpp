@@ -187,17 +187,20 @@ public:
 
     void stop(uint32_t id)
     {
-        wpe_audio_stream_stopped(m_wl.audio, id);
+        if (m_wl.audio)
+            wpe_audio_stream_stopped(m_wl.audio, id);
     }
 
     void pause(uint32_t id)
     {
-        wpe_audio_stream_paused(m_wl.audio, id);
+        if (m_wl.audio)
+            wpe_audio_stream_paused(m_wl.audio, id);
     }
 
     void resume(uint32_t id)
     {
-        wpe_audio_stream_resumed(m_wl.audio, id);
+        if (m_wl.audio)
+            wpe_audio_stream_resumed(m_wl.audio, id);
     }
 
 private:
