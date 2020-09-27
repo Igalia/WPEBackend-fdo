@@ -203,6 +203,11 @@ public:
             wpe_audio_stream_resumed(m_wl.audio, id);
     }
 
+    bool has_receiver()
+    {
+        return m_wl.audio;
+    }
+
 private:
     static const struct wl_registry_listener s_registryListener;
     static const struct wpe_audio_packet_export_listener s_audioPacketExportListener;
@@ -251,6 +256,14 @@ wpe_audio_source_create(struct wpe_renderer_backend_egl* backend)
     auto* base = reinterpret_cast<struct wpe_renderer_backend_egl_base*>(backend);
     auto* impl = new Impl::Audio(*static_cast<WS::BaseBackend*>(base->interface_data));
     return reinterpret_cast<struct wpe_audio_source*>(impl);
+}
+
+__attribute__((visibility("default")))
+bool
+wpe_audio_source_has_receiver(struct wpe_audio_source* audio_source)
+{
+    auto& impl = *reinterpret_cast<Impl::Audio*>(audio_source);
+    return impl.has_receiver();
 }
 
 __attribute__((visibility("default")))
