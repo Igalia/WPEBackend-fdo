@@ -193,7 +193,7 @@ set_target_properties(WPEBackend-fdo
 
 install(
     TARGETS WPEBackend-fdo
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${WPE_BACKENDS_DIR}
 )
 install(
     FILES ${WPEBACKEND_FDO_PUBLIC_HEADERS}

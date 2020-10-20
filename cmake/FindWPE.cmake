@@ -4,8 +4,9 @@
 #  WPE_FOUND - system has WPE.
 #  WPE_INCLUDE_DIRS - the WPE include directories
 #  WPE_LIBRARIES - link these to use WPE.
+#  WPE_BACKENDS_DIR - location where to install WPE backends.
 #
-# Copyright (C) 2016 Igalia S.L.
+# Copyright (C) 2020, 2016 Igalia S.L.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -30,6 +31,7 @@
 
 find_package(PkgConfig)
 pkg_check_modules(WPE IMPORTED_TARGET wpe-1.0)
+pkg_get_variable(WPE_BACKENDS_DIR wpe-1.0 backendsdir)
 
 if (WPE_FIND_VERSION AND WPE_VERSION VERSION_LESS WPE_FIND_VERSION)
     message(FATAL_ERROR "Package WPE has version '${WPE_VERSION}', "
@@ -64,4 +66,5 @@ if (WPE_LIBRARY AND NOT TARGET WPE::libwpe)
 endif ()
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(WPE REQUIRED_VARS WPE_LIBRARY WPE_INCLUDE_DIR)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(WPE
+    REQUIRED_VARS WPE_LIBRARY WPE_INCLUDE_DIR WPE_BACKENDS_DIR)

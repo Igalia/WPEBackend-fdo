@@ -8,4 +8,4 @@ Description: The WPEBackend-fdo library
 Version: @PROJECT_VERSION@
 Requires: wpe-1.0
 Cflags: -I${includedir}/wpe-fdo-@WPEBACKEND_FDO_API_VERSION@
-Libs: -L${libdir} -lWPEBackend-fdo-@WPEBACKEND_FDO_API_VERSION@
+Libs: -L@WPE_BACKENDS_DIR@ -lWPEBackend-fdo-@WPEBACKEND_FDO_API_VERSION@
