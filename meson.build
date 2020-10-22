@@ -245,7 +245,7 @@ deps = [
 	dependency('wayland-client'),
 	dependency('wayland-server'),
 	dependency('wayland-egl'),
-	dependency('wpe-1.0', version: '>=1.6.0', fallback: ['libwpe', 'libwpe_dep']),
+	dependency('wpe-1.0', version: '>=1.7.1', fallback: ['libwpe', 'libwpe_dep']),
 ]
 
 xkbcommon_dep = dependency('xkbcommon', required: false)
