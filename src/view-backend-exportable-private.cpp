@@ -111,20 +111,35 @@ void ViewBackend::dispatchFrameCallbacks()
     }
     clearFrameCallbacks();
 
-    wl_client_flush(m_client);
+    if (m_client)
+        wl_client_flush(m_client);
     wpe_view_backend_dispatch_frame_displayed(m_backend);
 }
 
 void ViewBackend::releaseBuffer(struct wl_resource* buffer_resource)
 {
     wl_buffer_send_release(buffer_resource);
-    wl_client_flush(m_client);
+    if (m_client)
+        wl_client_flush(m_client);
 }
 
 void ViewBackend::registerSurface(uint32_t surfaceId)
 {
     m_surfaceId = surfaceId;
     m_client = WS::Instance::singleton().registerViewBackend(m_surfaceId, *this);
+    this->m_destroyClientListener.notify = (wl_notify_func_t) [](struct wl_listener* listener, void* data)
+    {
+        ViewBackend *viewBackend;
+        viewBackend = wl_container_of(listener, viewBackend, m_destroyClientListener);
+
+        struct wl_client* client = (struct wl_client*) data;
+        g_debug("ViewBackend <%p>: wl_client <%p> destroy notification for fd %d", viewBackend, data, wl_client_get_fd(client));
+        viewBackend->m_client = NULL;
+    };
+    wl_client_add_destroy_listener(m_client,
+                                   &this->m_destroyClientListener);
+
+
 }
 
 void ViewBackend::unregisterSurface(uint32_t surfaceId)
