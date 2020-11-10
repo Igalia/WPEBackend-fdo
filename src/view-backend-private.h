@@ -100,7 +100,11 @@ private:
 
     std::unique_ptr<FdoIPC::Connection> m_socket;
     int m_clientFd { -1 };
-    struct wl_listener m_destroyClientListener;
+};
+
+struct wl_client_destroy_listener {
+    ViewBackend* backend;
+    struct wl_listener destroyClientListener;
 };
 
 struct wpe_view_backend_private {
