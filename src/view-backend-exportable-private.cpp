@@ -127,19 +127,19 @@ void ViewBackend::registerSurface(uint32_t surfaceId)
 {
     m_surfaceId = surfaceId;
     m_client = WS::Instance::singleton().registerViewBackend(m_surfaceId, *this);
-    this->m_destroyClientListener.notify = (wl_notify_func_t) [](struct wl_listener* listener, void* data)
+ 
+    struct wl_client_destroy_listener *listener = new wl_client_destroy_listener {this, };
+    listener->destroyClientListener.notify = (wl_notify_func_t) [](struct wl_listener* listener, void* data)
     {
-        ViewBackend *viewBackend;
-        viewBackend = wl_container_of(listener, viewBackend, m_destroyClientListener);
+        struct wl_client_destroy_listener *container;
+        container = wl_container_of(listener, container, destroyClientListener);
 
         struct wl_client* client = (struct wl_client*) data;
-        g_debug("ViewBackend <%p>: wl_client <%p> destroy notification for fd %d", viewBackend, data, wl_client_get_fd(client));
-        viewBackend->m_client = NULL;
+        container->backend->m_client = NULL;
+        delete container;  // Release the wl_client_destroy_listener instance since this is not longer needed.
     };
     wl_client_add_destroy_listener(m_client,
-                                   &this->m_destroyClientListener);
-
-
+                                   &listener->destroyClientListener);
 }
 
 void ViewBackend::unregisterSurface(uint32_t surfaceId)
