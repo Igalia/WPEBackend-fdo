@@ -56,7 +56,7 @@ public:
     uint32_t initialHeight;
 };
 
-class ViewBackend final : public WS::ExportableClient, public FdoIPC::MessageReceiver {
+class ViewBackend final : public WS::APIClient, public FdoIPC::MessageReceiver {
 public:
     ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* backend);
     ~ViewBackend();

@@ -43,16 +43,16 @@ static const struct wl_eglstream_controller_interface s_eglstreamControllerInter
     {
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
 
-        if (surface.exportableClient)
-            surface.exportableClient->exportEGLStreamProducer(bufferResource);
+        if (surface.apiClient)
+            surface.apiClient->exportEGLStreamProducer(bufferResource);
     },
     // attach_eglstream_consumer_attribs
     [](struct wl_client*, struct wl_resource*, struct wl_resource* surfaceResource, struct wl_resource* bufferResource, struct wl_array* attribs)
     {
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
 
-        if (surface.exportableClient)
-            surface.exportableClient->exportEGLStreamProducer(bufferResource);
+        if (surface.apiClient)
+            surface.apiClient->exportEGLStreamProducer(bufferResource);
     },
 };
 
@@ -73,13 +73,13 @@ void ImplEGLStream::surfaceAttach(Surface& surface, struct wl_resource* bufferRe
 
 void ImplEGLStream::surfaceCommit(Surface& surface)
 {
-    if (!surface.exportableClient)
+    if (!surface.apiClient)
         return;
 
     struct wl_resource* bufferResource = surface.bufferResource;
     surface.bufferResource = nullptr;
 
-    surface.exportableClient->exportBufferResource(bufferResource);
+    surface.apiClient->exportBufferResource(bufferResource);
 }
 
 bool ImplEGLStream::initialize(EGLDisplay eglDisplay)

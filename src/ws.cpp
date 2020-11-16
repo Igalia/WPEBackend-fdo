@@ -101,7 +101,7 @@ static const struct wl_surface_interface s_surfaceInterface = {
     [](struct wl_client* client, struct wl_resource* surfaceResource, uint32_t callback)
     {
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
-        if (!surface.exportableClient)
+        if (!surface.apiClient)
             return;
 
         struct wl_resource* callbackResource = wl_resource_create(client, &wl_callback_interface, 1, callback);
@@ -111,7 +111,7 @@ static const struct wl_surface_interface s_surfaceInterface = {
         }
 
         wl_resource_set_implementation(callbackResource, nullptr, nullptr, nullptr);
-        surface.exportableClient->frameCallback(callbackResource);
+        surface.apiClient->frameCallback(callbackResource);
     },
     // set_opaque_region
     [](struct wl_client*, struct wl_resource*, struct wl_resource*) { },
@@ -501,13 +501,13 @@ void Instance::releaseAudioPacketExport(struct wpe_audio_packet_export* packet_e
     wpe_audio_packet_export_send_release(packet_export->exportResource);
 }
 
-struct wl_client* Instance::registerViewBackend(uint32_t surfaceId, ExportableClient& exportableClient)
+struct wl_client* Instance::registerViewBackend(uint32_t surfaceId, APIClient& apiClient)
 {
     auto it = m_viewBackendMap.find(surfaceId);
     if (it == m_viewBackendMap.end())
         g_error("Instance::registerViewBackend(): " "Cannot find surface %" PRIu32 " in view backend map.", surfaceId);
 
-    it->second->exportableClient = &exportableClient;
+    it->second->apiClient = &apiClient;
     return it->second->client;
 }
 
@@ -515,7 +515,7 @@ void Instance::unregisterViewBackend(uint32_t surfaceId)
 {
     auto it = m_viewBackendMap.find(surfaceId);
     if (it != m_viewBackendMap.end()) {
-        it->second->exportableClient = nullptr;
+        it->second->apiClient = nullptr;
         m_viewBackendMap.erase(it);
     }
 }

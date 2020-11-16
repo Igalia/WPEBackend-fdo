@@ -79,18 +79,18 @@ void ImplEGL::surfaceAttach(Surface& surface, struct wl_resource* bufferResource
 
 void ImplEGL::surfaceCommit(Surface& surface)
 {
-    if (!surface.exportableClient)
+    if (!surface.apiClient)
         return;
 
     struct wl_resource* bufferResource = surface.bufferResource;
     surface.bufferResource = nullptr;
 
     if (surface.dmabufBuffer)
-        surface.exportableClient->exportLinuxDmabuf(surface.dmabufBuffer);
+        surface.apiClient->exportLinuxDmabuf(surface.dmabufBuffer);
     else if (surface.shmBuffer)
-        surface.exportableClient->exportShmBuffer(bufferResource, surface.shmBuffer);
+        surface.apiClient->exportShmBuffer(bufferResource, surface.shmBuffer);
     else
-        surface.exportableClient->exportBufferResource(bufferResource);
+        surface.apiClient->exportBufferResource(bufferResource);
 }
 
 bool ImplEGL::initialize(EGLDisplay eglDisplay)

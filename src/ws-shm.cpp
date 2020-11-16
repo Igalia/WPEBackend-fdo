@@ -41,16 +41,16 @@ void ImplSHM::surfaceAttach(Surface& surface, struct wl_resource* bufferResource
 
 void ImplSHM::surfaceCommit(Surface& surface)
 {
-    if (!surface.exportableClient)
+    if (!surface.apiClient)
         return;
 
     struct wl_resource* bufferResource = surface.bufferResource;
     surface.bufferResource = nullptr;
 
     if (surface.shmBuffer)
-        surface.exportableClient->exportShmBuffer(bufferResource, surface.shmBuffer);
+        surface.apiClient->exportShmBuffer(bufferResource, surface.shmBuffer);
     else
-        surface.exportableClient->exportBufferResource(bufferResource);
+        surface.apiClient->exportBufferResource(bufferResource);
 }
 
 bool ImplSHM::initialize()

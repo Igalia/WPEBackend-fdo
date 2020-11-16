@@ -37,8 +37,9 @@ struct wpe_audio_packet_export;
 
 namespace WS {
 
-struct ExportableClient {
-    virtual ~ExportableClient() = default;
+struct APIClient {
+    virtual ~APIClient() = default;
+
     virtual void frameCallback(struct wl_resource*) = 0;
     virtual void exportBufferResource(struct wl_resource*) = 0;
     virtual void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) = 0;
@@ -51,7 +52,7 @@ struct Surface {
     uint32_t id { 0 };
     struct wl_client* client { nullptr };
 
-    ExportableClient* exportableClient { nullptr };
+    APIClient* apiClient { nullptr };
 
     struct wl_resource* bufferResource { nullptr };
     const struct linux_dmabuf_buffer* dmabufBuffer { nullptr };
@@ -94,7 +95,7 @@ public:
     int createClient();
 
     void registerSurface(uint32_t, Surface*);
-    struct wl_client* registerViewBackend(uint32_t, ExportableClient&);
+    struct wl_client* registerViewBackend(uint32_t, APIClient&);
     void unregisterViewBackend(uint32_t);
 
     using VideoPlaneDisplayDmaBufCallback = std::function<void(struct wpe_video_plane_display_dmabuf_export*, uint32_t, int, int32_t, int32_t, int32_t, int32_t, uint32_t)>;
