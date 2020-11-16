@@ -24,7 +24,7 @@
  */
 
 #include "ipc-messages.h"
-#include "view-backend-exportable-private.h"
+#include "view-backend-private.h"
 #include <cassert>
 #include <sys/types.h>
 #include <sys/socket.h>

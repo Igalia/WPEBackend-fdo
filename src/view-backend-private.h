@@ -27,9 +27,9 @@
 
 #include "ipc.h"
 #include "ws.h"
-#include "wpe/view-backend-exportable.h"
 
 #include <gio/gio.h>
+#include <wpe/wpe.h>
 
 class ViewBackend;
 
@@ -102,12 +102,14 @@ private:
     int m_clientFd { -1 };
 };
 
-struct wpe_view_backend_exportable_fdo {
+struct wpe_view_backend_private {
     ClientBundle* clientBundle;
     struct wpe_view_backend* backend;
 };
 
-static struct wpe_view_backend_interface view_backend_exportable_fdo_interface = {
+struct wpe_view_backend_exportable_fdo : wpe_view_backend_private { };
+
+static struct wpe_view_backend_interface view_backend_private_interface = {
     // create
     [](void* data, struct wpe_view_backend* backend) -> void*
     {

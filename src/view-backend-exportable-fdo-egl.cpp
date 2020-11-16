@@ -26,7 +26,7 @@
 #include "exported-buffer-shm-private.h"
 #include "linux-dmabuf/linux-dmabuf.h"
 #include "view-backend-exportable-fdo-egl-private.h"
-#include "view-backend-exportable-private.h"
+#include "view-backend-private.h"
 #include "ws-egl.h"
 #include "wpe/view-backend-exportable-egl.h"
 

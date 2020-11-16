@@ -24,7 +24,7 @@
  */
 
 
-#include "view-backend-exportable-private.h"
+#include "view-backend-private.h"
 #include <cassert>
 #include <wpe/unstable/view-backend-exportable-eglstream.h>
 
