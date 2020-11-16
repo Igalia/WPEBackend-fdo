@@ -52,7 +52,7 @@ sources = [
 	'src/view-backend-exportable-fdo.cpp',
 	'src/view-backend-exportable-fdo-egl.cpp',
 	'src/view-backend-exportable-fdo-eglstream.cpp',
-	'src/view-backend-exportable-private.cpp',
+	'src/view-backend-private.cpp',
 	'src/ws.cpp',
 	'src/ws-client.cpp',
 	'src/ws-egl.cpp',

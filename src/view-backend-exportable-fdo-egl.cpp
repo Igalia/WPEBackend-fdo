@@ -293,7 +293,7 @@ wpe_view_backend_exportable_fdo_egl_create(const struct wpe_view_backend_exporta
     else
         clientBundle = new ClientBundleEGLDeprecated(client, data, nullptr, width, height);
 
-    struct wpe_view_backend* backend = wpe_view_backend_create_with_backend_interface(&view_backend_exportable_fdo_interface, clientBundle);
+    struct wpe_view_backend* backend = wpe_view_backend_create_with_backend_interface(&view_backend_private_interface, clientBundle);
 
     auto* exportable = new struct wpe_view_backend_exportable_fdo;
     exportable->clientBundle = clientBundle;

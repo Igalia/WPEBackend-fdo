@@ -27,6 +27,7 @@
 #include "linux-dmabuf/linux-dmabuf.h"
 #include "view-backend-private.h"
 #include "ws.h"
+#include "wpe/view-backend-exportable.h"
 #include <cassert>
 #include <cstring>
 
@@ -172,7 +173,7 @@ wpe_view_backend_exportable_fdo_create(const struct wpe_view_backend_exportable_
 {
     auto* clientBundle = new ClientBundleBuffer(client, data, nullptr, width, height);
 
-    struct wpe_view_backend* backend = wpe_view_backend_create_with_backend_interface(&view_backend_exportable_fdo_interface, clientBundle);
+    struct wpe_view_backend* backend = wpe_view_backend_create_with_backend_interface(&view_backend_private_interface, clientBundle);
 
     auto* exportable = new struct wpe_view_backend_exportable_fdo;
     exportable->clientBundle = clientBundle;
