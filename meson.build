@@ -244,9 +244,40 @@ deps = [
 	dependency('gobject-2.0'),
 	dependency('wayland-client'),
 	dependency('wayland-server'),
-	dependency('wayland-egl'),
 	dependency('wpe-1.0', version: '>=1.6.0', fallback: ['libwpe', 'libwpe_dep']),
 ]
+
+# Will be set to the library dependency which provides the wl_egl_* functions.
+wl_egl_dep = disabler()
+
+# Some EGL drivers provide the wl_egl_* symbols directly (e.g. old versions
+# of the Vivante driver), instead of a wayland-egl library. Try both and use
+# the first one found.
+wl_egl_try_deps = ['wayland-egl', 'egl']
+foreach dep_name : wl_egl_try_deps
+	dep = dependency(dep_name, required: false)
+	if dep.found() and cxx.has_function('wl_egl_window_create', dependencies: dep)
+		wl_egl_dep = dep
+		break
+	endif
+endforeach
+
+# As a fall back for systems which have an EGL library without a corresponding
+# pkg-config module, try findind the library directly.
+if not wl_egl_dep.found()
+	dep = cxx.find_library('EGL', required: false)
+	if dep.found() and cxx.has_function('wl_egl_window_create', dependencies: dep)
+		wl_egl_dep = dep
+	endif
+endif
+
+if wl_egl_dep.found()
+	deps += [wl_egl_dep]
+else
+	warning('''
+	Could not check availability of the wl_egl_* functions (tried wayland-client,
+	egl, and libEGL). Continuing anyway, but your build will likely be broken.''')
+endif
 
 xkbcommon_dep = dependency('xkbcommon', required: false)
 if xkbcommon_dep.found()
