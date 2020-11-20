@@ -38,7 +38,7 @@ public:
     ImplEGL();
     virtual ~ImplEGL();
 
-    Type type() const override { return Instance::Impl::Type::EGL; }
+    ImplementationType type() const override { return ImplementationType::EGL; }
     bool initialized() const override { return m_initialized; }
 
     void surfaceAttach(Surface&, struct wl_resource*) override;

@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "ws-types.h"
 #include <functional>
 #include <glib.h>
 #include <memory>
@@ -63,19 +64,13 @@ class Instance {
 public:
     class Impl {
     public:
-        enum class Type {
-            EGL,
-            EGLStream,
-            SHM,
-        };
-
         Impl() = default;
         virtual ~Impl() = default;
 
         void setInstance(Instance& instance) { m_instance = &instance; }
         struct wl_display* display() { return m_instance->m_display; }
 
-        virtual Type type() const = 0;
+        virtual ImplementationType type() const = 0;
         virtual bool initialized() const = 0;
 
         virtual void surfaceAttach(Surface&, struct wl_resource*) = 0;

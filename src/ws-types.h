@@ -25,29 +25,12 @@
 
 #pragma once
 
-#include "ws.h"
-
-typedef void *EGLDisplay;
-
 namespace WS {
 
-class ImplEGLStream final : public Instance::Impl {
-public:
-    ImplEGLStream();
-    virtual ~ImplEGLStream();
-
-    ImplementationType type() const override { return ImplementationType::EGLStream; }
-    bool initialized() const override { return m_initialized; }
-
-    void surfaceAttach(Surface&, struct wl_resource*) override;
-    void surfaceCommit(Surface&) override;
-
-    bool initialize(EGLDisplay);
-
-private:
-    bool m_initialized { false };
-
-    struct wl_global* m_eglstreamController { nullptr };
+enum class ImplementationType {
+    EGL,
+    EGLStream,
+    SHM,
 };
 
 } // namespace WS
