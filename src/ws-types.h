@@ -33,4 +33,9 @@ enum class ImplementationType {
     SHM,
 };
 
+enum class ClientImplementationType {
+    Invalid,
+    Wayland,
+};
+
 } // namespace WS
