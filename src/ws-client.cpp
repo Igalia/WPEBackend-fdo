@@ -221,6 +221,8 @@ const struct wl_callback_listener BaseTarget::s_callbackListener = {
 };
 
 const struct wpe_bridge_listener BaseTarget::s_bridgeListener = {
+    // implementation_info
+    [](void*, struct wpe_bridge*, uint32_t) { },
     // connected
     [](void* data, struct wpe_bridge*, uint32_t id)
     {
