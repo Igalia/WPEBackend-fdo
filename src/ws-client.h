@@ -63,14 +63,15 @@ public:
         virtual void dispatchFrameComplete() = 0;
     };
 
+    struct wl_surface* surface() const { return m_wl.surface; }
+
+    void requestFrame();
+
 protected:
     BaseTarget(int hostFD, Impl&);
     ~BaseTarget();
 
     void initialize(struct wl_display*);
-    void requestFrame();
-
-    struct wl_surface* surface() const { return m_wl.surface; }
 
 private:
     void frameComplete();

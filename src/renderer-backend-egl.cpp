@@ -25,8 +25,12 @@
 
 // Should be included early to force through the Wayland EGL platform
 #include <wayland-egl.h>
+#include <epoxy/egl.h>
 
 #include <wpe/wpe-egl.h>
+
+#include "egl-client.h"
+#include "egl-client-wayland.h"
 #include "interfaces.h"
 #include "ws-client.h"
 
@@ -36,10 +40,22 @@ class Backend final : public WS::BaseBackend {
 public:
     Backend(int hostFD)
         : WS::BaseBackend(hostFD)
-    { }
+    {
+        switch (type()) {
+        case WS::ClientImplementationType::Invalid:
+            g_error("Backend: invalid valid client implementation");
+            break;
+        case WS::ClientImplementationType::Wayland:
+            m_impl = WS::EGLClient::BackendImpl::create<WS::EGLClient::BackendWayland>(*this);
+            break;
+        }
+    }
+
     ~Backend() = default;
 
     using WS::BaseBackend::display;
+
+    std::unique_ptr<WS::EGLClient::BackendImpl> m_impl;
 };
 
 class Target final : public WS::BaseTarget, public WS::BaseTarget::Impl {
@@ -51,20 +67,27 @@ public:
 
     ~Target()
     {
-        g_clear_pointer(&m_egl.window, wl_egl_window_destroy);
-
+        m_impl = nullptr;
         m_target = nullptr;
     }
 
     void initialize(Backend& backend, uint32_t width, uint32_t height)
     {
         WS::BaseTarget::initialize(backend.display());
-        m_egl.window = wl_egl_window_create(surface(), width, height);
+
+        switch (backend.type()) {
+        case WS::ClientImplementationType::Invalid:
+            g_error("Target: invalid valid client implementation");
+            break;
+        case WS::ClientImplementationType::Wayland:
+            m_impl = WS::EGLClient::TargetImpl::create<WS::EGLClient::TargetWayland>(*this, width, height);
+            break;
+        }
     }
 
     using WS::BaseTarget::requestFrame;
 
-    struct wl_egl_window* window() const { return m_egl.window; }
+    std::unique_ptr<WS::EGLClient::TargetImpl> m_impl;
 
 private:
     // WS::BaseTarget::Impl
@@ -74,10 +97,6 @@ private:
     }
 
     struct wpe_renderer_backend_egl_target* m_target { nullptr };
-
-    struct {
-        struct wl_egl_window* window { nullptr };
-    } m_egl;
 };
 
 } // namespace
@@ -98,7 +117,7 @@ struct wpe_renderer_backend_egl_interface fdo_renderer_backend_egl = {
     [](void* data) -> EGLNativeDisplayType
     {
         auto& backend = *reinterpret_cast<Backend*>(data);
-        return EGLNativeDisplayType(backend.display());
+        return backend.m_impl->nativeDisplay();
     },
 };
 
@@ -125,22 +144,25 @@ struct wpe_renderer_backend_egl_target_interface fdo_renderer_backend_egl_target
     [](void* data) -> EGLNativeWindowType
     {
         auto& target = *reinterpret_cast<Target*>(data);
-        return target.window();
+        return target.m_impl->nativeWindow();
     },
     // resize
     [](void* data, uint32_t width, uint32_t height)
     {
-        wl_egl_window_resize(static_cast<Target*>(data)->window(), width, height, 0, 0);
+        auto& target = *reinterpret_cast<Target*>(data);
+        target.m_impl->resize(width, height);
     },
     // frame_will_render
     [](void* data)
     {
         auto& target = *reinterpret_cast<Target*>(data);
-        target.requestFrame();
+        target.m_impl->frameWillRender();
     },
     // frame_rendered
     [](void* data)
     {
+        auto& target = *reinterpret_cast<Target*>(data);
+        target.m_impl->frameRendered();
     },
 };
 
