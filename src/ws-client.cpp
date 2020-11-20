@@ -154,23 +154,6 @@ BaseTarget::~BaseTarget()
     }
 }
 
-GSource* ws_polling_source_new(const char* name, struct wl_display* display, struct wl_event_queue* eventQueue)
-{
-    GSource* wlSource = g_source_new(&TargetSource::s_sourceFuncs, sizeof(TargetSource));
-    auto& source = *reinterpret_cast<TargetSource*>(wlSource);
-    source.pfd.fd = wl_display_get_fd(display);
-    source.pfd.events = G_IO_IN | G_IO_ERR | G_IO_HUP;
-    source.pfd.revents = 0;
-    source.display = display;
-    source.queue = eventQueue;
-    source.isReading = false;
-
-    g_source_add_poll(wlSource, &source.pfd);
-    g_source_set_name(wlSource, name);
-    g_source_set_can_recurse(wlSource, TRUE);
-    return wlSource;
-}
-
 void BaseTarget::initialize(struct wl_display* display)
 {
     m_wl.eventQueue = wl_display_create_queue(display);
@@ -244,5 +227,23 @@ const struct wpe_bridge_listener BaseTarget::s_bridgeListener = {
         static_cast<BaseTarget*>(data)->bridgeConnected(id);
     },
 };
+
+
+GSource* ws_polling_source_new(const char* name, struct wl_display* display, struct wl_event_queue* eventQueue)
+{
+    GSource* wlSource = g_source_new(&TargetSource::s_sourceFuncs, sizeof(TargetSource));
+    auto& source = *reinterpret_cast<TargetSource*>(wlSource);
+    source.pfd.fd = wl_display_get_fd(display);
+    source.pfd.events = G_IO_IN | G_IO_ERR | G_IO_HUP;
+    source.pfd.revents = 0;
+    source.display = display;
+    source.queue = eventQueue;
+    source.isReading = false;
+
+    g_source_add_poll(wlSource, &source.pfd);
+    g_source_set_name(wlSource, name);
+    g_source_set_can_recurse(wlSource, TRUE);
+    return wlSource;
+}
 
 } // namespace WS
