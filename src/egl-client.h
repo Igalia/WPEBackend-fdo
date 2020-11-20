@@ -25,29 +25,46 @@
 
 #pragma once
 
-#include "ws.h"
-
-typedef void *EGLDisplay;
+#include <epoxy/egl.h>
+#include <memory>
 
 namespace WS {
 
-class ImplEGLStream final : public Instance::Impl {
+class BaseBackend;
+class BaseTarget;
+
+namespace EGLClient {
+
+class BackendImpl {
 public:
-    ImplEGLStream();
-    virtual ~ImplEGLStream();
+    template<typename T>
+    static std::unique_ptr<BackendImpl> create(BaseBackend& base)
+    {
+        return std::unique_ptr<BackendImpl>(new T(base));
+    }
 
-    ImplementationType type() const override { return ImplementationType::EGLStream; }
-    bool initialized() const override { return m_initialized; }
+    virtual ~BackendImpl() = default;
 
-    void surfaceAttach(Surface&, struct wl_resource*) override;
-    void surfaceCommit(Surface&) override;
-
-    bool initialize(EGLDisplay);
-
-private:
-    bool m_initialized { false };
-
-    struct wl_global* m_eglstreamController { nullptr };
+    virtual EGLNativeDisplayType nativeDisplay() const = 0;
+    virtual uint32_t platform() const = 0;
 };
 
-} // namespace WS
+class TargetImpl {
+public:
+    template<typename T>
+    static std::unique_ptr<TargetImpl> create(BaseTarget& base, uint32_t width, uint32_t height)
+    {
+        return std::unique_ptr<TargetImpl>(new T(base, width, height));
+    }
+
+    virtual ~TargetImpl() = default;
+
+    virtual EGLNativeWindowType nativeWindow() const = 0;
+
+    virtual void resize(uint32_t width, uint32_t height) = 0;
+
+    virtual void frameWillRender() = 0;
+    virtual void frameRendered() = 0;
+};
+
+} } // namespace WS::EGLClient

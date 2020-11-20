@@ -39,6 +39,7 @@ soversion_micro = soversion[1]  # Revision
 soversion = '@0@.@1@.@2@'.format(soversion_major, soversion_minor, soversion_micro)
 
 sources = [
+	'src/egl-client-wayland.cpp',
 	'src/exported-buffer-shm.cpp',
 	'src/exported-image-egl.cpp',
 	'src/fdo.cpp',

@@ -25,29 +25,43 @@
 
 #pragma once
 
-#include "ws.h"
+#include "egl-client.h"
 
-typedef void *EGLDisplay;
+struct wl_egl_window;
 
 namespace WS {
+namespace EGLClient {
 
-class ImplEGLStream final : public Instance::Impl {
+class BackendWayland final : public BackendImpl {
 public:
-    ImplEGLStream();
-    virtual ~ImplEGLStream();
+    BackendWayland(BaseBackend&);
+    virtual ~BackendWayland();
 
-    ImplementationType type() const override { return ImplementationType::EGLStream; }
-    bool initialized() const override { return m_initialized; }
-
-    void surfaceAttach(Surface&, struct wl_resource*) override;
-    void surfaceCommit(Surface&) override;
-
-    bool initialize(EGLDisplay);
+    EGLNativeDisplayType nativeDisplay() const override;
+    uint32_t platform() const override;
 
 private:
-    bool m_initialized { false };
-
-    struct wl_global* m_eglstreamController { nullptr };
+    BaseBackend& m_base;
 };
 
-} // namespace WS
+class TargetWayland final : public TargetImpl {
+public:
+    TargetWayland(BaseTarget&, uint32_t width, uint32_t height);
+    virtual ~TargetWayland();
+
+    EGLNativeWindowType nativeWindow() const override;
+
+    void resize(uint32_t width, uint32_t height) override;
+
+    void frameWillRender() override;
+    void frameRendered() override;
+
+private:
+    BaseTarget& m_base;
+
+    struct {
+        struct wl_egl_window* window;
+    } m_egl;
+};
+
+} } // namespace WS::EGLClient

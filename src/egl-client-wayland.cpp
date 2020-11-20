@@ -23,31 +23,61 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include <wayland-egl.h>
 
-#include "ws.h"
+#include "egl-client-wayland.h"
 
-typedef void *EGLDisplay;
+#include "ws-client.h"
 
 namespace WS {
+namespace EGLClient {
 
-class ImplEGLStream final : public Instance::Impl {
-public:
-    ImplEGLStream();
-    virtual ~ImplEGLStream();
+BackendWayland::BackendWayland(BaseBackend& base)
+    : m_base(base)
+{
+}
 
-    ImplementationType type() const override { return ImplementationType::EGLStream; }
-    bool initialized() const override { return m_initialized; }
+BackendWayland::~BackendWayland() = default;
 
-    void surfaceAttach(Surface&, struct wl_resource*) override;
-    void surfaceCommit(Surface&) override;
+EGLNativeDisplayType BackendWayland::nativeDisplay() const
+{
+    return m_base.display();
+}
 
-    bool initialize(EGLDisplay);
+uint32_t BackendWayland::platform() const
+{
+    return 0;
+}
 
-private:
-    bool m_initialized { false };
 
-    struct wl_global* m_eglstreamController { nullptr };
-};
+TargetWayland::TargetWayland(BaseTarget& base, uint32_t width, uint32_t height)
+    : m_base(base)
+{
+    m_egl.window = wl_egl_window_create(base.surface(), width, height);
+}
 
-} // namespace WS
+TargetWayland::~TargetWayland()
+{
+    g_clear_pointer(&m_egl.window, wl_egl_window_destroy);
+}
+
+EGLNativeWindowType TargetWayland::nativeWindow() const
+{
+    return m_egl.window;
+}
+
+void TargetWayland::resize(uint32_t width, uint32_t height)
+{
+    wl_egl_window_resize(m_egl.window, width, height, 0, 0);
+}
+
+void TargetWayland::frameWillRender()
+{
+    m_base.requestFrame();
+}
+
+void TargetWayland::frameRendered()
+{
+}
+
+} } // namespace WS::EGLClient

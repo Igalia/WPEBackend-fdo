@@ -27,6 +27,17 @@
   </copyright>
 
   <interface name="wpe_bridge" version="1">
+    <enum name="client_implementation_type">
+      <entry name="wayland" value="0"/>
+    </enum>
+
+    <request name="initialize">
+    </request>
+
+    <event name="implementation_info">
+      <arg name="type" type="uint" summary="See enum `implementation_type`"/>
+    </event>
+
     <request name="connect">
       <arg name="surface" type="object" interface="wl_surface"/>
     </request>
@@ -34,7 +45,6 @@
     <event name="connected">
       <arg name="id" type="uint"/>
     </event>
-
   </interface>
 
 </protocol>

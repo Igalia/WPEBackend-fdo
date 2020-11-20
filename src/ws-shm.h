@@ -34,7 +34,7 @@ public:
     ImplSHM();
     virtual ~ImplSHM();
 
-    Type type() const override { return Instance::Impl::Type::SHM; }
+    ImplementationType type() const override { return ImplementationType::SHM; }
     bool initialized() const override { return m_initialized; }
 
     void surfaceAttach(Surface&, struct wl_resource*) override;

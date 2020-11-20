@@ -120,14 +120,52 @@ GSourceFuncs TargetSource::s_sourceFuncs = {
 BaseBackend::BaseBackend(int hostFD)
 {
     m_wl.display = wl_display_connect_to_fd(hostFD);
+
+    struct wl_registry* registry = wl_display_get_registry(m_wl.display);
+    wl_registry_add_listener(registry, &s_registryListener, this);
+    wl_display_roundtrip(m_wl.display);
+    wl_registry_destroy(registry);
+
+    wpe_bridge_add_listener(m_wl.wpeBridge, &s_bridgeListener, this);
+    wpe_bridge_initialize(m_wl.wpeBridge);
+    wl_display_roundtrip(m_wl.display);
 }
 
 BaseBackend::~BaseBackend()
 {
-    if (m_wl.display)
-        wl_display_disconnect(m_wl.display);
-    m_wl.display = nullptr;
+    g_clear_pointer(&m_wl.wpeBridge, wpe_bridge_destroy);
+    g_clear_pointer(&m_wl.display, wl_display_disconnect);
 }
+
+const struct wl_registry_listener BaseBackend::s_registryListener = {
+    // global
+    [](void* data, struct wl_registry* registry, uint32_t name, const char* interface, uint32_t)
+    {
+        auto& backend = *reinterpret_cast<BaseBackend*>(data);
+
+        if (!std::strcmp(interface, "wpe_bridge"))
+            backend.m_wl.wpeBridge = static_cast<struct wpe_bridge*>(wl_registry_bind(registry, name, &wpe_bridge_interface, 1));
+    },
+    // global_remove
+    [](void*, struct wl_registry*, uint32_t) { },
+};
+
+const struct wpe_bridge_listener BaseBackend::s_bridgeListener = {
+    // implementation_info
+    [](void* data, struct wpe_bridge*, uint32_t implementationType)
+    {
+        auto& backend = *reinterpret_cast<BaseBackend*>(data);
+        switch (implementationType) {
+        case WPE_BRIDGE_CLIENT_IMPLEMENTATION_TYPE_WAYLAND:
+            backend.m_type = ClientImplementationType::Wayland;
+            break;
+        default:
+            break;
+        }
+    },
+    // connected
+    [](void* data, struct wpe_bridge*, uint32_t) { },
+};
 
 
 BaseTarget::BaseTarget(int hostFD, Impl& impl)
@@ -152,23 +190,6 @@ BaseTarget::~BaseTarget()
         g_source_destroy(m_glib.wlSource);
         g_source_unref(m_glib.wlSource);
     }
-}
-
-GSource* ws_polling_source_new(const char* name, struct wl_display* display, struct wl_event_queue* eventQueue)
-{
-    GSource* wlSource = g_source_new(&TargetSource::s_sourceFuncs, sizeof(TargetSource));
-    auto& source = *reinterpret_cast<TargetSource*>(wlSource);
-    source.pfd.fd = wl_display_get_fd(display);
-    source.pfd.events = G_IO_IN | G_IO_ERR | G_IO_HUP;
-    source.pfd.revents = 0;
-    source.display = display;
-    source.queue = eventQueue;
-    source.isReading = false;
-
-    g_source_add_poll(wlSource, &source.pfd);
-    g_source_set_name(wlSource, name);
-    g_source_set_can_recurse(wlSource, TRUE);
-    return wlSource;
 }
 
 void BaseTarget::initialize(struct wl_display* display)
@@ -238,11 +259,31 @@ const struct wl_callback_listener BaseTarget::s_callbackListener = {
 };
 
 const struct wpe_bridge_listener BaseTarget::s_bridgeListener = {
+    // implementation_info
+    [](void*, struct wpe_bridge*, uint32_t) { },
     // connected
     [](void* data, struct wpe_bridge*, uint32_t id)
     {
         static_cast<BaseTarget*>(data)->bridgeConnected(id);
     },
 };
+
+
+GSource* ws_polling_source_new(const char* name, struct wl_display* display, struct wl_event_queue* eventQueue)
+{
+    GSource* wlSource = g_source_new(&TargetSource::s_sourceFuncs, sizeof(TargetSource));
+    auto& source = *reinterpret_cast<TargetSource*>(wlSource);
+    source.pfd.fd = wl_display_get_fd(display);
+    source.pfd.events = G_IO_IN | G_IO_ERR | G_IO_HUP;
+    source.pfd.revents = 0;
+    source.display = display;
+    source.queue = eventQueue;
+    source.isReading = false;
+
+    g_source_add_poll(wlSource, &source.pfd);
+    g_source_set_name(wlSource, name);
+    g_source_set_can_recurse(wlSource, TRUE);
+    return wlSource;
+}
 
 } // namespace WS

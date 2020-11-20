@@ -159,6 +159,22 @@ static const struct wl_compositor_interface s_compositorInterface = {
 };
 
 static const struct wpe_bridge_interface s_wpeBridgeInterface = {
+    // initialize
+    [](struct wl_client*, struct wl_resource* resource)
+    {
+        uint32_t implementationType = WPE_BRIDGE_CLIENT_IMPLEMENTATION_TYPE_WAYLAND;
+        switch (Instance::singleton().impl().type()) {
+        case ImplementationType::EGL:
+        case ImplementationType::EGLStream:
+        case ImplementationType::SHM:
+            implementationType = WPE_BRIDGE_CLIENT_IMPLEMENTATION_TYPE_WAYLAND;
+            break;
+        default:
+            break;
+        }
+
+        wpe_bridge_send_implementation_info(resource, implementationType);
+    },
     // connect
     [](struct wl_client*, struct wl_resource* resource, struct wl_resource* surfaceResource)
     {
