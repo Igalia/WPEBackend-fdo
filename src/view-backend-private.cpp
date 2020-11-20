@@ -111,35 +111,25 @@ void ViewBackend::dispatchFrameCallbacks()
     }
     clearFrameCallbacks();
 
-    if (m_client)
-        wl_client_flush(m_client);
+    if (m_client.object)
+        wl_client_flush(m_client.object);
     wpe_view_backend_dispatch_frame_displayed(m_backend);
 }
 
 void ViewBackend::releaseBuffer(struct wl_resource* buffer_resource)
 {
     wl_buffer_send_release(buffer_resource);
-    if (m_client)
-        wl_client_flush(m_client);
+    if (m_client.object)
+        wl_client_flush(m_client.object);
 }
 
 void ViewBackend::registerSurface(uint32_t surfaceId)
 {
     m_surfaceId = surfaceId;
-    m_client = WS::Instance::singleton().registerViewBackend(m_surfaceId, *this);
- 
-    struct wl_client_destroy_listener *listener = new wl_client_destroy_listener {this, };
-    listener->destroyClientListener.notify = (wl_notify_func_t) [](struct wl_listener* listener, void* data)
-    {
-        struct wl_client_destroy_listener *container;
-        container = wl_container_of(listener, container, destroyClientListener);
+    m_client.object = WS::Instance::singleton().registerViewBackend(m_surfaceId, *this);
 
-        struct wl_client* client = (struct wl_client*) data;
-        container->backend->m_client = NULL;
-        delete container;  // Release the wl_client_destroy_listener instance since this is not longer needed.
-    };
-    wl_client_add_destroy_listener(m_client,
-                                   &listener->destroyClientListener);
+    m_client.destroyListener.notify = Client::destroyNotify;
+    wl_client_add_destroy_listener(m_client.object, &m_client.destroyListener);
 }
 
 void ViewBackend::unregisterSurface(uint32_t surfaceId)
@@ -178,6 +168,14 @@ void ViewBackend::clearFrameCallbacks()
         delete resource;
     }
     wl_list_init(&m_frameCallbacks);
+}
+
+void ViewBackend::Client::destroyNotify(struct wl_listener* listener, void*)
+{
+    Client* client;
+    client = wl_container_of(listener, client, destroyListener);
+
+    client->object = nullptr;
 }
 
 void ViewBackend::FrameCallbackResource::destroyNotify(struct wl_listener* listener, void*)
