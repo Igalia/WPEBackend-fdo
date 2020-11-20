@@ -27,6 +27,7 @@
 
 #include "wpe-bridge-client-protocol.h"
 #include "ipc.h"
+#include "ws-types.h"
 #include <glib.h>
 #include <wayland-client.h>
 
@@ -40,10 +41,18 @@ protected:
 public:
     struct wl_display* display() const { return m_wl.display; }
 
+    ClientImplementationType type() const { return m_type; }
+
 private:
+    static const struct wl_registry_listener s_registryListener;
+    static const struct wpe_bridge_listener s_bridgeListener;
+
     struct {
         struct wl_display* display;
+        struct wpe_bridge* wpeBridge { nullptr };
     } m_wl;
+
+    ClientImplementationType m_type { ClientImplementationType::Invalid };
 };
 
 class BaseTarget {

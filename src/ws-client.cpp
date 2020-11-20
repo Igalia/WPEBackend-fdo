@@ -120,14 +120,52 @@ GSourceFuncs TargetSource::s_sourceFuncs = {
 BaseBackend::BaseBackend(int hostFD)
 {
     m_wl.display = wl_display_connect_to_fd(hostFD);
+
+    struct wl_registry* registry = wl_display_get_registry(m_wl.display);
+    wl_registry_add_listener(registry, &s_registryListener, this);
+    wl_display_roundtrip(m_wl.display);
+    wl_registry_destroy(registry);
+
+    wpe_bridge_add_listener(m_wl.wpeBridge, &s_bridgeListener, this);
+    wpe_bridge_initialize(m_wl.wpeBridge);
+    wl_display_roundtrip(m_wl.display);
 }
 
 BaseBackend::~BaseBackend()
 {
-    if (m_wl.display)
-        wl_display_disconnect(m_wl.display);
-    m_wl.display = nullptr;
+    g_clear_pointer(&m_wl.wpeBridge, wpe_bridge_destroy);
+    g_clear_pointer(&m_wl.display, wl_display_disconnect);
 }
+
+const struct wl_registry_listener BaseBackend::s_registryListener = {
+    // global
+    [](void* data, struct wl_registry* registry, uint32_t name, const char* interface, uint32_t)
+    {
+        auto& backend = *reinterpret_cast<BaseBackend*>(data);
+
+        if (!std::strcmp(interface, "wpe_bridge"))
+            backend.m_wl.wpeBridge = static_cast<struct wpe_bridge*>(wl_registry_bind(registry, name, &wpe_bridge_interface, 1));
+    },
+    // global_remove
+    [](void*, struct wl_registry*, uint32_t) { },
+};
+
+const struct wpe_bridge_listener BaseBackend::s_bridgeListener = {
+    // implementation_info
+    [](void* data, struct wpe_bridge*, uint32_t implementationType)
+    {
+        auto& backend = *reinterpret_cast<BaseBackend*>(data);
+        switch (implementationType) {
+        case WPE_BRIDGE_CLIENT_IMPLEMENTATION_TYPE_WAYLAND:
+            backend.m_type = ClientImplementationType::Wayland;
+            break;
+        default:
+            break;
+        }
+    },
+    // connected
+    [](void* data, struct wpe_bridge*, uint32_t) { },
+};
 
 
 BaseTarget::BaseTarget(int hostFD, Impl& impl)
