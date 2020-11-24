@@ -119,6 +119,12 @@ struct wpe_renderer_backend_egl_interface fdo_renderer_backend_egl = {
         auto& backend = *reinterpret_cast<Backend*>(data);
         return backend.m_impl->nativeDisplay();
     },
+    // get_platform
+    [](void* data) -> uint32_t
+    {
+        auto& backend = *reinterpret_cast<Backend*>(data);
+        return backend.m_impl->platform();
+    },
 };
 
 struct wpe_renderer_backend_egl_target_interface fdo_renderer_backend_egl_target = {
