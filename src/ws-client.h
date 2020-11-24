@@ -71,7 +71,7 @@ protected:
     BaseTarget(int hostFD, Impl&);
     ~BaseTarget();
 
-    void initialize(struct wl_display*);
+    void initialize(BaseBackend&);
 
 private:
     void frameComplete();

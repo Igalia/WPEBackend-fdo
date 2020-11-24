@@ -192,8 +192,10 @@ BaseTarget::~BaseTarget()
     }
 }
 
-void BaseTarget::initialize(struct wl_display* display)
+void BaseTarget::initialize(BaseBackend& backend)
 {
+    struct wl_display* display = backend.display();
+
     m_wl.eventQueue = wl_display_create_queue(display);
 
     struct wl_registry* registry = wl_display_get_registry(display);

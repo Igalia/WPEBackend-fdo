@@ -73,7 +73,7 @@ public:
 
     void initialize(Backend& backend, uint32_t width, uint32_t height)
     {
-        WS::BaseTarget::initialize(backend.display());
+        WS::BaseTarget::initialize(backend);
 
         switch (backend.type()) {
         case WS::ClientImplementationType::Invalid:
