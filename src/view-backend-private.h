@@ -103,11 +103,27 @@ private:
 };
 
 struct wpe_view_backend_private {
-    ClientBundle* clientBundle;
-    struct wpe_view_backend* backend;
+    wpe_view_backend_private(std::unique_ptr<ClientBundle>&& clientBundle, struct wpe_view_backend* backend)
+        : clientBundle(std::move(clientBundle))
+        , backend(backend)
+    {
+    }
+
+    ~wpe_view_backend_private()
+    {
+        wpe_view_backend_destroy(backend);
+    }
+
+    std::unique_ptr<ClientBundle> clientBundle;
+    struct wpe_view_backend* backend { nullptr };
 };
 
-struct wpe_view_backend_exportable_fdo : wpe_view_backend_private { };
+struct wpe_view_backend_exportable_fdo : wpe_view_backend_private {
+    wpe_view_backend_exportable_fdo(std::unique_ptr<ClientBundle>&& clientBundle, struct wpe_view_backend* backend)
+        : wpe_view_backend_private(std::move(clientBundle), backend)
+    {
+    }
+};
 
 static struct wpe_view_backend_interface view_backend_private_interface = {
     // create
