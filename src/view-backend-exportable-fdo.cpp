@@ -170,22 +170,17 @@ __attribute__((visibility("default")))
 struct wpe_view_backend_exportable_fdo*
 wpe_view_backend_exportable_fdo_create(const struct wpe_view_backend_exportable_fdo_client* client, void* data, uint32_t width, uint32_t height)
 {
-    auto* clientBundle = new ClientBundleBuffer(client, data, nullptr, width, height);
+    auto clientBundle = std::unique_ptr<ClientBundleBuffer>(new ClientBundleBuffer(client, data, nullptr, width, height));
 
-    struct wpe_view_backend* backend = wpe_view_backend_create_with_backend_interface(&view_backend_exportable_fdo_interface, clientBundle);
+    struct wpe_view_backend* backend = wpe_view_backend_create_with_backend_interface(&view_backend_exportable_fdo_interface, clientBundle.get());
 
-    auto* exportable = new struct wpe_view_backend_exportable_fdo;
-    exportable->clientBundle = clientBundle;
-    exportable->backend = backend;
-
-    return exportable;
+    return new struct wpe_view_backend_exportable_fdo(std::move(clientBundle), backend);
 }
 
 __attribute__((visibility("default")))
 void
 wpe_view_backend_exportable_fdo_destroy(struct wpe_view_backend_exportable_fdo* exportable)
 {
-    wpe_view_backend_destroy(exportable->backend);
     delete exportable;
 }
 
@@ -207,14 +202,14 @@ __attribute__((visibility("default")))
 void
 wpe_view_backend_exportable_fdo_dispatch_release_buffer(struct wpe_view_backend_exportable_fdo* exportable, struct wl_resource* buffer)
 {
-    static_cast<ClientBundleBuffer*>(exportable->clientBundle)->releaseBuffer(buffer);
+    static_cast<ClientBundleBuffer*>(exportable->clientBundle.get())->releaseBuffer(buffer);
 }
 
 __attribute__((visibility("default")))
 void
 wpe_view_backend_exportable_fdo_dispatch_release_shm_exported_buffer(struct wpe_view_backend_exportable_fdo* exportable, struct wpe_fdo_shm_exported_buffer* buffer)
 {
-    static_cast<ClientBundleBuffer*>(exportable->clientBundle)->releaseBuffer(buffer);
+    static_cast<ClientBundleBuffer*>(exportable->clientBundle.get())->releaseBuffer(buffer);
 }
 
 }

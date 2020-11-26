@@ -103,8 +103,19 @@ private:
 };
 
 struct wpe_view_backend_exportable_fdo {
-    ClientBundle* clientBundle;
-    struct wpe_view_backend* backend;
+    wpe_view_backend_exportable_fdo(std::unique_ptr<ClientBundle>&& clientBundle, struct wpe_view_backend* backend)
+	: clientBundle(std::move(clientBundle))
+        , backend(backend)
+    {
+    }
+
+    ~wpe_view_backend_exportable_fdo()
+    {
+        wpe_view_backend_destroy(backend);
+    }
+
+    std::unique_ptr<ClientBundle> clientBundle;
+    struct wpe_view_backend* backend { nullptr };
 };
 
 static struct wpe_view_backend_interface view_backend_exportable_fdo_interface = {
