@@ -34,11 +34,7 @@
 extern "C" {
 #endif
 
-#include <wpe/wpe.h>
-
 struct wpe_fdo_shm_exported_buffer;
-
-struct wl_resource;
 struct wl_shm_buffer;
 
 struct wl_shm_buffer*

@@ -30,11 +30,11 @@
 #ifndef __view_backend_exportable_h__
 #define __view_backend_exportable_h__
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <wpe/wpe.h>
 
 struct wl_resource;
 

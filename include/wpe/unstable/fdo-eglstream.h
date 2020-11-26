@@ -32,8 +32,8 @@
 
 #define __WPE_FDO_EGLSTREAM_H_INSIDE__
 
-#include <wpe/unstable/initialize-eglstream.h>
-#include <wpe/unstable/view-backend-exportable-eglstream.h>
+#include "initialize-eglstream.h"
+#include "view-backend-exportable-eglstream.h"
 
 #undef __WPE_FDO_EGLSTREAM_H_INSIDE__
 
