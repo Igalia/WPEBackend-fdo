@@ -30,11 +30,11 @@
 #ifndef __exported_image_egl_h__
 #define __exported_image_egl_h__
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <wpe/wpe.h>
 
 typedef void* EGLImageKHR;
 
