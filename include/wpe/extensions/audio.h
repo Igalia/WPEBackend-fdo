@@ -26,6 +26,7 @@
 #ifndef __audio_h__
 #define __audio_h__
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #ifdef __cplusplus

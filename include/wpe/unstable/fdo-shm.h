@@ -32,8 +32,8 @@
 
 #define __WPE_FDO_SHM_H_INSIDE__
 
-#include <wpe/exported-buffer-shm.h>
-#include <wpe/unstable/initialize-shm.h>
+#include "../exported-buffer-shm.h"
+#include "initialize-shm.h"
 
 #undef __WPE_FDO_SHM_H_INSIDE__
 
