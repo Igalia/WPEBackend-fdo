@@ -287,40 +287,36 @@ __attribute__((visibility("default")))
 struct wpe_view_backend_exportable_fdo*
 wpe_view_backend_exportable_fdo_egl_create(const struct wpe_view_backend_exportable_fdo_egl_client* client, void* data, uint32_t width, uint32_t height)
 {
-    ClientBundle* clientBundle;
+    std::unique_ptr<ClientBundle> clientBundle;
     if (client->export_fdo_egl_image)
-        clientBundle = new ClientBundleEGL(client, data, nullptr, width, height);
+        clientBundle.reset(new ClientBundleEGL(client, data, nullptr, width, height));
     else
-        clientBundle = new ClientBundleEGLDeprecated(client, data, nullptr, width, height);
+        clientBundle.reset(new ClientBundleEGLDeprecated(client, data, nullptr, width, height));
 
-    struct wpe_view_backend* backend = wpe_view_backend_create_with_backend_interface(&view_backend_private_interface, clientBundle);
+    struct wpe_view_backend* backend = wpe_view_backend_create_with_backend_interface(&view_backend_private_interface, clientBundle.get());
 
-    auto* exportable = new struct wpe_view_backend_exportable_fdo;
-    exportable->clientBundle = clientBundle;
-    exportable->backend = backend;
-
-    return exportable;
+    return new struct wpe_view_backend_exportable_fdo(std::move(clientBundle), backend);
 }
 
 __attribute__((visibility("default")))
 void
 wpe_view_backend_exportable_fdo_egl_dispatch_release_image(struct wpe_view_backend_exportable_fdo* exportable, EGLImageKHR image)
 {
-    static_cast<ClientBundleEGLDeprecated*>(exportable->clientBundle)->releaseImage(image);
+    static_cast<ClientBundleEGLDeprecated*>(exportable->clientBundle.get())->releaseImage(image);
 }
 
 __attribute__((visibility("default")))
 void
 wpe_view_backend_exportable_fdo_egl_dispatch_release_exported_image(struct wpe_view_backend_exportable_fdo* exportable, struct wpe_fdo_egl_exported_image* image)
 {
-    static_cast<ClientBundleEGL*>(exportable->clientBundle)->releaseImage(image);
+    static_cast<ClientBundleEGL*>(exportable->clientBundle.get())->releaseImage(image);
 }
 
 __attribute__((visibility("default")))
 void
 wpe_view_backend_exportable_fdo_egl_dispatch_release_shm_exported_buffer(struct wpe_view_backend_exportable_fdo* exportable, struct wpe_fdo_shm_exported_buffer* buffer)
 {
-    static_cast<ClientBundleEGL*>(exportable->clientBundle)->releaseShmBuffer(buffer);
+    static_cast<ClientBundleEGL*>(exportable->clientBundle.get())->releaseShmBuffer(buffer);
 }
 
 }
