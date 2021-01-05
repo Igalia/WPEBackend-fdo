@@ -33,7 +33,8 @@ __attribute__((visibility("default")))
 bool
 wpe_fdo_initialize_shm(void)
 {
-    WS::Instance::construct(std::unique_ptr<WS::ImplSHM>(new WS::ImplSHM));
+    if (!WS::Instance::isConstructed())
+        WS::Instance::construct(std::unique_ptr<WS::ImplSHM>(new WS::ImplSHM));
 
     auto& instance = WS::Instance::singleton();
     return static_cast<WS::ImplSHM&>(instance.impl()).initialize();
