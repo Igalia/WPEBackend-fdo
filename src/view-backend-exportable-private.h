@@ -30,6 +30,7 @@
 #include "wpe/view-backend-exportable.h"
 
 #include <gio/gio.h>
+#include <wpe/wpe.h>
 
 class ViewBackend;
 
