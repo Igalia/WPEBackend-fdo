@@ -1,4 +1,4 @@
-project('WPEBackend-fdo', ['c', 'cpp'],
+project('wpebackend-fdo', ['c', 'cpp'],
 	meson_version: '>=0.49',
 	default_options: [
 		'b_ndebug=if-release',
@@ -301,7 +301,7 @@ generated_sources = [
 	wayland_eglstream_controller_server_proto_header,
 ]
 
-lib = shared_library(meson.project_name() + '-' + api_version,
+lib = shared_library('WPEBackend-fdo-' + api_version,
 	sources, generated_sources,
 	install: true,
 	dependencies: deps,
@@ -339,7 +339,7 @@ if get_option('build_docs')
 	assert(hotdoc.has_extensions('c-extension'),
 		'The HotDoc C extension is required.'
 	)
-	libwpe_doc = hotdoc.generate_doc(meson.project_name(),
+	libwpe_doc = hotdoc.generate_doc('WPEBackend-fdo',
 		project_version: api_version,
 		index: 'docs/index.markdown',
 		sitemap: 'docs/sitemap.txt',
