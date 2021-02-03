@@ -1,3 +1,13 @@
+========================
+1.9.1 - February 3, 2021
+========================
+
+- Added API to query whether receiving rendered audio has been configured.
+- The CMake build system has been removed in favor of Meson.
+- Fixed memory leak on the second (and subsequent) use of
+  wpe_fdo_initialize_shm().
+- Fixed memory leak when releasing exportable view backends.
+
 =====================
 1.7.1 - July 29, 2020
 =====================
