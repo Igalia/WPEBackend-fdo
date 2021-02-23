@@ -73,7 +73,8 @@ void Connection::send(uint32_t messageId, uint32_t messageBody)
     uint32_t message[2] = { messageId, messageBody };
     gssize len = g_socket_send(m_socket, reinterpret_cast<gchar*>(message), messageSize, nullptr, &error);
     if (len == -1) {
-        g_warning("Failed to send message %u to socket: %s", messageId, error->message);
+        if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_CONNECTION_CLOSED))
+            g_warning("Failed to send message %u to socket: %s", messageId, error->message);
         g_error_free(error);
     }
 }
@@ -87,7 +88,8 @@ gboolean Connection::s_socketCallback(GSocket* socket, GIOCondition condition, g
     uint32_t message[2];
     gssize len = g_socket_receive(socket, reinterpret_cast<gchar*>(message), messageSize, nullptr, &error);
     if (len == -1) {
-        g_warning("Failed to read message from socket: %s", error->message);
+        if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_CONNECTION_CLOSED))
+            g_warning("Failed to read message from socket: %s", error->message);
         g_error_free(error);
         return FALSE;
     }
