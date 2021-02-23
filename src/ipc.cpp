@@ -81,7 +81,7 @@ void Connection::send(uint32_t messageId, uint32_t messageBody)
 gboolean Connection::s_socketCallback(GSocket* socket, GIOCondition condition, gpointer data)
 {
     if (!(condition & G_IO_IN))
-                return TRUE;
+        return TRUE;
 
     GError* error = nullptr;
     uint32_t message[2];
