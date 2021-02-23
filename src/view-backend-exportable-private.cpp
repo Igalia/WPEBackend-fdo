@@ -51,7 +51,7 @@ ViewBackend::~ViewBackend()
 void ViewBackend::initialize()
 {
     int sockets[2];
-    int ret = socketpair(AF_UNIX, SOCK_STREAM, 0, sockets);
+    int ret = socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, sockets);
     if (ret == -1)
         return;
 
