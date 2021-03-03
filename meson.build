@@ -7,7 +7,7 @@ project('wpebackend-fdo', ['c', 'cpp'],
 		'cpp_std=c++11',
 	],
 	license: 'BSD-2-Clause',
-	version: '1.9.1',
+	version: run_command(join_paths('scripts', 'version.py')).stdout().strip(),
 )
 
 # This refers to the API level provided. This is modified only with major,
@@ -23,14 +23,6 @@ api_version = '1.0'
 #   change to [C+1, 0, 0]
 # - If the interface is the same as the previous version, use [C, R+1, A].
 soversion = [8, 1, 7]
-
-# Split the *project* version into its components.
-version_info = meson.project_version().split('.')
-version_info = {
-	'PROJECT_VERSION_MAJOR': version_info[0],
-	'PROJECT_VERSION_MINOR': version_info[1],
-	'PROJECT_VERSION_PATCH': version_info[2],
-}
 
 # Mangle [C, R, A] into an actual usable *soversion*.
 soversion_major = soversion[0] - soversion[2]  # Current-Age
@@ -68,20 +60,15 @@ sources = [
 ]
 
 api_headers = [
-	'include/wpe/exported-image-egl.h',
 	'include/wpe/exported-buffer-shm.h',
-	'include/wpe/initialize-egl.h',
-	'include/wpe/view-backend-exportable.h',
-	'include/wpe/view-backend-exportable-egl.h',
+	'include/wpe/exported-image-egl.h',
 	'include/wpe/fdo-egl.h',
 	'include/wpe/fdo.h',
-
-	# Generated API headers.
-	configure_file(
-		input: 'include/wpe/version.h.in',
-		output: 'version.h',
-		configuration: version_info,
-	),
+	'include/wpe/initialize-egl.h',
+	'include/wpe/version.h',
+	'include/wpe/view-backend-exportable-egl.h',
+	'include/wpe/view-backend-exportable.h',
+	'include/wpe/wpebackend-fdo-version.h',
 ]
 
 extensions_api_headers = [

@@ -23,10 +23,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "wpe/extensions/video-plane-display-dmabuf.h"
+#include "../../include/wpe/extensions/video-plane-display-dmabuf.h"
 
-#include "wpe-video-plane-display-dmabuf-client-protocol.h"
 #include "../ws-client.h"
+#include "wpe-video-plane-display-dmabuf-client-protocol.h"
 #include <wpe/wpe-egl.h>
 #include <cstring>
 

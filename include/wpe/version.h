@@ -30,6 +30,8 @@
 #ifndef __wpe_fdo_version_h__
 #define __wpe_fdo_version_h__
 
+#include "wpebackend-fdo-version.h"
+
 /**
  * WPE_FDO_MAJOR_VERSION:
  *
@@ -47,10 +49,6 @@
  *
  * Micro version of the headers being used at compilation time.
  */
-
-#define WPE_FDO_MAJOR_VERSION (@PROJECT_VERSION_MAJOR@)
-#define WPE_FDO_MINOR_VERSION (@PROJECT_VERSION_MINOR@)
-#define WPE_FDO_MICRO_VERSION (@PROJECT_VERSION_PATCH@)
 
 /**
  * WPE_FDO_CHECK_VERSION:

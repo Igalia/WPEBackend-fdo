@@ -24,9 +24,9 @@
  */
 
 
+#include "../include/wpe/unstable/view-backend-exportable-eglstream.h"
 #include "view-backend-private.h"
 #include <cassert>
-#include <wpe/unstable/view-backend-exportable-eglstream.h>
 
 namespace {
 

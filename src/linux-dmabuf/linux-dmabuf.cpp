@@ -3,10 +3,10 @@
  * along with its license.
  */
 
-#include <assert.h>
+#include "../ws-egl.h"
 #include "linux-dmabuf.h"
 #include "linux-dmabuf-unstable-v1-server-protocol.h"
-#include "../ws-egl.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

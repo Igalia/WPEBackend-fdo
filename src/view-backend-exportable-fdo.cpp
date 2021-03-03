@@ -23,11 +23,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../include/wpe/view-backend-exportable.h"
 #include "exported-buffer-shm-private.h"
 #include "linux-dmabuf/linux-dmabuf.h"
 #include "view-backend-private.h"
 #include "ws.h"
-#include "wpe/view-backend-exportable.h"
 #include <cassert>
 #include <cstring>
 
