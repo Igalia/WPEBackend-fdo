@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017, 2018 Igalia S.L.
+ * Copyright (C) 2021 Igalia S.L.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,21 +23,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "../include/wpe/initialize-egl.h"
+#ifndef WPEBACKEND_FDO_VERSION_H
+#define WPEBACKEND_FDO_VERSION_H
 
-#include "ws-egl.h"
+#define WPE_FDO_MAJOR_VERSION 1
+#define WPE_FDO_MINOR_VERSION 9
+#define WPE_FDO_MICRO_VERSION 1
 
-extern "C" {
-
-__attribute__((visibility("default")))
-bool
-wpe_fdo_initialize_for_egl_display(EGLDisplay display)
-{
-    if (!WS::Instance::isConstructed())
-        WS::Instance::construct(std::unique_ptr<WS::ImplEGL>(new WS::ImplEGL));
-
-    auto& instance = WS::Instance::singleton();
-    return static_cast<WS::ImplEGL&>(instance.impl()).initialize(display);
-}
-
-}
+#endif /* !WPEBACKEND_FDO_VERSION_H */

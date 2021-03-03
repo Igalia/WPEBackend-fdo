@@ -23,10 +23,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "wpe/extensions/audio.h"
+#include "../../include/wpe/extensions/audio.h"
 
-#include "wpe-audio-client-protocol.h"
 #include "../ws-client.h"
+#include "wpe-audio-client-protocol.h"
 #include <wpe/wpe-egl.h>
 #include <cstring>
 

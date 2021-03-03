@@ -23,13 +23,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../include/wpe/view-backend-exportable-egl.h"
+
 #include "exported-buffer-shm-private.h"
 #include "linux-dmabuf/linux-dmabuf.h"
 #include "view-backend-exportable-fdo-egl-private.h"
 #include "view-backend-private.h"
 #include "ws-egl.h"
-#include "wpe/view-backend-exportable-egl.h"
-
 #include <epoxy/egl.h>
 #include <cassert>
 #include <list>

@@ -23,7 +23,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "wpe/extensions/audio.h"
+#include "../../include/wpe/extensions/audio.h"
 
 #include "../ws.h"
 #include <unistd.h>

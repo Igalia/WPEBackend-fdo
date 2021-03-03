@@ -23,9 +23,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../include/wpe/exported-image-egl.h"
 #include "view-backend-exportable-fdo-egl-private.h"
 #include "ws.h"
-#include "wpe/exported-image-egl.h"
 
 #include <cassert>
 
