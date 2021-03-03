@@ -35,7 +35,11 @@ extern "C" {
 #endif
 
 struct wpe_fdo_shm_exported_buffer;
+struct wl_resource;
 struct wl_shm_buffer;
+
+struct wl_resource*
+wpe_fdo_shm_exported_buffer_get_resource(struct wpe_fdo_shm_exported_buffer*);
 
 struct wl_shm_buffer*
 wpe_fdo_shm_exported_buffer_get_shm_buffer(struct wpe_fdo_shm_exported_buffer*);
