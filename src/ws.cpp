@@ -516,7 +516,6 @@ void Instance::unregisterViewBackend(uint32_t surfaceId)
     auto it = m_viewBackendMap.find(surfaceId);
     if (it != m_viewBackendMap.end()) {
         it->second->exportableClient = nullptr;
-        wl_client_destroy(it->second->client);
         m_viewBackendMap.erase(it);
     }
 }
