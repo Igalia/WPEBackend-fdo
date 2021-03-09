@@ -1,3 +1,12 @@
+======================
+1.8.1 - March 10, 2021
+======================
+
+- Fixed invalid usage of Wayland client connections in the nested compositor
+  which caused sporadic crashes in certain conditions.
+- Fixed a file descriptor leak on view backend initialization.
+- Fixed a small memory leak when releasing exportable view backends.
+
 ==========================
 1.8.0 - September 11, 2020
 ==========================
