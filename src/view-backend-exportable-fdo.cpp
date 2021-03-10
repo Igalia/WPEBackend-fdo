@@ -121,6 +121,17 @@ public:
         assert(!"should not be reached");
     }
 
+    struct wpe_dmabuf_pool_entry* createDmabufPoolEntry() override
+    {
+        assert(!"should not be reached");
+        return nullptr;
+    }
+
+    void commitDmabufPoolEntry(struct wpe_dmabuf_pool_entry*) override
+    {
+        assert(!"should not be reached");
+    }
+
     void releaseBuffer(struct wl_resource* buffer)
     {
         BufferResource* matchingResource = nullptr;

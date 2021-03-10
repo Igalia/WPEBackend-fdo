@@ -23,65 +23,49 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <wayland-egl.h>
+#include "ws-dmabuf-pool.h"
 
-#include "egl-client-wayland.h"
-
-#include "ws-client.h"
+#include "dmabuf-pool-entry-private.h"
+#include "wpe-dmabuf-pool-server-protocol.h"
 
 namespace WS {
-namespace EGLClient {
 
-BackendWayland::BackendWayland(BaseBackend& base)
-    : m_base(base)
+ImplDmabufPool::ImplDmabufPool() = default;
+ImplDmabufPool::~ImplDmabufPool() = default;
+
+void ImplDmabufPool::surfaceAttach(Surface& surface, struct wl_resource* bufferResource)
 {
+    if (surface.bufferResource)
+        wl_buffer_send_release(surface.bufferResource);
+    surface.bufferResource = bufferResource;
 }
 
-BackendWayland::~BackendWayland() = default;
-
-EGLNativeDisplayType BackendWayland::nativeDisplay() const
+void ImplDmabufPool::surfaceCommit(Surface& surface)
 {
-    return m_base.display();
+    if (!surface.apiClient)
+        return;
+
+    struct wl_resource* bufferResource = surface.bufferResource;
+    surface.bufferResource = nullptr;
+    if (!bufferResource)
+        return;
+
+    auto* entry = static_cast<struct wpe_dmabuf_pool_entry*>(wl_resource_get_user_data(bufferResource));
+    surface.apiClient->commitDmabufPoolEntry(entry);
 }
 
-uint32_t BackendWayland::platform() const
+struct wpe_dmabuf_pool_entry* ImplDmabufPool::createDmabufPoolEntry(Surface& surface)
 {
-    return 0;
+    if (!surface.apiClient)
+        return nullptr;
+
+    return surface.apiClient->createDmabufPoolEntry();
 }
 
-
-TargetWayland::TargetWayland(BaseTarget& base, uint32_t width, uint32_t height)
-    : m_base(base)
+bool ImplDmabufPool::initialize()
 {
-    m_egl.window = wl_egl_window_create(base.surface(), width, height);
+    m_initialized = true;
+    return true;
 }
 
-TargetWayland::~TargetWayland()
-{
-    g_clear_pointer(&m_egl.window, wl_egl_window_destroy);
-}
-
-EGLNativeWindowType TargetWayland::nativeWindow() const
-{
-    return m_egl.window;
-}
-
-void TargetWayland::resize(uint32_t width, uint32_t height)
-{
-    wl_egl_window_resize(m_egl.window, width, height, 0, 0);
-}
-
-void TargetWayland::frameWillRender()
-{
-    m_base.requestFrame();
-}
-
-void TargetWayland::frameRendered()
-{
-}
-
-void TargetWayland::deinitialize()
-{
-}
-
-} } // namespace WS::EGLClient
+} // namespace WS

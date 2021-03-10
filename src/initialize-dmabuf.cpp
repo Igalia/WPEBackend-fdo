@@ -23,65 +23,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <wayland-egl.h>
+#include "wpe/unstable/initialize-dmabuf.h"
 
-#include "egl-client-wayland.h"
+#include "ws-dmabuf-pool.h"
 
-#include "ws-client.h"
+extern "C" {
 
-namespace WS {
-namespace EGLClient {
-
-BackendWayland::BackendWayland(BaseBackend& base)
-    : m_base(base)
+__attribute__((visibility("default")))
+bool
+wpe_fdo_initialize_dmabuf(void)
 {
+    WS::Instance::construct(std::unique_ptr<WS::ImplDmabufPool>(new WS::ImplDmabufPool));
+
+    auto& instance = WS::Instance::singleton();
+    return static_cast<WS::ImplDmabufPool&>(instance.impl()).initialize();
 }
 
-BackendWayland::~BackendWayland() = default;
-
-EGLNativeDisplayType BackendWayland::nativeDisplay() const
-{
-    return m_base.display();
 }
-
-uint32_t BackendWayland::platform() const
-{
-    return 0;
-}
-
-
-TargetWayland::TargetWayland(BaseTarget& base, uint32_t width, uint32_t height)
-    : m_base(base)
-{
-    m_egl.window = wl_egl_window_create(base.surface(), width, height);
-}
-
-TargetWayland::~TargetWayland()
-{
-    g_clear_pointer(&m_egl.window, wl_egl_window_destroy);
-}
-
-EGLNativeWindowType TargetWayland::nativeWindow() const
-{
-    return m_egl.window;
-}
-
-void TargetWayland::resize(uint32_t width, uint32_t height)
-{
-    wl_egl_window_resize(m_egl.window, width, height, 0, 0);
-}
-
-void TargetWayland::frameWillRender()
-{
-    m_base.requestFrame();
-}
-
-void TargetWayland::frameRendered()
-{
-}
-
-void TargetWayland::deinitialize()
-{
-}
-
-} } // namespace WS::EGLClient

@@ -32,10 +32,13 @@ soversion_micro = soversion[1]  # Revision
 soversion = '@0@.@1@.@2@'.format(soversion_major, soversion_minor, soversion_micro)
 
 sources = [
+	'src/dmabuf-pool-entry.cpp',
+	'src/egl-client-dmabuf-pool.cpp',
 	'src/egl-client-wayland.cpp',
 	'src/exported-buffer-shm.cpp',
 	'src/exported-image-egl.cpp',
 	'src/fdo.cpp',
+	'src/initialize-dmabuf.cpp',
 	'src/initialize-egl.cpp',
 	'src/initialize-eglstream.cpp',
 	'src/initialize-shm.cpp',
@@ -43,12 +46,14 @@ sources = [
 	'src/renderer-backend-egl.cpp',
 	'src/renderer-host.cpp',
 	'src/version.c',
+	'src/view-backend-dmabuf-pool-fdo.cpp',
 	'src/view-backend-exportable-fdo.cpp',
 	'src/view-backend-exportable-fdo-egl.cpp',
 	'src/view-backend-exportable-fdo-eglstream.cpp',
 	'src/view-backend-private.cpp',
 	'src/ws.cpp',
 	'src/ws-client.cpp',
+	'src/ws-dmabuf-pool.cpp',
 	'src/ws-egl.cpp',
 	'src/ws-eglstream.cpp',
 	'src/ws-shm.cpp',
@@ -78,10 +83,14 @@ extensions_api_headers = [
 ]
 
 unstable_api_headers = [
+	'include/wpe/unstable/dmabuf-pool-entry.h',
+	'include/wpe/unstable/fdo-dmabuf.h',
 	'include/wpe/unstable/fdo-eglstream.h',
 	'include/wpe/unstable/fdo-shm.h',
+	'include/wpe/unstable/initialize-dmabuf.h',
 	'include/wpe/unstable/initialize-shm.h',
 	'include/wpe/unstable/initialize-eglstream.h',
+	'include/wpe/unstable/view-backend-dmabuf-pool-fdo.h',
 	'include/wpe/unstable/view-backend-exportable-eglstream.h',
 ]
 
@@ -196,6 +205,26 @@ wayland_eglstream_controller_proto_source = custom_target(
 	command: [wayland_scanner, wayland_scanner_code, '@INPUT@', '@OUTPUT@'],
 )
 
+# Wayland extension: dmabuf pool
+wpe_dmabuf_pool_client_proto_header = custom_target(
+	'dmabuf-pool-client-proto-header',
+	input: 'src/dmabuf-pool/wpe-dmabuf-pool.xml',
+	output: '@BASENAME@-client-protocol.h',
+	command: [wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'],
+)
+wpe_dmabuf_pool_server_proto_header = custom_target(
+	'dmabuf-pool-server-proto-header',
+	input: 'src/dmabuf-pool/wpe-dmabuf-pool.xml',
+	output: '@BASENAME@-server-protocol.h',
+	command: [wayland_scanner, 'server-header', '@INPUT@', '@OUTPUT@'],
+)
+wpe_dmabuf_pool_proto_source = custom_target(
+	'dmabuf-pool-proto-source',
+	input: 'src/dmabuf-pool/wpe-dmabuf-pool.xml',
+	output: '@BASENAME@-protocol.c',
+	command: [wayland_scanner, wayland_scanner_code, '@INPUT@', '@OUTPUT@'],
+)
+
 cxx = meson.get_compiler('cpp')
 
 # Switch to the 'cpp_eh=none' default option when updating to Meson 0.51 or newer, see
@@ -285,6 +314,9 @@ generated_sources = [
 	wpe_video_plane_display_dmabuf_server_proto_header,
 	wayland_eglstream_controller_proto_source,
 	wayland_eglstream_controller_server_proto_header,
+	wpe_dmabuf_pool_client_proto_header,
+	wpe_dmabuf_pool_server_proto_header,
+	wpe_dmabuf_pool_proto_source,
 ]
 
 lib = shared_library('WPEBackend-fdo-' + api_version,

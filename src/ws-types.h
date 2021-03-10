@@ -28,6 +28,7 @@
 namespace WS {
 
 enum class ImplementationType {
+    DmabufPool,
     EGL,
     EGLStream,
     SHM,
@@ -35,6 +36,7 @@ enum class ImplementationType {
 
 enum class ClientImplementationType {
     Invalid,
+    DmabufPool,
     Wayland,
 };
 

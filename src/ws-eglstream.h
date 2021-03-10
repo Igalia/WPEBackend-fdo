@@ -42,6 +42,8 @@ public:
     void surfaceAttach(Surface&, struct wl_resource*) override;
     void surfaceCommit(Surface&) override;
 
+    struct wpe_dmabuf_pool_entry* createDmabufPoolEntry(Surface&) override { return nullptr; }
+
     bool initialize(EGLDisplay);
 
 private:

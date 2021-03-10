@@ -23,65 +23,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <wayland-egl.h>
+#ifdef __WEBKIT_WEB_EXTENSION_H__
+#error "Headers <wpe/unstable/fdo-dmabuf.h> and <wpe/webkit-web-extension.h> cannot be included together."
+#endif
 
-#include "egl-client-wayland.h"
+#pragma once
 
-#include "ws-client.h"
+#define __WPE_FDO_DMABUF_H_INSIDE__
 
-namespace WS {
-namespace EGLClient {
+#include "dmabuf-pool-entry.h"
+#include "initialize-dmabuf.h"
+#include "view-backend-dmabuf-pool-fdo.h"
 
-BackendWayland::BackendWayland(BaseBackend& base)
-    : m_base(base)
-{
-}
-
-BackendWayland::~BackendWayland() = default;
-
-EGLNativeDisplayType BackendWayland::nativeDisplay() const
-{
-    return m_base.display();
-}
-
-uint32_t BackendWayland::platform() const
-{
-    return 0;
-}
-
-
-TargetWayland::TargetWayland(BaseTarget& base, uint32_t width, uint32_t height)
-    : m_base(base)
-{
-    m_egl.window = wl_egl_window_create(base.surface(), width, height);
-}
-
-TargetWayland::~TargetWayland()
-{
-    g_clear_pointer(&m_egl.window, wl_egl_window_destroy);
-}
-
-EGLNativeWindowType TargetWayland::nativeWindow() const
-{
-    return m_egl.window;
-}
-
-void TargetWayland::resize(uint32_t width, uint32_t height)
-{
-    wl_egl_window_resize(m_egl.window, width, height, 0, 0);
-}
-
-void TargetWayland::frameWillRender()
-{
-    m_base.requestFrame();
-}
-
-void TargetWayland::frameRendered()
-{
-}
-
-void TargetWayland::deinitialize()
-{
-}
-
-} } // namespace WS::EGLClient
+#undef __WPE_FDO_DMABUF_H_INSIDE__

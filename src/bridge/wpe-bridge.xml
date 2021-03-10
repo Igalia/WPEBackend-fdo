@@ -29,6 +29,7 @@
   <interface name="wpe_bridge" version="1">
     <enum name="client_implementation_type">
       <entry name="wayland" value="0"/>
+      <entry name="dmabuf_pool" value="1"/>
     </enum>
 
     <request name="initialize">

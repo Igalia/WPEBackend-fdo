@@ -23,65 +23,26 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <wayland-egl.h>
+#pragma once
 
-#include "egl-client-wayland.h"
+#include "wpe/unstable/dmabuf-pool-entry.h"
 
-#include "ws-client.h"
+#include <array>
 
-namespace WS {
-namespace EGLClient {
+struct wl_resource;
 
-BackendWayland::BackendWayland(BaseBackend& base)
-    : m_base(base)
-{
-}
+struct wpe_dmabuf_pool_entry {
+    struct wl_resource* bufferResource { nullptr };
 
-BackendWayland::~BackendWayland() = default;
+    void* data { nullptr };
 
-EGLNativeDisplayType BackendWayland::nativeDisplay() const
-{
-    return m_base.display();
-}
+    uint32_t width { 0 };
+    uint32_t height { 0 };
+    uint32_t format { 0 };
 
-uint32_t BackendWayland::platform() const
-{
-    return 0;
-}
-
-
-TargetWayland::TargetWayland(BaseTarget& base, uint32_t width, uint32_t height)
-    : m_base(base)
-{
-    m_egl.window = wl_egl_window_create(base.surface(), width, height);
-}
-
-TargetWayland::~TargetWayland()
-{
-    g_clear_pointer(&m_egl.window, wl_egl_window_destroy);
-}
-
-EGLNativeWindowType TargetWayland::nativeWindow() const
-{
-    return m_egl.window;
-}
-
-void TargetWayland::resize(uint32_t width, uint32_t height)
-{
-    wl_egl_window_resize(m_egl.window, width, height, 0, 0);
-}
-
-void TargetWayland::frameWillRender()
-{
-    m_base.requestFrame();
-}
-
-void TargetWayland::frameRendered()
-{
-}
-
-void TargetWayland::deinitialize()
-{
-}
-
-} } // namespace WS::EGLClient
+    unsigned num_planes { 0 };
+    std::array<int, 4> fds { -1, -1, -1, -1 };
+    std::array<uint32_t, 4> strides { };
+    std::array<uint32_t, 4> offsets { };
+    std::array<uint64_t, 4> modifiers { };
+};

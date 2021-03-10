@@ -65,6 +65,8 @@ public:
 
     virtual void frameWillRender() = 0;
     virtual void frameRendered() = 0;
+
+    virtual void deinitialize() = 0;
 };
 
 } } // namespace WS::EGLClient

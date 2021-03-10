@@ -118,6 +118,17 @@ public:
         assert(!"should not be reached");
     }
 
+    struct wpe_dmabuf_pool_entry* createDmabufPoolEntry() override
+    {
+        assert(!"should not be reached");
+        return nullptr;
+    }
+
+    void commitDmabufPoolEntry(struct wpe_dmabuf_pool_entry*) override
+    {
+        assert(!"should not be reached");
+    }
+
     void releaseImage(EGLImageKHR image)
     {
         BufferResource* matchingResource = nullptr;
@@ -219,6 +230,17 @@ public:
     }
 
     void exportEGLStreamProducer(struct wl_resource* bufferResource) override
+    {
+        assert(!"should not be reached");
+    }
+
+    struct wpe_dmabuf_pool_entry* createDmabufPoolEntry() override
+    {
+        assert(!"should not be reached");
+        return nullptr;
+    }
+
+    void commitDmabufPoolEntry(struct wpe_dmabuf_pool_entry*) override
     {
         assert(!"should not be reached");
     }

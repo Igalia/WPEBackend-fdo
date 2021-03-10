@@ -23,65 +23,51 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <wayland-egl.h>
+#include "dmabuf-pool-entry-private.h"
 
-#include "egl-client-wayland.h"
+extern "C" {
 
-#include "ws-client.h"
-
-namespace WS {
-namespace EGLClient {
-
-BackendWayland::BackendWayland(BaseBackend& base)
-    : m_base(base)
+__attribute__((visibility("default")))
+struct wpe_dmabuf_pool_entry*
+wpe_dmabuf_pool_entry_create(const struct wpe_dmabuf_pool_entry_init* entry_init)
 {
+    auto* entry = new struct wpe_dmabuf_pool_entry;
+    entry->data = nullptr;
+
+    entry->width = entry_init->width;
+    entry->height = entry_init->height;
+    entry->format = entry_init->format;
+
+    entry->num_planes = entry_init->num_planes;
+    for (unsigned i = 0; i < entry->num_planes; ++i) {
+        entry->fds[i] = entry_init->fds[i];
+        entry->strides[i] = entry_init->strides[i];
+        entry->offsets[i] = entry_init->offsets[i];
+        entry->modifiers[i] = entry_init->modifiers[i];
+    }
+
+    return entry;
 }
 
-BackendWayland::~BackendWayland() = default;
-
-EGLNativeDisplayType BackendWayland::nativeDisplay() const
+__attribute__((visibility("default")))
+void
+wpe_dmabuf_pool_entry_destroy(struct wpe_dmabuf_pool_entry* entry)
 {
-    return m_base.display();
+    delete entry;
 }
 
-uint32_t BackendWayland::platform() const
+__attribute__((visibility("default")))
+void
+wpe_dmabuf_pool_entry_set_user_data(struct wpe_dmabuf_pool_entry* entry, void* data)
 {
-    return 0;
+    entry->data = data;
 }
 
-
-TargetWayland::TargetWayland(BaseTarget& base, uint32_t width, uint32_t height)
-    : m_base(base)
+__attribute__((visibility("default")))
+void*
+wpe_dmabuf_pool_entry_get_user_data(struct wpe_dmabuf_pool_entry* entry)
 {
-    m_egl.window = wl_egl_window_create(base.surface(), width, height);
+    return entry->data;
 }
 
-TargetWayland::~TargetWayland()
-{
-    g_clear_pointer(&m_egl.window, wl_egl_window_destroy);
-}
-
-EGLNativeWindowType TargetWayland::nativeWindow() const
-{
-    return m_egl.window;
-}
-
-void TargetWayland::resize(uint32_t width, uint32_t height)
-{
-    wl_egl_window_resize(m_egl.window, width, height, 0, 0);
-}
-
-void TargetWayland::frameWillRender()
-{
-    m_base.requestFrame();
-}
-
-void TargetWayland::frameRendered()
-{
-}
-
-void TargetWayland::deinitialize()
-{
-}
-
-} } // namespace WS::EGLClient
+} // extern "C"

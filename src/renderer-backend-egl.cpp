@@ -30,6 +30,7 @@
 #include <wpe/wpe-egl.h>
 
 #include "egl-client.h"
+#include "egl-client-dmabuf-pool.h"
 #include "egl-client-wayland.h"
 #include "interfaces.h"
 #include "ws-client.h"
@@ -44,6 +45,9 @@ public:
         switch (type()) {
         case WS::ClientImplementationType::Invalid:
             g_error("Backend: invalid valid client implementation");
+            break;
+        case WS::ClientImplementationType::DmabufPool:
+            m_impl = WS::EGLClient::BackendImpl::create<WS::EGLClient::BackendDmabufPool>(*this);
             break;
         case WS::ClientImplementationType::Wayland:
             m_impl = WS::EGLClient::BackendImpl::create<WS::EGLClient::BackendWayland>(*this);
@@ -78,6 +82,9 @@ public:
         switch (backend.type()) {
         case WS::ClientImplementationType::Invalid:
             g_error("Target: invalid valid client implementation");
+            break;
+        case WS::ClientImplementationType::DmabufPool:
+            m_impl = WS::EGLClient::TargetImpl::create<WS::EGLClient::TargetDmabufPool>(*this, width, height);
             break;
         case WS::ClientImplementationType::Wayland:
             m_impl = WS::EGLClient::TargetImpl::create<WS::EGLClient::TargetWayland>(*this, width, height);
@@ -170,6 +177,14 @@ struct wpe_renderer_backend_egl_target_interface fdo_renderer_backend_egl_target
         auto& target = *reinterpret_cast<Target*>(data);
         target.m_impl->frameRendered();
     },
+#if WPE_CHECK_VERSION(1,9,1)
+    // deinitialize
+    [](void* data)
+    {
+        auto& target = *reinterpret_cast<Target*>(data);
+        target.m_impl->deinitialize();
+    },
+#endif
 };
 
 struct wpe_renderer_backend_egl_offscreen_target_interface fdo_renderer_backend_egl_offscreen_target = {

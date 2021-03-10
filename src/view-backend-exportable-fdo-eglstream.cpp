@@ -71,6 +71,17 @@ public:
         client->export_eglstream_producer_resource(data, bufferResource);
     }
 
+    struct wpe_dmabuf_pool_entry* createDmabufPoolEntry() override
+    {
+        assert(!"should not be reached");
+        return nullptr;
+    }
+
+    void commitDmabufPoolEntry(struct wpe_dmabuf_pool_entry*) override
+    {
+        assert(!"should not be reached");
+    }
+
     const struct wpe_view_backend_exportable_fdo_eglstream_client* client;
 };
 
