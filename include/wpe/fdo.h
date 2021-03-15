@@ -30,6 +30,8 @@
 #ifndef __wpe_fdo_h__
 #define __wpe_fdo_h__
 
+#include <wpe/wpe.h>
+
 #define __WPE_FDO_H_INSIDE__
 
 #include "version.h"

@@ -30,6 +30,8 @@
 #ifndef __wpe_fdo_egl_h__
 #define __wpe_fdo_egl_h__
 
+#include <wpe/wpe.h>
+
 #define __WPE_FDO_EGL_H_INSIDE__
 
 #include "exported-buffer-shm.h"
