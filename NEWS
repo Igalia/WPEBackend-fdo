@@ -1,4 +1,11 @@
 ======================
+1.8.1 - March 18, 2021
+======================
+
+- Fixed headers to include <wpe/wpe.h> from the top-level API headers,
+  as their consumers expect the public libwpe API to be defined as well.
+
+======================
 1.8.1 - March 10, 2021
 ======================
 
