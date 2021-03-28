@@ -91,12 +91,10 @@ private:
     static gboolean s_socketCallback(GSocket*, GIOCondition, gpointer);
 
     uint32_t m_surfaceId { 0 };
-    struct Client {
-        struct wl_client* object { nullptr };
-        struct wl_listener destroyListener;
 
-        static void destroyNotify(struct wl_listener*, void*);
-    } m_client;
+    static void clientDestroyNotify(struct wl_listener*, void*);
+    struct wl_listener m_clientDestroy { {}, clientDestroyNotify };
+    struct wl_client* m_client { nullptr };
 
     ClientBundle* m_clientBundle;
     struct wpe_view_backend* m_backend;
