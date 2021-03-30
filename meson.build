@@ -7,7 +7,7 @@ project('WPEBackend-fdo', ['c', 'cpp'],
 		'cpp_std=c++11',
 	],
 	license: 'BSD-2-Clause',
-	version: '1.8.2',
+	version: '1.8.3',
 )
 
 # This refers to the API level provided. This is modified only with major,
@@ -22,7 +22,7 @@ api_version = '1.0'
 # - If binary compatibility has been broken (eg removed or changed interfaces)
 #   change to [C+1, 0, 0]
 # - If the interface is the same as the previous version, use [C, R+1, A].
-soversion = [7, 5, 6]
+soversion = [7, 6, 6]
 
 # Split the *project* version into its components.
 version_info = meson.project_version().split('.')

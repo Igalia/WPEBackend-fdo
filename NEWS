@@ -1,4 +1,18 @@
 ======================
+1.8.3 - March 30, 2021
+======================
+
+- Fixed UI process getting stuck when navigating across different security
+  origins. This also fixed a small memory leak.
+
+======================
+1.8.2 - March 18, 2021
+======================
+
+- Fixed headers to include <wpe/wpe.h> from the top-level API headers,
+  as their consumers expect the public libwpe API to be defined as well.
+
+======================
 1.8.1 - March 18, 2021
 ======================
 
