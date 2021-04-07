@@ -110,8 +110,11 @@ static const struct wl_surface_interface s_surfaceInterface = {
             return;
         }
 
-        wl_resource_set_implementation(callbackResource, nullptr, nullptr, nullptr);
-        surface.apiClient->frameCallback(callbackResource);
+        wl_resource_set_implementation(callbackResource, nullptr, nullptr,
+            [](struct wl_resource* resource) {
+                wl_list_remove(wl_resource_get_link(resource));
+            });
+        surface.addFrameCallback(callbackResource);
     },
     // set_opaque_region
     [](struct wl_client*, struct wl_resource*, struct wl_resource*) { },
@@ -121,6 +124,7 @@ static const struct wl_surface_interface s_surfaceInterface = {
     [](struct wl_client*, struct wl_resource* surfaceResource)
     {
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
+        surface.commit();
         WS::Instance::singleton().impl().surfaceCommit(surface);
     },
     // set_buffer_transform
@@ -532,6 +536,17 @@ void Instance::unregisterViewBackend(uint32_t bridgeId)
         it->second->apiClient = nullptr;
         m_viewBackendMap.erase(it);
     }
+}
+
+void Instance::dispatchFrameCallbacks(uint32_t bridgeId)
+{
+    auto it = m_viewBackendMap.find(bridgeId);
+    if (it == m_viewBackendMap.end()) {
+        g_error("Instance::dispatchFrameCallbacks(): "
+                "Cannot find surface with bridgeId %" PRIu32 " in view backend map.", bridgeId);
+    }
+
+    it->second->dispatchFrameCallbacks();
 }
 
 } // namespace WS
