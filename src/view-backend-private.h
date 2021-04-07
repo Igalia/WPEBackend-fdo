@@ -63,7 +63,6 @@ public:
 
     void initialize();
     int clientFd();
-    void frameCallback(struct wl_resource* callbackResource) override;
     void exportBufferResource(struct wl_resource* bufferResource) override;
     void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) override;
     void exportShmBuffer(struct wl_resource* bufferResource, struct wl_shm_buffer* shmBuffer) override;
@@ -72,21 +71,10 @@ public:
     void releaseBuffer(struct wl_resource* buffer_resource);
 
 private:
-    struct FrameCallbackResource {
-        struct wl_resource* resource;
-
-        struct wl_list link;
-        struct wl_listener destroyListener;
-
-        static void destroyNotify(struct wl_listener*, void*);
-    };
-
     void didReceiveMessage(uint32_t messageId, uint32_t messageBody) override;
 
     void registerSurface(uint32_t);
     void unregisterSurface(uint32_t);
-
-    void clearFrameCallbacks();
 
     static gboolean s_socketCallback(GSocket*, GIOCondition, gpointer);
 
@@ -98,8 +86,6 @@ private:
 
     ClientBundle* m_clientBundle;
     struct wpe_view_backend* m_backend;
-
-    struct wl_list m_frameCallbacks;
 
     std::unique_ptr<FdoIPC::Connection> m_socket;
     int m_clientFd { -1 };
