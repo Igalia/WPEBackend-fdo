@@ -39,7 +39,6 @@ namespace WS {
 
 struct ExportableClient {
     virtual ~ExportableClient() = default;
-    virtual void frameCallback(struct wl_resource*) = 0;
     virtual void exportBufferResource(struct wl_resource*) = 0;
     virtual void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) = 0;
     virtual void exportShmBuffer(struct wl_resource*, struct wl_shm_buffer*) = 0;
@@ -50,6 +49,18 @@ struct Surface {
     explicit Surface(struct wl_resource* surfaceResource):
         resource {surfaceResource}
     {
+        wl_list_init(&m_pendingFrameCallbacks);
+        wl_list_init(&m_currentFrameCallbacks);
+    }
+
+    ~Surface()
+    {
+        struct wl_resource* resource;
+        struct wl_resource* tmp;
+        wl_resource_for_each_safe(resource, tmp, &m_pendingFrameCallbacks)
+            wl_resource_destroy(resource);
+        wl_resource_for_each_safe(resource, tmp, &m_currentFrameCallbacks)
+            wl_resource_destroy(resource);
     }
 
     struct wl_resource* resource;
@@ -59,6 +70,31 @@ struct Surface {
     struct wl_resource* bufferResource { nullptr };
     const struct linux_dmabuf_buffer* dmabufBuffer { nullptr };
     struct wl_shm_buffer* shmBuffer { nullptr };
+
+    void commit()
+    {
+        wl_list_insert_list(&m_currentFrameCallbacks, &m_pendingFrameCallbacks);
+        wl_list_init(&m_pendingFrameCallbacks);
+    }
+
+    void addFrameCallback(struct wl_resource* resource)
+    {
+        wl_list_insert(m_pendingFrameCallbacks.prev, wl_resource_get_link(resource));
+    }
+
+    void dispatchFrameCallbacks()
+    {
+        struct wl_resource* resource;
+        struct wl_resource* tmp;
+        wl_resource_for_each_safe(resource, tmp, &m_currentFrameCallbacks) {
+            wl_callback_send_done(resource, 0);
+            wl_resource_destroy(resource);
+        }
+    }
+
+private:
+    struct wl_list m_pendingFrameCallbacks;
+    struct wl_list m_currentFrameCallbacks;
 };
 
 class Instance {
@@ -99,6 +135,7 @@ public:
     void registerSurface(uint32_t, Surface*);
     struct wl_client* registerViewBackend(uint32_t, ExportableClient&);
     void unregisterViewBackend(uint32_t);
+    void dispatchFrameCallbacks(uint32_t);
 
     using VideoPlaneDisplayDmaBufCallback = std::function<void(struct wpe_video_plane_display_dmabuf_export*, uint32_t, int, int32_t, int32_t, int32_t, int32_t, uint32_t)>;
     using VideoPlaneDisplayDmaBufEndOfStreamCallback = std::function<void(uint32_t)>;
