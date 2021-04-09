@@ -36,12 +36,14 @@ ViewBackend::ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* ba
     m_clientBundle->viewBackend = this;
 
     wl_list_init(&m_frameCallbacks);
-    wl_list_init(&m_clientDestroy.link);
 }
 
 ViewBackend::~ViewBackend()
 {
+    clearFrameCallbacks();
+
     unregisterSurface(m_surfaceId);
+
     if (m_clientFd != -1)
         close(m_clientFd);
 }
@@ -103,52 +105,31 @@ void ViewBackend::exportEGLStreamProducer(struct wl_resource* bufferResource)
 
 void ViewBackend::dispatchFrameCallbacks()
 {
-    if (G_UNLIKELY(!m_client))
-        return;
-
     FrameCallbackResource* resource;
     wl_list_for_each(resource, &m_frameCallbacks, link) {
         wl_callback_send_done(resource->resource, 0);
     }
     clearFrameCallbacks();
 
-    wl_client_flush(m_client);
-
+    if (m_client.object)
+        wl_client_flush(m_client.object);
     wpe_view_backend_dispatch_frame_displayed(m_backend);
 }
 
 void ViewBackend::releaseBuffer(struct wl_resource* buffer_resource)
 {
-    if (G_UNLIKELY(!m_client))
-        return;
-
     wl_buffer_send_release(buffer_resource);
-    wl_client_flush(m_client);
-}
-
-void ViewBackend::clientDestroyNotify(struct wl_listener* listener, void*)
-{
-    ViewBackend* self = wl_container_of(listener, self, m_clientDestroy);
-
-    self->clearFrameCallbacks();
-    WS::Instance::singleton().unregisterViewBackend(self->m_surfaceId);
-    self->m_client = nullptr;
-    self->m_surfaceId = 0;
-
-    wl_list_remove(&self->m_clientDestroy.link);
+    if (m_client.object)
+        wl_client_flush(m_client.object);
 }
 
 void ViewBackend::registerSurface(uint32_t surfaceId)
 {
-
-    if (m_surfaceId == surfaceId)
-        return;
-
-    unregisterSurface(m_surfaceId);
-
     m_surfaceId = surfaceId;
-    m_client = WS::Instance::singleton().registerViewBackend(m_surfaceId, *this);
-    wl_client_add_destroy_listener(m_client, &m_clientDestroy);
+    m_client.object = WS::Instance::singleton().registerViewBackend(m_surfaceId, *this);
+
+    m_client.destroyListener.notify = Client::destroyNotify;
+    wl_client_add_destroy_listener(m_client.object, &m_client.destroyListener);
 }
 
 void ViewBackend::unregisterSurface(uint32_t surfaceId)
@@ -156,16 +137,12 @@ void ViewBackend::unregisterSurface(uint32_t surfaceId)
     if (!surfaceId || m_surfaceId != surfaceId)
         return;
 
-    // If the surfaceId is valid, we cannot have an invalid wl_client.
-    g_assert(m_client != nullptr);
+    clearFrameCallbacks();
 
-    // Destroying the client triggers the m_clientDestroy callback,
-    // the rest of the teardown is done from there.
-    wl_client_destroy(m_client);
+    g_clear_pointer(&m_client.object, wl_client_destroy);
 
-    // After destroying the client, none of these can be valid.
-    g_assert(m_client == nullptr);
-    g_assert(m_surfaceId == 0);
+    WS::Instance::singleton().unregisterViewBackend(m_surfaceId);
+    m_surfaceId = 0;
 }
 
 void ViewBackend::didReceiveMessage(uint32_t messageId, uint32_t messageBody)
@@ -193,6 +170,14 @@ void ViewBackend::clearFrameCallbacks()
         delete resource;
     }
     wl_list_init(&m_frameCallbacks);
+}
+
+void ViewBackend::Client::destroyNotify(struct wl_listener* listener, void*)
+{
+    Client* client;
+    client = wl_container_of(listener, client, destroyListener);
+
+    client->object = nullptr;
 }
 
 void ViewBackend::FrameCallbackResource::destroyNotify(struct wl_listener* listener, void*)
