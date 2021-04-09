@@ -126,6 +126,9 @@ BaseBackend::BaseBackend(int hostFD)
     wl_display_roundtrip(m_wl.display);
     wl_registry_destroy(registry);
 
+    if (!m_wl.wpeBridge)
+        g_error("Failed to bind wpe_bridge");
+
     wpe_bridge_add_listener(m_wl.wpeBridge, &s_bridgeListener, this);
     wpe_bridge_initialize(m_wl.wpeBridge);
     wl_display_roundtrip(m_wl.display);
@@ -203,6 +206,11 @@ void BaseTarget::initialize(BaseBackend& backend)
     wl_registry_add_listener(registry, &s_registryListener, this);
     wl_display_roundtrip_queue(display, m_wl.eventQueue);
     wl_registry_destroy(registry);
+
+    if (!m_wl.compositor)
+        g_error("Failed to bind wl_compositor");
+    if (!m_wl.wpeBridge)
+        g_error("Failed to bind wpe_bridge");
 
     m_wl.surface = wl_compositor_create_surface(m_wl.compositor);
     wl_proxy_set_queue(reinterpret_cast<struct wl_proxy*>(m_wl.surface), m_wl.eventQueue);
