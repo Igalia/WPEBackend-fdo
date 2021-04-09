@@ -139,8 +139,6 @@ void ViewBackend::unregisterSurface(uint32_t surfaceId)
 
     clearFrameCallbacks();
 
-    g_clear_pointer(&m_client.object, wl_client_destroy);
-
     WS::Instance::singleton().unregisterViewBackend(m_surfaceId);
     m_surfaceId = 0;
 }
