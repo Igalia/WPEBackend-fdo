@@ -534,6 +534,7 @@ void Instance::unregisterViewBackend(uint32_t bridgeId)
     auto it = m_viewBackendMap.find(bridgeId);
     if (it != m_viewBackendMap.end()) {
         it->second->apiClient = nullptr;
+        wl_client_destroy(wl_resource_get_client(it->second->resource));
         m_viewBackendMap.erase(it);
     }
 }
