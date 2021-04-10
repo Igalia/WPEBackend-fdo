@@ -79,18 +79,18 @@ private:
     static gboolean s_socketCallback(GSocket*, GIOCondition, gpointer);
 
     uint32_t m_bridgeId { 0 };
-    struct Client {
-        struct wl_client* object { nullptr };
-        struct wl_listener destroyListener;
-
-        static void destroyNotify(struct wl_listener*, void*);
-    } m_client;
+    struct wl_client* m_client { nullptr };
 
     ClientBundle* m_clientBundle;
     struct wpe_view_backend* m_backend;
 
     std::unique_ptr<FdoIPC::Connection> m_socket;
     int m_clientFd { -1 };
+};
+
+struct wl_client_destroy_listener {
+    ViewBackend* backend;
+    struct wl_listener destroyClientListener;
 };
 
 struct wpe_view_backend_private {
