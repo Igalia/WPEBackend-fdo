@@ -87,7 +87,6 @@ private:
 
     std::unique_ptr<FdoIPC::Connection> m_socket;
     int m_clientFd { -1 };
-    struct wl_listener m_destroyClientListener;
 };
 
 struct wpe_view_backend_exportable_fdo {
