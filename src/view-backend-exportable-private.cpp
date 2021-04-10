@@ -120,8 +120,6 @@ void ViewBackend::unregisterSurface(uint32_t bridgeId)
     if (!bridgeId || m_bridgeId != bridgeId)
         return;
 
-    g_clear_pointer(&m_client.object, wl_client_destroy);
-
     WS::Instance::singleton().unregisterViewBackend(m_bridgeId);
     m_bridgeId = 0;
 }
