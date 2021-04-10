@@ -95,24 +95,33 @@ void ViewBackend::dispatchFrameCallbacks()
     if (G_LIKELY(m_bridgeId))
         WS::Instance::singleton().dispatchFrameCallbacks(m_bridgeId);
 
-    if (m_client.object)
-        wl_client_flush(m_client.object);
+    if (m_client)
+        wl_client_flush(m_client);
     wpe_view_backend_dispatch_frame_displayed(m_backend);
 }
 
 void ViewBackend::releaseBuffer(struct wl_resource* buffer_resource)
 {
     wl_buffer_send_release(buffer_resource);
-    if (m_client.object)
-        wl_client_flush(m_client.object);
+    if (m_client)
+        wl_client_flush(m_client);
 }
 
 void ViewBackend::registerSurface(uint32_t bridgeId)
 {
     m_bridgeId = bridgeId;
-    m_client.object = WS::Instance::singleton().registerViewBackend(m_bridgeId, *this);
-    m_client.destroyListener.notify = Client::destroyNotify;
-    wl_client_add_destroy_listener(m_client.object, &m_client.destroyListener);
+    m_client = WS::Instance::singleton().registerViewBackend(m_bridgeId, *this);
+
+    struct wl_client_destroy_listener *listener = new wl_client_destroy_listener {this, };
+    listener->destroyClientListener.notify = (wl_notify_func_t) [](struct wl_listener* listener, void* data)
+    {
+        struct wl_client_destroy_listener *container;
+        container = wl_container_of(listener, container, destroyClientListener);
+        container->backend->m_client = NULL;
+        delete container;  // Release the wl_client_destroy_listener instance since this is not longer needed.
+    };
+    wl_client_add_destroy_listener(m_client,
+                                   &listener->destroyClientListener);
 }
 
 void ViewBackend::unregisterSurface(uint32_t bridgeId)
@@ -136,12 +145,4 @@ void ViewBackend::didReceiveMessage(uint32_t messageId, uint32_t messageBody)
     default:
         assert(!"WPE fdo received an invalid IPC message");
     }
-}
-
-void ViewBackend::Client::destroyNotify(struct wl_listener* listener, void*)
-{
-    Client* client;
-    client = wl_container_of(listener, client, destroyListener);
-
-    client->object = nullptr;
 }
