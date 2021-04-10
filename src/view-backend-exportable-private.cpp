@@ -34,13 +34,12 @@ ViewBackend::ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* ba
     , m_backend(backend)
 {
     m_clientBundle->viewBackend = this;
-
-    wl_list_init(&m_clientDestroy.link);
 }
 
 ViewBackend::~ViewBackend()
 {
     unregisterSurface(m_bridgeId);
+
     if (m_clientFd != -1)
         close(m_clientFd);
 }
@@ -96,39 +95,24 @@ void ViewBackend::dispatchFrameCallbacks()
     if (G_LIKELY(m_bridgeId))
         WS::Instance::singleton().dispatchFrameCallbacks(m_bridgeId);
 
+    if (m_client.object)
+        wl_client_flush(m_client.object);
     wpe_view_backend_dispatch_frame_displayed(m_backend);
 }
 
 void ViewBackend::releaseBuffer(struct wl_resource* buffer_resource)
 {
-    if (G_UNLIKELY(!m_client))
-        return;
-
     wl_buffer_send_release(buffer_resource);
-    wl_client_flush(m_client);
-}
-
-void ViewBackend::clientDestroyNotify(struct wl_listener* listener, void*)
-{
-    ViewBackend* self = wl_container_of(listener, self, m_clientDestroy);
-
-    WS::Instance::singleton().unregisterViewBackend(self->m_bridgeId);
-    self->m_client = nullptr;
-    self->m_bridgeId = 0;
-
-    wl_list_remove(&self->m_clientDestroy.link);
+    if (m_client.object)
+        wl_client_flush(m_client.object);
 }
 
 void ViewBackend::registerSurface(uint32_t bridgeId)
 {
-    if (m_bridgeId == bridgeId)
-        return;
-
-    unregisterSurface(m_bridgeId);
-
     m_bridgeId = bridgeId;
-    m_client = WS::Instance::singleton().registerViewBackend(m_bridgeId, *this);
-    wl_client_add_destroy_listener(m_client, &m_clientDestroy);
+    m_client.object = WS::Instance::singleton().registerViewBackend(m_bridgeId, *this);
+    m_client.destroyListener.notify = Client::destroyNotify;
+    wl_client_add_destroy_listener(m_client.object, &m_client.destroyListener);
 }
 
 void ViewBackend::unregisterSurface(uint32_t bridgeId)
@@ -136,16 +120,10 @@ void ViewBackend::unregisterSurface(uint32_t bridgeId)
     if (!bridgeId || m_bridgeId != bridgeId)
         return;
 
-    // If the surfaceId is valid, we cannot have an invalid wl_client.
-    g_assert(m_client != nullptr);
+    g_clear_pointer(&m_client.object, wl_client_destroy);
 
-    // Destroying the client triggers the m_clientDestroy callback,
-    // the rest of the teardown is done from there.
-    wl_client_destroy(m_client);
-
-    // After destroying the client, none of these can be valid.
-    g_assert(m_client == nullptr);
-    g_assert(m_bridgeId == 0);
+    WS::Instance::singleton().unregisterViewBackend(m_bridgeId);
+    m_bridgeId = 0;
 }
 
 void ViewBackend::didReceiveMessage(uint32_t messageId, uint32_t messageBody)
@@ -160,4 +138,12 @@ void ViewBackend::didReceiveMessage(uint32_t messageId, uint32_t messageBody)
     default:
         assert(!"WPE fdo received an invalid IPC message");
     }
+}
+
+void ViewBackend::Client::destroyNotify(struct wl_listener* listener, void*)
+{
+    Client* client;
+    client = wl_container_of(listener, client, destroyListener);
+
+    client->object = nullptr;
 }
