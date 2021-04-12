@@ -144,9 +144,7 @@ static const struct wl_compositor_interface s_compositorInterface = {
             return;
         }
 
-        auto* surface = new Surface;
-        surface->client = client;
-        surface->id = id;
+        auto* surface = new Surface {surfaceResource};
         wl_resource_set_implementation(surfaceResource, &s_surfaceInterface, surface,
             [](struct wl_resource* resource)
             {
@@ -524,7 +522,7 @@ struct wl_client* Instance::registerViewBackend(uint32_t surfaceId, APIClient& a
         g_error("Instance::registerViewBackend(): " "Cannot find surface %" PRIu32 " in view backend map.", surfaceId);
 
     it->second->apiClient = &apiClient;
-    return it->second->client;
+    return wl_resource_get_client(it->second->resource);
 }
 
 void Instance::unregisterViewBackend(uint32_t surfaceId)
