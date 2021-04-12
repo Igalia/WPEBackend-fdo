@@ -128,6 +128,7 @@ private:
     struct wl_global* m_wpeBridge { nullptr };
     GSource* m_source { nullptr };
 
+    // (bridgeId -> Surface)
     std::unordered_map<uint32_t, Surface*> m_viewBackendMap;
 
     struct {
