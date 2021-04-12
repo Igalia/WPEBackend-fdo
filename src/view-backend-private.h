@@ -90,7 +90,7 @@ private:
 
     static gboolean s_socketCallback(GSocket*, GIOCondition, gpointer);
 
-    uint32_t m_surfaceId { 0 };
+    uint32_t m_bridgeId { 0 };
 
     static void clientDestroyNotify(struct wl_listener*, void*);
     struct wl_listener m_clientDestroy { {}, clientDestroyNotify };

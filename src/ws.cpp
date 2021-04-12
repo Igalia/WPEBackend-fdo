@@ -515,19 +515,19 @@ void Instance::releaseAudioPacketExport(struct wpe_audio_packet_export* packet_e
     wpe_audio_packet_export_send_release(packet_export->exportResource);
 }
 
-struct wl_client* Instance::registerViewBackend(uint32_t surfaceId, APIClient& apiClient)
+struct wl_client* Instance::registerViewBackend(uint32_t bridgeId, APIClient& apiClient)
 {
-    auto it = m_viewBackendMap.find(surfaceId);
+    auto it = m_viewBackendMap.find(bridgeId);
     if (it == m_viewBackendMap.end())
-        g_error("Instance::registerViewBackend(): " "Cannot find surface %" PRIu32 " in view backend map.", surfaceId);
+        g_error("Instance::registerViewBackend(): " "Cannot find surface with bridgeId %" PRIu32 " in view backend map.", bridgeId);
 
     it->second->apiClient = &apiClient;
     return wl_resource_get_client(it->second->resource);
 }
 
-void Instance::unregisterViewBackend(uint32_t surfaceId)
+void Instance::unregisterViewBackend(uint32_t bridgeId)
 {
-    auto it = m_viewBackendMap.find(surfaceId);
+    auto it = m_viewBackendMap.find(bridgeId);
     if (it != m_viewBackendMap.end()) {
         it->second->apiClient = nullptr;
         m_viewBackendMap.erase(it);
