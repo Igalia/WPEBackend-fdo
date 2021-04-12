@@ -41,7 +41,7 @@ ViewBackend::ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* ba
 
 ViewBackend::~ViewBackend()
 {
-    unregisterSurface(m_surfaceId);
+    unregisterSurface(m_bridgeId);
     if (m_clientFd != -1)
         close(m_clientFd);
 }
@@ -131,29 +131,28 @@ void ViewBackend::clientDestroyNotify(struct wl_listener* listener, void*)
     ViewBackend* self = wl_container_of(listener, self, m_clientDestroy);
 
     self->clearFrameCallbacks();
-    WS::Instance::singleton().unregisterViewBackend(self->m_surfaceId);
+    WS::Instance::singleton().unregisterViewBackend(self->m_bridgeId);
     self->m_client = nullptr;
-    self->m_surfaceId = 0;
+    self->m_bridgeId = 0;
 
     wl_list_remove(&self->m_clientDestroy.link);
 }
 
-void ViewBackend::registerSurface(uint32_t surfaceId)
+void ViewBackend::registerSurface(uint32_t bridgeId)
 {
-
-    if (m_surfaceId == surfaceId)
+    if (m_bridgeId == bridgeId)
         return;
 
-    unregisterSurface(m_surfaceId);
+    unregisterSurface(m_bridgeId);
 
-    m_surfaceId = surfaceId;
-    m_client = WS::Instance::singleton().registerViewBackend(m_surfaceId, *this);
+    m_bridgeId = bridgeId;
+    m_client = WS::Instance::singleton().registerViewBackend(m_bridgeId, *this);
     wl_client_add_destroy_listener(m_client, &m_clientDestroy);
 }
 
-void ViewBackend::unregisterSurface(uint32_t surfaceId)
+void ViewBackend::unregisterSurface(uint32_t bridgeId)
 {
-    if (!surfaceId || m_surfaceId != surfaceId)
+    if (!bridgeId || m_bridgeId != bridgeId)
         return;
 
     // If the surfaceId is valid, we cannot have an invalid wl_client.
@@ -165,7 +164,7 @@ void ViewBackend::unregisterSurface(uint32_t surfaceId)
 
     // After destroying the client, none of these can be valid.
     g_assert(m_client == nullptr);
-    g_assert(m_surfaceId == 0);
+    g_assert(m_bridgeId == 0);
 }
 
 void ViewBackend::didReceiveMessage(uint32_t messageId, uint32_t messageBody)
