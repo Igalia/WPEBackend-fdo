@@ -46,10 +46,13 @@ struct ExportableClient {
     virtual void exportEGLStreamProducer(struct wl_resource*) = 0;
 };
 
-struct Surface;
 struct Surface {
-    uint32_t id { 0 };
-    struct wl_client* client { nullptr };
+    explicit Surface(struct wl_resource* surfaceResource):
+        resource {surfaceResource}
+    {
+    }
+
+    struct wl_resource* resource;
 
     ExportableClient* exportableClient { nullptr };
 
