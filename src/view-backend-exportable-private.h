@@ -80,7 +80,6 @@ private:
     static gboolean s_socketCallback(GSocket*, GIOCondition, gpointer);
 
     uint32_t m_bridgeId { 0 };
-    struct wl_client* m_client { nullptr };
 
     ClientBundle* m_clientBundle;
     struct wpe_view_backend* m_backend;
