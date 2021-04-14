@@ -88,10 +88,17 @@ struct Surface {
     {
         struct wl_resource* resource;
         struct wl_resource* tmp;
+        struct wl_client* client { nullptr };
+
         wl_resource_for_each_safe(resource, tmp, &m_currentFrameCallbacks) {
+            g_assert(!client || client == wl_resource_get_client(resource));
+            client = wl_resource_get_client(resource);
             wl_callback_send_done(resource, 0);
             wl_resource_destroy(resource);
         }
+
+        if (client)
+            wl_client_flush(client);
     }
 
 private:
@@ -129,7 +136,7 @@ public:
     int createClient();
 
     void registerSurface(uint32_t, Surface*);
-    struct wl_client* registerViewBackend(uint32_t, APIClient&);
+    void registerViewBackend(uint32_t, APIClient&);
     void unregisterViewBackend(uint32_t);
     void dispatchFrameCallbacks(uint32_t);
 
