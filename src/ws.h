@@ -140,6 +140,7 @@ public:
     int createClient();
 
     void registerSurface(uint32_t, Surface*);
+    void unregisterSurface(Surface*);
     void registerViewBackend(uint32_t, ExportableClient&);
     void unregisterViewBackend(uint32_t);
     void dispatchFrameCallbacks(uint32_t);
