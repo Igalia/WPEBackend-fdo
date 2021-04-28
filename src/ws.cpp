@@ -28,6 +28,7 @@
 #include "wpe-audio-server-protocol.h"
 #include "wpe-bridge-server-protocol.h"
 #include "wpe-video-plane-display-dmabuf-server-protocol.h"
+#include <algorithm>
 #include <cassert>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -153,6 +154,7 @@ static const struct wl_compositor_interface s_compositorInterface = {
             [](struct wl_resource* resource)
             {
                 auto* surface = static_cast<Surface*>(wl_resource_get_user_data(resource));
+                WS::Instance::singleton().unregisterSurface(surface);
                 delete surface;
             });
     },
@@ -537,15 +539,27 @@ void Instance::unregisterViewBackend(uint32_t bridgeId)
     }
 }
 
+void Instance::unregisterSurface(Surface* surface)
+{
+    auto it = std::find_if(m_viewBackendMap.begin(), m_viewBackendMap.end(),
+        [surface](const std::pair<uint32_t, Surface*>& value) -> bool {
+            return value.second == surface;
+        });
+    if (it != m_viewBackendMap.end())
+        m_viewBackendMap.erase(it);
+}
+
 void Instance::dispatchFrameCallbacks(uint32_t bridgeId)
 {
     auto it = m_viewBackendMap.find(bridgeId);
     if (it == m_viewBackendMap.end()) {
-        g_error("Instance::dispatchFrameCallbacks(): "
-                "Cannot find surface with bridgeId %" PRIu32 " in view backend map.", bridgeId);
+        g_warning("Instance::dispatchFrameCallbacks(): "
+                  "Cannot find surface with bridgeId %" PRIu32 " in view "
+                  "backend map. Probably the associated surface is gone "
+                  "due to a premature exit in the client side", bridgeId);
+    } else {
+        it->second->dispatchFrameCallbacks();
     }
-
-    it->second->dispatchFrameCallbacks();
 }
 
 } // namespace WS
