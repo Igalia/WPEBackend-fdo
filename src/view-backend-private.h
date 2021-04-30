@@ -67,6 +67,23 @@ public:
     void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) override;
     void exportShmBuffer(struct wl_resource* bufferResource, struct wl_shm_buffer* shmBuffer) override;
     void exportEGLStreamProducer(struct wl_resource*) override;
+
+    /** Set back the ViewBackend to the previous bridge references
+     *
+     * Falling back to the previous bridge Id because the current Surface is
+     * gone. This action prevents inconsistencies by keeping the ViewBackend in
+     * a consistent state pointing to a still valid bridge reference.
+     *
+     * An example of a scenario that could generate this kind of inconsistency
+     * is a failed load request due to content filter policies. In that case,
+     * the client gone situation is reached because
+     */
+    void clientGone(uint32_t id) override
+    {
+        if (id >= m_bridgeId)
+            m_bridgeId = m_fallback_bridgeId;
+    }
+
     void dispatchFrameCallbacks();
     void releaseBuffer(struct wl_resource* buffer_resource);
 
@@ -79,6 +96,7 @@ private:
     static gboolean s_socketCallback(GSocket*, GIOCondition, gpointer);
 
     uint32_t m_bridgeId { 0 };
+    uint32_t m_fallback_bridgeId { 0 };
 
     ClientBundle* m_clientBundle;
     struct wpe_view_backend* m_backend;

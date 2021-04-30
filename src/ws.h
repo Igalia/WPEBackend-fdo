@@ -45,6 +45,7 @@ struct APIClient {
     virtual void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) = 0;
     virtual void exportShmBuffer(struct wl_resource*, struct wl_shm_buffer*) = 0;
     virtual void exportEGLStreamProducer(struct wl_resource*) = 0;
+    virtual void clientGone(uint32_t) {};
 };
 
 struct Surface {
@@ -134,6 +135,7 @@ public:
     Impl& impl() { return *m_impl; }
 
     int createClient();
+    void clientGone(uint32_t);
 
     void registerSurface(uint32_t, Surface*);
     void unregisterSurface(Surface*);

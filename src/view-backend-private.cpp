@@ -95,11 +95,15 @@ void ViewBackend::dispatchFrameCallbacks()
     if (G_LIKELY(m_bridgeId))
         WS::Instance::singleton().dispatchFrameCallbacks(m_bridgeId);
 
+    m_fallback_bridgeId = m_bridgeId;
     wpe_view_backend_dispatch_frame_displayed(m_backend);
 }
 
 void ViewBackend::releaseBuffer(struct wl_resource* buffer_resource)
 {
+    if (G_UNLIKELY(m_bridgeId == 0))
+        return;
+
     wl_buffer_send_release(buffer_resource);
     wl_client_flush(wl_resource_get_client(buffer_resource));
 }
@@ -112,11 +116,9 @@ void ViewBackend::registerSurface(uint32_t bridgeId)
 
 void ViewBackend::unregisterSurface(uint32_t bridgeId)
 {
-    if (!bridgeId || m_bridgeId != bridgeId)
+    if (!bridgeId)
         return;
-
-    WS::Instance::singleton().unregisterViewBackend(m_bridgeId);
-    m_bridgeId = 0;
+    WS::Instance::singleton().unregisterViewBackend(bridgeId);
 }
 
 void ViewBackend::didReceiveMessage(uint32_t messageId, uint32_t messageBody)
