@@ -159,9 +159,6 @@ public:
         wl_display_roundtrip_queue(display, eventQueue);
         wl_registry_destroy(registry);
 
-        if (!m_wl.audio)
-            g_error("Failed to bind wpe_audio");
-
         wl_event_queue_destroy(eventQueue);
     }
 
