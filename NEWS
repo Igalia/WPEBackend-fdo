@@ -1,3 +1,11 @@
+=======================
+1.9.91 - April 30, 2021
+=======================
+
+- Fixed more cases of invalid usage of Wayland client connections in the
+  nested compositor which caused crashes in some situations.
+- Fix the build with version of Python older than 3.6
+
 ======================
 1.9.90 - April 1, 2021
 ======================
