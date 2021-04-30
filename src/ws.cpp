@@ -154,6 +154,8 @@ static const struct wl_compositor_interface s_compositorInterface = {
             [](struct wl_resource* resource)
             {
                 auto* surface = static_cast<Surface*>(wl_resource_get_user_data(resource));
+                if (surface->apiClient)
+                    surface->apiClient->clientGone();
                 WS::Instance::singleton().unregisterSurface(surface);
                 delete surface;
             });

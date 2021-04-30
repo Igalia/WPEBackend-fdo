@@ -58,6 +58,7 @@ void ViewBackend::initialize()
         return;
     }
 
+    m_prev_clientFd = m_clientFd;
     m_clientFd = sockets[1];
 
     wpe_view_backend_dispatch_set_size(m_backend,
@@ -100,6 +101,9 @@ void ViewBackend::dispatchFrameCallbacks()
 
 void ViewBackend::releaseBuffer(struct wl_resource* buffer_resource)
 {
+    if (G_UNLIKELY(m_bridgeId == 0))
+        return;
+
     wl_buffer_send_release(buffer_resource);
     wl_client_flush(wl_resource_get_client(buffer_resource));
 }
