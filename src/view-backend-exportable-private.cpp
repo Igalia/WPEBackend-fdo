@@ -28,6 +28,7 @@
 #include <cassert>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <algorithm>
 
 ViewBackend::ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* backend)
     : m_clientBundle(clientBundle)
@@ -38,7 +39,8 @@ ViewBackend::ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* ba
 
 ViewBackend::~ViewBackend()
 {
-    unregisterSurface(m_bridgeId);
+    while (!m_bridgeIds.empty())
+        unregisterSurface(m_bridgeIds.front());
 
     if (m_clientFd != -1)
         close(m_clientFd);
@@ -92,10 +94,10 @@ void ViewBackend::exportEGLStreamProducer(struct wl_resource* bufferResource)
 
 void ViewBackend::dispatchFrameCallbacks()
 {
-    if (G_LIKELY(m_bridgeId))
-        WS::Instance::singleton().dispatchFrameCallbacks(m_bridgeId);
-
-    wpe_view_backend_dispatch_frame_displayed(m_backend);
+    if (G_LIKELY(!m_bridgeIds.empty())) {
+        WS::Instance::singleton().dispatchFrameCallbacks(m_bridgeIds.back());
+        wpe_view_backend_dispatch_frame_displayed(m_backend);
+    }
 }
 
 void ViewBackend::releaseBuffer(struct wl_resource* buffer_resource)
@@ -106,17 +108,18 @@ void ViewBackend::releaseBuffer(struct wl_resource* buffer_resource)
 
 void ViewBackend::registerSurface(uint32_t bridgeId)
 {
-    m_bridgeId = bridgeId;
-    WS::Instance::singleton().registerViewBackend(m_bridgeId, *this);
+    m_bridgeIds.push_back(bridgeId);
+    WS::Instance::singleton().registerViewBackend(m_bridgeIds.back(), *this);
 }
 
 void ViewBackend::unregisterSurface(uint32_t bridgeId)
 {
-    if (!bridgeId || m_bridgeId != bridgeId)
+    auto it = std::find(m_bridgeIds.begin(), m_bridgeIds.end(), bridgeId);
+    if (it == m_bridgeIds.end())
         return;
 
-    WS::Instance::singleton().unregisterViewBackend(m_bridgeId);
-    m_bridgeId = 0;
+    m_bridgeIds.erase(it);
+    WS::Instance::singleton().unregisterViewBackend(bridgeId);
 }
 
 void ViewBackend::didReceiveMessage(uint32_t messageId, uint32_t messageBody)

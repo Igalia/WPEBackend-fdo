@@ -31,6 +31,7 @@
 
 #include <gio/gio.h>
 #include <wpe/wpe.h>
+#include <vector>
 
 class ViewBackend;
 
@@ -79,7 +80,7 @@ private:
 
     static gboolean s_socketCallback(GSocket*, GIOCondition, gpointer);
 
-    uint32_t m_bridgeId { 0 };
+    std::vector<uint32_t> m_bridgeIds;
 
     ClientBundle* m_clientBundle;
     struct wpe_view_backend* m_backend;
