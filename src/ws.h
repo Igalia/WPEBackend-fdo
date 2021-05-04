@@ -46,6 +46,7 @@ struct APIClient {
     virtual void exportShmBuffer(struct wl_resource*, struct wl_shm_buffer*) = 0;
     virtual void exportEGLStreamProducer(struct wl_resource*) = 0;
     virtual void clientGone(uint32_t) {};
+    virtual void setLastValidBridgeId(uint32_t) {};
 };
 
 struct Surface {
@@ -71,6 +72,9 @@ struct Surface {
     struct wl_resource* resource;
 
     APIClient* apiClient { nullptr };
+
+    bool disabled { false };
+    uint32_t id { 0 };
 
     struct wl_resource* bufferResource { nullptr };
     const struct linux_dmabuf_buffer* dmabufBuffer { nullptr };
@@ -104,7 +108,7 @@ struct Surface {
         }
 
         if (client)
-            wl_client_flush(client);
+            wl_client_flush(client);	
     }
 
 private:
@@ -144,6 +148,7 @@ public:
 
     void registerSurface(uint32_t, Surface*);
     void unregisterSurface(Surface*);
+    void enableViewBackend(uint32_t, bool);
     void registerViewBackend(uint32_t, APIClient&);
     void unregisterViewBackend(uint32_t);
     void dispatchFrameCallbacks(uint32_t);

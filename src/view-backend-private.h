@@ -85,8 +85,15 @@ public:
         if (id >= m_bridgeId) {
             fprintf(stderr,"ViewBackend::clientGone TRUE\n");
             m_bridgeId = m_fallback_bridgeId;
+            WS::Instance::singleton().enableViewBackend(m_bridgeId, true);
         }
         fprintf(stderr,"ViewBackend::clientGone (m_bridgeId: %d, m_clientFd: %d)\n", m_bridgeId, m_clientFd);
+    }
+
+    void setLastValidBridgeId(uint32_t id) override
+    {
+        fprintf(stderr,"ViewBackend::setLastValidBridgeId (id: %d))\n", id);
+        m_fallback_bridgeId = id;
     }
 
     void dispatchFrameCallbacks();

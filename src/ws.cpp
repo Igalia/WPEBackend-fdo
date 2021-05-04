@@ -101,12 +101,16 @@ static const struct wl_surface_interface s_surfaceInterface = {
     // frame
     [](struct wl_client* client, struct wl_resource* surfaceResource, uint32_t callback)
     {
-        fprintf(stderr,"frame (1/2): client: %p - &client: %p)\n", client, &client);
+        fprintf(stderr,"frame (1/3): client: %p - &client: %p)\n", client, &client);
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
         if (!surface.apiClient)
             return;
 
-        fprintf(stderr,"frame (2/2): client: %p - &client: %p)\n", client, &client);
+        fprintf(stderr,"frame (2/3): (surface.disabled: %d)\n", surface.disabled);
+	if (!surface.disabled)
+            surface.apiClient->setLastValidBridgeId(surface.id);
+
+        fprintf(stderr,"frame (3/3): client: %p - &client: %p)\n", client, &client);
         struct wl_resource* callbackResource = wl_resource_create(client, &wl_callback_interface, 1, callback);
         if (!callbackResource) {
             wl_resource_post_no_memory(surfaceResource);
@@ -418,6 +422,7 @@ void Instance::registerSurface(uint32_t id, Surface* surface)
 {
     fprintf(stderr,"-> Instance::registerSurface (id: %" PRIu32 " surface: %p)\n", id, surface);
     m_viewBackendMap.insert({ id, surface });
+    surface->id = id;
     for (std::pair<uint32_t, Surface*> element : m_viewBackendMap)
     {
         fprintf(stderr,"    * --> (m_viewBackendMap) Instance::registerSurface:(id: %" PRIu32 " surface: %p)\n", element.first, element.second);
@@ -538,6 +543,15 @@ void Instance::releaseAudioPacketExport(struct wpe_audio_packet_export* packet_e
     wpe_audio_packet_export_send_release(packet_export->exportResource);
 }
 
+void Instance::enableViewBackend(uint32_t bridgeId, bool enabled)
+{
+    auto it = m_viewBackendMap.find(bridgeId);
+    if (it == m_viewBackendMap.end())
+        g_error("Instance::enableViewBackend(): " "Cannot find surface with bridgeId %" PRIu32 " in view backend map.", bridgeId);
+
+    it->second->disabled = !enabled;
+}
+
 void Instance::registerViewBackend(uint32_t bridgeId, APIClient& apiClient)
 {
     auto it = m_viewBackendMap.find(bridgeId);
@@ -545,6 +559,8 @@ void Instance::registerViewBackend(uint32_t bridgeId, APIClient& apiClient)
         g_error("Instance::registerViewBackend(): " "Cannot find surface with bridgeId %" PRIu32 " in view backend map.", bridgeId);
 
     it->second->apiClient = &apiClient;
+    it->second->disabled = false;
+    fprintf(stderr,"Instance:registerViewBackend: this: (%p) - bridgeId: %" PRIu32 " disabled: %d\n", this, bridgeId, it->second->disabled);
 }
 
 void Instance::unregisterViewBackend(uint32_t bridgeId)
@@ -554,7 +570,7 @@ void Instance::unregisterViewBackend(uint32_t bridgeId)
     if (it != m_viewBackendMap.end()) {
         fprintf(stderr,"Instance::unregisterViewBackend: (2/2) erase surface (%p) - bridgeId: %" PRIu32 "\n", this, bridgeId);
         it->second->apiClient = nullptr;
-        m_viewBackendMap.erase(it);
+        it->second->disabled = true;
     }
     for (std::pair<uint32_t, Surface*> element : m_viewBackendMap)
     {
@@ -574,6 +590,7 @@ void Instance::unregisterSurface(Surface* surface)
 	if (surface->apiClient) {
             g_message("===== Notifying surface[%p]->apiClient->clientGone(%" PRIu32 ")", surface->apiClient, it->first);
             surface->apiClient->clientGone(it->first);
+            surface->id = 0;
         } else {
             g_message("==== No surface[%p]->apiClient!", surface);
         }

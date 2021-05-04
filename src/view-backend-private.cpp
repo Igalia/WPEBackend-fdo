@@ -39,7 +39,7 @@ ViewBackend::ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* ba
 ViewBackend::~ViewBackend()
 {
     fprintf(stderr,"ViewBackend::~ViewBackend: this: (%p)\n", this);
-    // unregisterSurface(m_bridgeId);
+    unregisterSurface(m_bridgeId);
 
     if (m_clientFd != -1)
         close(m_clientFd);
@@ -98,7 +98,7 @@ void ViewBackend::dispatchFrameCallbacks()
     if (G_LIKELY(m_bridgeId))
         WS::Instance::singleton().dispatchFrameCallbacks(m_bridgeId);
 
-    m_fallback_bridgeId = m_bridgeId;
+    // m_fallback_bridgeId = m_bridgeId;
 
     fprintf(stderr,"ViewBackend::dispatchFrameCallbacks: (2/2) wpe_view_backend_dispatch_frame_displayed this: (%p) m_backend: (%p)\n", this, m_backend);
     wpe_view_backend_dispatch_frame_displayed(m_backend);
@@ -118,6 +118,8 @@ void ViewBackend::registerSurface(uint32_t bridgeId)
     fprintf(stderr,"ViewBackend::registerSurface: (1/3) this: (%p) - bridgeId: %" PRIu32 "\n", this, bridgeId);
     fprintf(stderr,"ViewBackend::registerSurface: (2/3) this: (%p) - m_fallback_bridgeId: %" PRIu32 "\n", this, m_fallback_bridgeId);
 
+    if (G_LIKELY(m_bridgeId))
+        WS::Instance::singleton().enableViewBackend(m_bridgeId, false);
     m_bridgeId = bridgeId;
     fprintf(stderr,"ViewBackend::registerSurface: (3/3) this: (%p) - m_bridgeId: %" PRIu32 "\n", this, m_bridgeId);
     WS::Instance::singleton().registerViewBackend(m_bridgeId, *this);
@@ -129,7 +131,7 @@ void ViewBackend::unregisterSurface(uint32_t bridgeId)
     if (!bridgeId)
         return;
     WS::Instance::singleton().unregisterViewBackend(bridgeId);
-    m_bridgeId = 0;
+    // m_bridgeId = 0;
     fprintf(stderr,"ViewBackend::unregisterSurface (2/2): this: (%p) - bridgeId: %" PRIu32 "\n", this, bridgeId);
 }
 
