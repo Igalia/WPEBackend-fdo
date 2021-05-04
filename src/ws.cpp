@@ -569,6 +569,7 @@ void Instance::unregisterViewBackend(uint32_t bridgeId)
     auto it = m_viewBackendMap.find(bridgeId);
     if (it != m_viewBackendMap.end()) {
         fprintf(stderr,"Instance::unregisterViewBackend: (2/2) erase surface (%p) - bridgeId: %" PRIu32 "\n", this, bridgeId);
+        it->second->apiClient->clientGone(bridgeId);
         it->second->apiClient = nullptr;
         it->second->disabled = true;
     }
