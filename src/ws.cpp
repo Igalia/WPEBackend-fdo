@@ -101,10 +101,12 @@ static const struct wl_surface_interface s_surfaceInterface = {
     // frame
     [](struct wl_client* client, struct wl_resource* surfaceResource, uint32_t callback)
     {
+        fprintf(stderr,"frame (1/2): client: %p - &client: %p)\n", client, &client);
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
         if (!surface.apiClient)
             return;
 
+        fprintf(stderr,"frame (2/2): client: %p - &client: %p)\n", client, &client);
         struct wl_resource* callbackResource = wl_resource_create(client, &wl_callback_interface, 1, callback);
         if (!callbackResource) {
             wl_resource_post_no_memory(surfaceResource);
@@ -113,6 +115,7 @@ static const struct wl_surface_interface s_surfaceInterface = {
 
         wl_resource_set_implementation(callbackResource, nullptr, nullptr,
             [](struct wl_resource* resource) {
+                fprintf(stderr,"wl_resource_set_implementation: callbackResource.DESTROY resource: %p - &resource: %p\n", resource, &resource);
                 wl_list_remove(wl_resource_get_link(resource));
             });
         surface.addFrameCallback(callbackResource);
@@ -122,11 +125,13 @@ static const struct wl_surface_interface s_surfaceInterface = {
     // set_input_region
     [](struct wl_client*, struct wl_resource*, struct wl_resource*) { },
     // commit
-    [](struct wl_client*, struct wl_resource* surfaceResource)
+    [](struct wl_client* client, struct wl_resource* surfaceResource)
     {
+        fprintf(stderr,"commit: (client: %p)\n", client);
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
         surface.commit();
         WS::Instance::singleton().impl().surfaceCommit(surface);
+        fprintf(stderr,"commit: surface.commit\n");
     },
     // set_buffer_transform
     [](struct wl_client*, struct wl_resource*, int32_t) { },
@@ -164,8 +169,9 @@ static const struct wl_compositor_interface s_compositorInterface = {
 
 static const struct wpe_bridge_interface s_wpeBridgeInterface = {
     // initialize
-    [](struct wl_client*, struct wl_resource* resource)
+    [](struct wl_client* client, struct wl_resource* resource)
     {
+        fprintf(stderr,"wpe_bridge_interface::initialize (1/2) - client: %p \n", client);
         uint32_t implementationType = WPE_BRIDGE_CLIENT_IMPLEMENTATION_TYPE_WAYLAND;
         switch (Instance::singleton().impl().type()) {
         case ImplementationType::EGL:
@@ -178,10 +184,12 @@ static const struct wpe_bridge_interface s_wpeBridgeInterface = {
         }
 
         wpe_bridge_send_implementation_info(resource, implementationType);
+        fprintf(stderr,"wpe_bridge_interface::initialize (2/2)\n");
     },
     // connect
-    [](struct wl_client*, struct wl_resource* resource, struct wl_resource* surfaceResource)
+    [](struct wl_client* client, struct wl_resource* resource, struct wl_resource* surfaceResource)
     {
+        fprintf(stderr,"wpe_bridge_interface::connect (1/2) - client: %p \n", client);
         auto* surface = static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
         if (!surface)
             return;
@@ -190,6 +198,7 @@ static const struct wpe_bridge_interface s_wpeBridgeInterface = {
         ++bridgeID;
         wpe_bridge_send_connected(resource, bridgeID);
         Instance::singleton().registerSurface(bridgeID, surface);
+        fprintf(stderr,"wpe_bridge_interface::connect (2/2) - client: %p \n", client);
     },
 };
 
@@ -363,6 +372,7 @@ Instance::Instance(std::unique_ptr<Impl>&& impl)
 
 Instance::~Instance()
 {
+    fprintf(stderr,"Instance::Instance: this: (%p),\n", this);
     if (m_source) {
         g_source_destroy(m_source);
         g_source_unref(m_source);
@@ -388,6 +398,7 @@ Instance::~Instance()
 
 int Instance::createClient()
 {
+    fprintf(stderr,"Instance::createClient() (1/2)\n");
     if (!m_impl->initialized())
         return -1;
 
@@ -399,12 +410,18 @@ int Instance::createClient()
     close(pair[1]);
 
     wl_client_create(m_display, pair[0]);
+    fprintf(stderr,"Instance::createClient() (2/2) clientFd: %d\n",clientFd);
     return clientFd;
 }
 
 void Instance::registerSurface(uint32_t id, Surface* surface)
 {
+    fprintf(stderr,"-> Instance::registerSurface (id: %" PRIu32 " surface: %p)\n", id, surface);
     m_viewBackendMap.insert({ id, surface });
+    for (std::pair<uint32_t, Surface*> element : m_viewBackendMap)
+    {
+        fprintf(stderr,"    * --> (m_viewBackendMap) Instance::registerSurface:(id: %" PRIu32 " surface: %p)\n", element.first, element.second);
+    }
 }
 
 void Instance::initializeVideoPlaneDisplayDmaBuf(VideoPlaneDisplayDmaBufCallback updateCallback, VideoPlaneDisplayDmaBufEndOfStreamCallback endOfStreamCallback)
@@ -532,28 +549,48 @@ void Instance::registerViewBackend(uint32_t bridgeId, APIClient& apiClient)
 
 void Instance::unregisterViewBackend(uint32_t bridgeId)
 {
+    fprintf(stderr,"Instance::unregisterViewBackend: (1/2) this: (%p) - bridgeId: %" PRIu32 "\n", this, bridgeId);
     auto it = m_viewBackendMap.find(bridgeId);
     if (it != m_viewBackendMap.end()) {
+        fprintf(stderr,"Instance::unregisterViewBackend: (2/2) erase surface (%p) - bridgeId: %" PRIu32 "\n", this, bridgeId);
         it->second->apiClient = nullptr;
         m_viewBackendMap.erase(it);
+    }
+    for (std::pair<uint32_t, Surface*> element : m_viewBackendMap)
+    {
+        fprintf(stderr,"    * (m_viewBackendMap) Instance::unregisterViewBackend: (id: %" PRIu32 " surface: %p)\n", element.first, element.second);
     }
 }
 
 void Instance::unregisterSurface(Surface* surface)
 {
+    fprintf(stderr, "~~~~~~ Instance::unregisterSurface: %p \n", surface);
     auto it = std::find_if(m_viewBackendMap.begin(), m_viewBackendMap.end(),
         [surface](const std::pair<uint32_t, Surface*>& value) -> bool {
             return value.second == surface;
         });
     if (it != m_viewBackendMap.end()) {
-        if (surface->apiClient)
+        fprintf(stderr, "~~~~~~ Surface %p (%" PRIu32 ") removed from m_viewBackendMap ~~~~~~\n", surface, it->first);
+	if (surface->apiClient) {
+            g_message("===== Notifying surface[%p]->apiClient->clientGone(%" PRIu32 ")", surface->apiClient, it->first);
             surface->apiClient->clientGone(it->first);
+        } else {
+            g_message("==== No surface[%p]->apiClient!", surface);
+        }
         m_viewBackendMap.erase(it);
+    } else {
+        fprintf(stderr, "~~~~~~ Surface %p not found in m_viewBackendMap ~~~~~~\n", surface);
+    }
+
+    for (std::pair<uint32_t, Surface*> element : m_viewBackendMap)
+    {
+        fprintf(stderr,"    * (m_viewBackendMap) Instance::unregisterSurface:(id: %" PRIu32 " surface: %p)\n", element.first, element.second);
     }
 }
 
 void Instance::dispatchFrameCallbacks(uint32_t bridgeId)
 {
+    fprintf(stderr,"Instance::dispatchFrameCallbacks: this: (%p) - bridgeId: %" PRIu32 "\n", this, bridgeId);
     auto it = m_viewBackendMap.find(bridgeId);
     if (it == m_viewBackendMap.end()) {
         g_warning("Instance::dispatchFrameCallbacks(): "

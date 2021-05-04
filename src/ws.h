@@ -52,12 +52,14 @@ struct Surface {
     explicit Surface(struct wl_resource* surfaceResource):
         resource {surfaceResource}
     {
+        fprintf(stderr,"Surface created \n");
         wl_list_init(&m_pendingFrameCallbacks);
         wl_list_init(&m_currentFrameCallbacks);
     }
 
     ~Surface()
     {
+        fprintf(stderr,"~Surface (this: %p)\n", this);
         struct wl_resource* resource;
         struct wl_resource* tmp;
         wl_resource_for_each_safe(resource, tmp, &m_pendingFrameCallbacks)
@@ -82,7 +84,9 @@ struct Surface {
 
     void addFrameCallback(struct wl_resource* resource)
     {
+        fprintf(stderr,"addFrameCallback (start): resource: %p - &resource: %p\n", resource, &resource);
         wl_list_insert(m_pendingFrameCallbacks.prev, wl_resource_get_link(resource));
+        fprintf(stderr,"addFrameCallback (end): resource: %p - &resource: %p\n", resource, &resource);
     }
 
     void dispatchFrameCallbacks()
@@ -91,6 +95,7 @@ struct Surface {
         struct wl_resource* tmp;
         struct wl_client* client { nullptr };
 
+        fprintf(stderr,"Surface::dispatchFrameCallbacks (this: %p)\n", this);
         wl_resource_for_each_safe(resource, tmp, &m_currentFrameCallbacks) {
             g_assert(!client || client == wl_resource_get_client(resource));
             client = wl_resource_get_client(resource);

@@ -80,8 +80,13 @@ public:
      */
     void clientGone(uint32_t id) override
     {
-        if (id >= m_bridgeId)
+        fprintf(stderr,"ViewBackend::clientGone (m_fallback_bridgeId: %d)\n", m_fallback_bridgeId);
+        fprintf(stderr,"ViewBackend::clientGone (id: %" PRIu32 " >= m_bridgeId: %" PRIu32 ")\n", id, m_bridgeId);
+        if (id >= m_bridgeId) {
+            fprintf(stderr,"ViewBackend::clientGone TRUE\n");
             m_bridgeId = m_fallback_bridgeId;
+        }
+        fprintf(stderr,"ViewBackend::clientGone (m_bridgeId: %d, m_clientFd: %d)\n", m_bridgeId, m_clientFd);
     }
 
     void dispatchFrameCallbacks();

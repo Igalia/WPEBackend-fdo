@@ -119,6 +119,7 @@ GSourceFuncs TargetSource::s_sourceFuncs = {
 
 BaseBackend::BaseBackend(int hostFD)
 {
+    fprintf(stderr,"ws-client: BaseBackend::BaseBackend(hostFD: %d)\n",hostFD);
     m_wl.display = wl_display_connect_to_fd(hostFD);
 
     struct wl_registry* registry = wl_display_get_registry(m_wl.display);
@@ -136,6 +137,7 @@ BaseBackend::BaseBackend(int hostFD)
 
 BaseBackend::~BaseBackend()
 {
+    fprintf(stderr,"ws-client: BaseBackend::~BaseBackend()\n");
     g_clear_pointer(&m_wl.wpeBridge, wpe_bridge_destroy);
     g_clear_pointer(&m_wl.display, wl_display_disconnect);
 }
@@ -157,6 +159,7 @@ const struct wpe_bridge_listener BaseBackend::s_bridgeListener = {
     // implementation_info
     [](void* data, struct wpe_bridge*, uint32_t implementationType)
     {
+        fprintf(stderr,"wpe_bridge_listener::implementationType (1/2)\n");
         auto& backend = *reinterpret_cast<BaseBackend*>(data);
         switch (implementationType) {
         case WPE_BRIDGE_CLIENT_IMPLEMENTATION_TYPE_WAYLAND:
@@ -165,15 +168,19 @@ const struct wpe_bridge_listener BaseBackend::s_bridgeListener = {
         default:
             break;
         }
+        fprintf(stderr,"wpe_bridge_listener::implementationType (2/2)\n");
     },
     // connected
-    [](void* data, struct wpe_bridge*, uint32_t) { },
+    [](void* data, struct wpe_bridge*, uint32_t) {
+        fprintf(stderr,"ws-client: BaseBackend::s_bridgeListener.connected \n");
+    },
 };
 
 
 BaseTarget::BaseTarget(int hostFD, Impl& impl)
     : m_impl(impl)
 {
+    fprintf(stderr,"ws-client: BaseTarget::BaseTarget(hostFD: %d) \n", hostFD);
     m_glib.socket = FdoIPC::Connection::create(hostFD);
 }
 
@@ -274,6 +281,7 @@ const struct wpe_bridge_listener BaseTarget::s_bridgeListener = {
     // connected
     [](void* data, struct wpe_bridge*, uint32_t id)
     {
+        fprintf(stderr,"ws-client: BaseTarget::s_bridgeListener.connected \n");
         static_cast<BaseTarget*>(data)->bridgeConnected(id);
     },
 };
