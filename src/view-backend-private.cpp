@@ -39,7 +39,7 @@ ViewBackend::ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* ba
 ViewBackend::~ViewBackend()
 {
     fprintf(stderr,"ViewBackend::~ViewBackend: this: (%p)\n", this);
-    unregisterSurface(m_bridgeId);
+    // unregisterSurface(m_bridgeId);
 
     if (m_clientFd != -1)
         close(m_clientFd);
