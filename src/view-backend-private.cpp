@@ -119,6 +119,7 @@ void ViewBackend::unregisterSurface(uint32_t bridgeId)
     if (!bridgeId)
         return;
     WS::Instance::singleton().unregisterViewBackend(bridgeId);
+    m_bridgeId = 0;
 }
 
 void ViewBackend::didReceiveMessage(uint32_t messageId, uint32_t messageBody)
