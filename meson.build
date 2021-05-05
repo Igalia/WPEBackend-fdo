@@ -91,15 +91,13 @@ add_project_arguments(
 	language: ['c', 'cpp']
 )
 
+wayland_scanner_candidates = ['wayland-scanner']
 wayland_scanner_dep = dependency('wayland-scanner', required: false, native: true)
 if wayland_scanner_dep.found()
-	wayland_scanner = find_program(
-		wayland_scanner_dep.get_pkgconfig_variable('wayland_scanner'),
-		native: true
-	)
-else
-	wayland_scanner = find_program('wayland-scanner', native: true)
+	wayland_scanner_candidates += wayland_scanner_dep.get_pkgconfig_variable('wayland_scanner')
 endif
+
+wayland_scanner = find_program(wayland_scanner_candidates, native: true)
 
 r = run_command(wayland_scanner, '--version')
 assert(r.returncode() == 0,
