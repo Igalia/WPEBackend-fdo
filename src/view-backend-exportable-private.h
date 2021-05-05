@@ -69,6 +69,12 @@ public:
     void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) override;
     void exportShmBuffer(struct wl_resource* bufferResource, struct wl_shm_buffer* shmBuffer) override;
     void exportEGLStreamProducer(struct wl_resource*) override;
+
+    void bridgeConnectionLost(uint32_t id) override
+    {
+         unregisterSurface(id);
+    }
+
     void dispatchFrameCallbacks();
     void releaseBuffer(struct wl_resource* buffer_resource);
 
