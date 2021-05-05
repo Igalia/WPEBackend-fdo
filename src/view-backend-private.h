@@ -82,6 +82,7 @@ public:
     void clientGone(uint32_t id) override
     {
          unregisterSurface(id);
+         dispatchFrameCallbacks();
     }
 
     void dispatchFrameCallbacks();
