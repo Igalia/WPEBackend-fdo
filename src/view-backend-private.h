@@ -72,7 +72,6 @@ public:
     void bridgeConnectionLost(uint32_t id) override
     {
          unregisterSurface(id);
-         dispatchFrameCallbacks();
     }
 
     void dispatchFrameCallbacks();

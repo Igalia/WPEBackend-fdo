@@ -94,10 +94,8 @@ void ViewBackend::exportEGLStreamProducer(struct wl_resource* bufferResource)
 
 void ViewBackend::dispatchFrameCallbacks()
 {
-    if (G_LIKELY(!m_bridgeIds.empty())) {
-        WS::Instance::singleton().dispatchFrameCallbacks(m_bridgeIds.back());
-        wpe_view_backend_dispatch_frame_displayed(m_backend);
-    }
+    for (auto id : m_bridgeIds) WS::Instance::singleton().dispatchFrameCallbacks(id);
+    wpe_view_backend_dispatch_frame_displayed(m_backend);
 }
 
 void ViewBackend::releaseBuffer(struct wl_resource* buffer_resource)
