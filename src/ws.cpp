@@ -545,8 +545,11 @@ void Instance::unregisterSurface(Surface* surface)
         [surface](const std::pair<uint32_t, Surface*>& value) -> bool {
             return value.second == surface;
         });
-    if (it != m_viewBackendMap.end())
+    if (it != m_viewBackendMap.end()) {
         m_viewBackendMap.erase(it);
+        if (surface->apiClient)
+            surface->apiClient->clientGone(it->first);
+    }
 }
 
 void Instance::dispatchFrameCallbacks(uint32_t bridgeId)
