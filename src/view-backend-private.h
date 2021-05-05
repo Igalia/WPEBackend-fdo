@@ -74,10 +74,21 @@ public:
          unregisterSurface(id);
     }
 
-    void dispatchFrameCallbacks();
+    inline void dispatchFrameCallbacks()
+    {
+        if (G_LIKELY(!m_bridgeIds.empty()))
+            dispatchFrameCallbacks(m_bridgeIds.back());
+    }
+
     void releaseBuffer(struct wl_resource* buffer_resource);
 
 private:
+    inline void dispatchFrameCallbacks(uint32_t bridgeId)
+    {
+        WS::Instance::singleton().dispatchFrameCallbacks(bridgeId);
+        wpe_view_backend_dispatch_frame_displayed(m_backend);
+    }
+
     void didReceiveMessage(uint32_t messageId, uint32_t messageBody) override;
 
     void registerSurface(uint32_t);
