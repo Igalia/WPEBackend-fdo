@@ -45,6 +45,12 @@ struct APIClient {
     virtual void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) = 0;
     virtual void exportShmBuffer(struct wl_resource*, struct wl_shm_buffer*) = 0;
     virtual void exportEGLStreamProducer(struct wl_resource*) = 0;
+
+    // Invoked when the association with the surface associated with a given
+    // wpe_bridge identifier is no longer valid, typically due to the nested
+    // compositor client being disconnected before having the chance to read
+    // and process a FdoIPC::UnregisterSurface message.
+    virtual void bridgeConnectionLost(uint32_t bridgeId) = 0;
 };
 
 struct Surface {
