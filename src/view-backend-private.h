@@ -86,7 +86,10 @@ private:
     inline void dispatchFrameCallbacks(uint32_t bridgeId)
     {
         WS::Instance::singleton().dispatchFrameCallbacks(bridgeId);
-        wpe_view_backend_dispatch_frame_displayed(m_backend);
+        if (G_LIKELY(m_backend))
+            wpe_view_backend_dispatch_frame_displayed(m_backend);
+        else
+            g_warning("Ignored dispatch frame displayed for bridgeId %" PRIu32 ": WPE view backend is gone", bridgeId);
     }
 
     void didReceiveMessage(uint32_t messageId, uint32_t messageBody) override;

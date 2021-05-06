@@ -39,6 +39,7 @@ ViewBackend::ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* ba
 
 ViewBackend::~ViewBackend()
 {
+    m_backend = nullptr;
     while (!m_bridgeIds.empty())
         unregisterSurface(m_bridgeIds.front());
 
