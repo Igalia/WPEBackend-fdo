@@ -72,12 +72,27 @@ public:
     void bridgeConnectionLost(uint32_t id) override
     {
          unregisterSurface(id);
+         dispatchFrameCallbacks();
     }
 
-    void dispatchFrameCallbacks();
+    inline void dispatchFrameCallbacks()
+    {
+        if (G_LIKELY(!m_bridgeIds.empty()))
+            dispatchFrameCallbacks(m_bridgeIds.back());
+    }
+
     void releaseBuffer(struct wl_resource* buffer_resource);
 
 private:
+    inline void dispatchFrameCallbacks(uint32_t bridgeId)
+    {
+        WS::Instance::singleton().dispatchFrameCallbacks(bridgeId);
+        if (G_LIKELY(m_backend))
+            wpe_view_backend_dispatch_frame_displayed(m_backend);
+        else
+            g_warning("Ignored dispatch frame displayed for bridgeId %" PRIu32 ": WPE view backend is gone", bridgeId);
+    }
+
     void didReceiveMessage(uint32_t messageId, uint32_t messageBody) override;
 
     void registerSurface(uint32_t);

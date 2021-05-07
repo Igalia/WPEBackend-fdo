@@ -39,9 +39,9 @@ ViewBackend::ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* ba
 
 ViewBackend::~ViewBackend()
 {
-    while (!m_bridgeIds.empty())
-        unregisterSurface(m_bridgeIds.front());
-
+    m_backend = nullptr;
+    for (auto bridgeId : m_bridgeIds)
+        WS::Instance::singleton().unregisterViewBackend(bridgeId);
     if (m_clientFd != -1)
         close(m_clientFd);
 }
@@ -92,14 +92,6 @@ void ViewBackend::exportEGLStreamProducer(struct wl_resource* bufferResource)
     m_clientBundle->exportEGLStreamProducer(bufferResource);
 }
 
-void ViewBackend::dispatchFrameCallbacks()
-{
-    if (G_LIKELY(!m_bridgeIds.empty())) {
-        WS::Instance::singleton().dispatchFrameCallbacks(m_bridgeIds.back());
-        wpe_view_backend_dispatch_frame_displayed(m_backend);
-    }
-}
-
 void ViewBackend::releaseBuffer(struct wl_resource* buffer_resource)
 {
     wl_buffer_send_release(buffer_resource);
@@ -108,6 +100,11 @@ void ViewBackend::releaseBuffer(struct wl_resource* buffer_resource)
 
 void ViewBackend::registerSurface(uint32_t bridgeId)
 {
+    // The current surface will be made inactive (if any); make sure that
+    // surfaces other than the new active one do not have callbacks pending
+    // to be dispatched.
+    dispatchFrameCallbacks();
+
     m_bridgeIds.push_back(bridgeId);
     WS::Instance::singleton().registerViewBackend(m_bridgeIds.back(), *this);
 }
@@ -117,6 +114,11 @@ void ViewBackend::unregisterSurface(uint32_t bridgeId)
     auto it = std::find(m_bridgeIds.begin(), m_bridgeIds.end(), bridgeId);
     if (it == m_bridgeIds.end())
         return;
+
+    // If the item being removed corresponds to the active surface, make
+    // sure to avoid having frame callbacks pending dispatch before removing.
+    if (bridgeId == m_bridgeIds.back())
+        dispatchFrameCallbacks(bridgeId);
 
     m_bridgeIds.erase(it);
     WS::Instance::singleton().unregisterViewBackend(bridgeId);
