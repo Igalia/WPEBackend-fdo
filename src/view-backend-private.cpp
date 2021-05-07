@@ -40,9 +40,8 @@ ViewBackend::ViewBackend(ClientBundle* clientBundle, struct wpe_view_backend* ba
 ViewBackend::~ViewBackend()
 {
     m_backend = nullptr;
-    while (!m_bridgeIds.empty())
-        unregisterSurface(m_bridgeIds.front());
-
+    for (auto bridgeId : m_bridgeIds)
+        WS::Instance::singleton().unregisterViewBackend(bridgeId);
     if (m_clientFd != -1)
         close(m_clientFd);
 }
