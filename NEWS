@@ -1,3 +1,12 @@
+=====================
+1.9.92 - May 12, 2021
+=====================
+
+- Fixed frozen web views not being updated after PSON when multiple
+  web views (and hence view backends) are in use.
+- Made it easier to override where Meson looks for wayland-scanner during
+  cross-compilation, using a native machine file.
+
 =======================
 1.9.91 - April 30, 2021
 =======================
