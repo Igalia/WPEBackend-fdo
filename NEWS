@@ -1,3 +1,12 @@
+====================
+1.8.4 - May 12, 2021
+====================
+
+- Fixed frozen web views not being updated after PSON when multiple web
+  views (and hence view backends) are in use.
+- Fixed invalid usage of Wayland client connections in the nested compositor
+  which caused crashes in some situations.
+
 ======================
 1.8.3 - March 30, 2021
 ======================
