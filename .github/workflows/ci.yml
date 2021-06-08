@@ -59,3 +59,64 @@ jobs:
         with:
           name: build
           path: _work
+  analyze:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Tools
+        run: |
+          curl -sL https://apt.llvm.org/llvm-snapshot.gpg.key | \
+            sudo apt-key add -
+          sudo add-apt-repository \
+            'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-14 main'
+          sudo apt update
+          sudo apt install -y libxkbcommon-dev libegl1-mesa-dev libyaml-dev \
+            libwayland-dev clang libglib2.0-dev libepoxy-dev ninja-build
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Python Package Cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('.github/workflows/ci.yml') }}
+          restore-keys: ${{ runner.os }}-pip-
+      - name: Install Python Packages
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install scan-build meson==0.55
+      - name: Fetch libwpe
+        run: |
+          if [[ -d ~/libwpe/.git ]] ; then
+            echo 'Updating libwpe clone...'
+            cd ~/libwpe/
+            git reset --hard
+            git clean -qxdff
+            git checkout -f master
+            git pull -q
+          else
+            echo 'Cloning libwpe afresh...'
+            rm -rf ~/libwpe/
+            git clone -q https://github.com/WebPlatformForEmbedded/libwpe ~/libwpe/
+          fi
+          mkdir -p subprojects
+          ln -s ~/libwpe subprojects/
+      - name: Configure
+        run: |
+          meson _work --prefix /usr -Dbuild_docs=false
+      - name: Analyze
+        run: |
+          TERM=dumb ninja -C _work
+          analyze-build \
+            --enable-checker nullability.NullablePassedToNonnull \
+            --enable-checker optin.cplusplus.UninitializedObject \
+            --enable-checker optin.cplusplus.VirtualCall \
+            --enable-checker optin.performance.Padding \
+            --enable-checker optin.portability.UnixAPI \
+            --enable-checker valist.CopyToSelf \
+            --enable-checker valist.Uninitialized \
+            --enable-checker valist.Unterminated \
+            --cdb _work/compile_commands.json \
+            -o _work/report
