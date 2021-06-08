@@ -4,6 +4,7 @@ project('wpebackend-fdo', ['c', 'cpp'],
 		'b_ndebug=if-release',
 		'c_std=c99',
 		'cpp_eh=none',
+		'cpp_rtti=false',
 		'cpp_std=c++11',
 	],
 	license: 'BSD-2-Clause',
@@ -206,7 +207,7 @@ if meson.version().version_compare('<0.51')
 	)
 endif
 
-# Switch to the 'cpp_rtti=false' default option when updating to Meson 0.53 or newer, see
+# The 'cpp_rtti=false' default option is only recognized by Meson 0.53 or newer, see
 # https://mesonbuild.com/FAQ.html#how-do-i-disable-exceptions-and-rtti-in-my-c-project
 if meson.version().version_compare('<0.53')
 	add_project_arguments(
