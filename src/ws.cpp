@@ -546,9 +546,10 @@ void Instance::unregisterSurface(Surface* surface)
             return value.second == surface;
         });
     if (it != m_viewBackendMap.end()) {
+        const uint32_t bridgeId = it->first;
         m_viewBackendMap.erase(it);
         if (surface->apiClient)
-            surface->apiClient->bridgeConnectionLost(it->first);
+            surface->apiClient->bridgeConnectionLost(bridgeId);
     }
 }
 
