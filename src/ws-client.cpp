@@ -162,6 +162,9 @@ const struct wpe_bridge_listener BaseBackend::s_bridgeListener = {
         case WPE_BRIDGE_CLIENT_IMPLEMENTATION_TYPE_WAYLAND:
             backend.m_type = ClientImplementationType::Wayland;
             break;
+        case WPE_BRIDGE_CLIENT_IMPLEMENTATION_TYPE_DMABUF_POOL:
+            backend.m_type = ClientImplementationType::DmabufPool;
+            break;
         default:
             break;
         }
@@ -185,6 +188,7 @@ BaseTarget::~BaseTarget()
     g_clear_pointer(&m_wl.frameCallback, wl_callback_destroy);
     g_clear_pointer(&m_wl.surface, wl_surface_destroy);
 
+    g_clear_pointer(&m_wl.wpeDmabufPoolManager, wpe_dmabuf_pool_manager_destroy);
     g_clear_pointer(&m_wl.wpeBridge, wpe_bridge_destroy);
     g_clear_pointer(&m_wl.compositor, wl_compositor_destroy);
     g_clear_pointer(&m_wl.eventQueue, wl_event_queue_destroy);
@@ -197,6 +201,7 @@ BaseTarget::~BaseTarget()
 
 void BaseTarget::initialize(BaseBackend& backend)
 {
+    m_backend = &backend;
     struct wl_display* display = backend.display();
 
     m_wl.eventQueue = wl_display_create_queue(display);
@@ -214,6 +219,9 @@ void BaseTarget::initialize(BaseBackend& backend)
 
     m_wl.surface = wl_compositor_create_surface(m_wl.compositor);
     wl_proxy_set_queue(reinterpret_cast<struct wl_proxy*>(m_wl.surface), m_wl.eventQueue);
+
+    m_wl.wpeDmabufPool = wpe_dmabuf_pool_manager_create_pool(m_wl.wpeDmabufPoolManager, m_wl.surface);
+    wl_proxy_set_queue(reinterpret_cast<struct wl_proxy*>(m_wl.wpeDmabufPool), m_wl.eventQueue);
 
     m_glib.wlSource = ws_polling_source_new("WPEBackend-fdo::wayland", display, m_wl.eventQueue);
     g_source_attach(m_glib.wlSource, g_main_context_get_thread_default());
@@ -255,6 +263,8 @@ const struct wl_registry_listener BaseTarget::s_registryListener = {
             target.m_wl.compositor = static_cast<struct wl_compositor*>(wl_registry_bind(registry, name, &wl_compositor_interface, 1));
         if (!std::strcmp(interface, "wpe_bridge"))
             target.m_wl.wpeBridge = static_cast<struct wpe_bridge*>(wl_registry_bind(registry, name, &wpe_bridge_interface, 1));
+        if (!std::strcmp(interface, "wpe_dmabuf_pool_manager"))
+            target.m_wl.wpeDmabufPoolManager = static_cast<struct wpe_dmabuf_pool_manager*>(wl_registry_bind(registry, name, &wpe_dmabuf_pool_manager_interface, 1));
     },
     // global_remove
     [](void*, struct wl_registry*, uint32_t) { },

@@ -25,8 +25,10 @@
 
 #include "ws.h"
 
+#include "dmabuf-pool-entry-private.h"
 #include "wpe-audio-server-protocol.h"
 #include "wpe-bridge-server-protocol.h"
+#include "wpe-dmabuf-pool-server-protocol.h"
 #include "wpe-video-plane-display-dmabuf-server-protocol.h"
 #include <algorithm>
 #include <cassert>
@@ -168,6 +170,9 @@ static const struct wpe_bridge_interface s_wpeBridgeInterface = {
     {
         uint32_t implementationType = WPE_BRIDGE_CLIENT_IMPLEMENTATION_TYPE_WAYLAND;
         switch (Instance::singleton().impl().type()) {
+        case ImplementationType::DmabufPool:
+            implementationType = WPE_BRIDGE_CLIENT_IMPLEMENTATION_TYPE_DMABUF_POOL;
+            break;
         case ImplementationType::EGL:
         case ImplementationType::EGLStream:
         case ImplementationType::SHM:
@@ -190,6 +195,93 @@ static const struct wpe_bridge_interface s_wpeBridgeInterface = {
         ++bridgeID;
         wpe_bridge_send_connected(resource, bridgeID);
         Instance::singleton().registerSurface(bridgeID, surface);
+    },
+};
+
+static const struct wl_buffer_interface s_wpeDmabufPoolEntryBufferInterface = {
+    // destroy
+    [](struct wl_client*, struct wl_resource* resource)
+    {
+        wl_resource_destroy(resource);
+    },
+};
+
+static const struct wpe_dmabuf_data_interface s_wpeDmabufDataInterface = {
+    // request
+    [](struct wl_client*, struct wl_resource* dmabufDataResource)
+    {
+        auto* entry = static_cast<struct wpe_dmabuf_pool_entry*>(wl_resource_get_user_data(dmabufDataResource));
+
+        wpe_dmabuf_data_send_attributes(dmabufDataResource, entry->width, entry->height,
+            entry->format, entry->num_planes);
+        for (unsigned i = 0; i < entry->num_planes; ++i) {
+            uint32_t modifier_hi = entry->modifiers[i] >> 32;
+            uint32_t modifier_lo = entry->modifiers[i] & 0xFFFFFFFF;
+            wpe_dmabuf_data_send_plane(dmabufDataResource, i, entry->fds[i],
+                entry->strides[i], entry->offsets[i], modifier_hi, modifier_lo);
+        }
+        wpe_dmabuf_data_send_complete(dmabufDataResource);
+    },
+};
+
+static const struct wpe_dmabuf_pool_interface s_wpeDmabufPoolInterface = {
+    // create_buffer
+    [](struct wl_client* client, struct wl_resource* resource, uint32_t id, uint32_t width, uint32_t height)
+    {
+        auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(resource));
+        auto entry = WS::Instance::singleton().impl().createDmabufPoolEntry(surface);
+        if (!entry) {
+            // FIXME: more of an error
+            wl_resource_post_no_memory(resource);
+            return;
+        }
+
+        struct wl_resource* bufferResource = wl_resource_create(client, &wl_buffer_interface,
+            wl_resource_get_version(resource), id);
+        if (!bufferResource) {
+            wl_resource_post_no_memory(resource);
+            return;
+        }
+
+        entry->bufferResource = bufferResource;
+        wl_resource_set_implementation(bufferResource, &s_wpeDmabufPoolEntryBufferInterface, entry,
+            [](struct wl_resource* resource)
+            {
+                auto* entry = static_cast<struct wpe_dmabuf_pool_entry*>(wl_resource_get_user_data(resource));
+                entry->bufferResource = nullptr;
+            });
+    },
+    // get_dmabuf_data
+    [](struct wl_client* client, struct wl_resource* resource, uint32_t id, struct wl_resource* bufferResource)
+    {
+        auto* entry = static_cast<struct wpe_dmabuf_pool_entry*>(wl_resource_get_user_data(bufferResource));
+        if (!entry)
+            return;
+
+        struct wl_resource* dmabufDataResource = wl_resource_create(client, &wpe_dmabuf_data_interface,
+            wl_resource_get_version(resource), id);
+        if (!dmabufDataResource) {
+            wl_resource_post_no_memory(resource);
+            return;
+        }
+
+        wl_resource_set_implementation(dmabufDataResource, &s_wpeDmabufDataInterface, entry, nullptr);
+    },
+};
+
+static const struct wpe_dmabuf_pool_manager_interface s_wpeDmabufPoolManagerInterface = {
+    // create_pool
+    [](struct wl_client* client, struct wl_resource* resource, uint32_t id, struct wl_resource* surfaceResource)
+    {
+        struct wl_resource* poolResource = wl_resource_create(client, &wpe_dmabuf_pool_interface,
+            wl_resource_get_version(resource), id);
+        if (!poolResource) {
+            wl_resource_post_no_memory(resource);
+            return;
+        }
+
+        auto* surface = static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
+        wl_resource_set_implementation(poolResource, &s_wpeDmabufPoolInterface, surface, nullptr);
     },
 };
 
@@ -346,6 +438,17 @@ Instance::Instance(std::unique_ptr<Impl>&& impl)
 
             wl_resource_set_implementation(resource, &s_wpeBridgeInterface, nullptr, nullptr);
         });
+    m_wpeDmabufPoolManager = wl_global_create(m_display, &wpe_dmabuf_pool_manager_interface, 1, this,
+        [](struct wl_client* client, void*, uint32_t version, uint32_t id)
+        {
+            struct wl_resource* resource = wl_resource_create(client, &wpe_dmabuf_pool_manager_interface, version, id);
+            if (!resource) {
+                wl_client_post_no_memory(client);
+                return;
+            }
+
+            wl_resource_set_implementation(resource, &s_wpeDmabufPoolManagerInterface, nullptr, nullptr);
+        });
 
     auto& source = *reinterpret_cast<ServerSource*>(m_source);
 
@@ -375,6 +478,9 @@ Instance::~Instance()
 
     if (m_wpeBridge)
         wl_global_destroy(m_wpeBridge);
+
+    if (m_wpeDmabufPoolManager)
+        wl_global_destroy(m_wpeDmabufPoolManager);
 
     if (m_videoPlaneDisplayDmaBuf.object)
         wl_global_destroy(m_videoPlaneDisplayDmaBuf.object);

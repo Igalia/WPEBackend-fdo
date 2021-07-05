@@ -26,28 +26,26 @@
 #pragma once
 
 #include "egl-client.h"
-
-struct wl_egl_window;
+#include "wpe-dmabuf-pool-client-protocol.h"
+#include <epoxy/egl.h>
+#include <wayland-client.h>
 
 namespace WS {
 namespace EGLClient {
 
-class BackendWayland final : public BackendImpl {
+class BackendDmabufPool final : public BackendImpl {
 public:
-    BackendWayland(BaseBackend&);
-    virtual ~BackendWayland();
+    BackendDmabufPool(BaseBackend&);
+    virtual ~BackendDmabufPool();
 
     EGLNativeDisplayType nativeDisplay() const override;
     uint32_t platform() const override;
-
-private:
-    BaseBackend& m_base;
 };
 
-class TargetWayland final : public TargetImpl {
+class TargetDmabufPool final : public TargetImpl {
 public:
-    TargetWayland(BaseTarget&, uint32_t width, uint32_t height);
-    virtual ~TargetWayland();
+    TargetDmabufPool(BaseTarget&, uint32_t width, uint32_t height);
+    virtual ~TargetDmabufPool();
 
     EGLNativeWindowType nativeWindow() const override;
 
@@ -61,9 +59,28 @@ public:
 private:
     BaseTarget& m_base;
 
+    static const struct wpe_dmabuf_data_listener s_dmabufDataListener;
+    static const struct wl_buffer_listener s_bufferListener;
+
     struct {
-        struct wl_egl_window* window;
-    } m_egl;
+        bool initialized { false };
+        uint32_t width { 0 };
+        uint32_t height { 0 };
+
+        PFNEGLCREATEIMAGEKHRPROC createImageKHR;
+        PFNEGLDESTROYIMAGEKHRPROC destroyImageKHR;
+        PFNGLEGLIMAGETARGETRENDERBUFFERSTORAGEOESPROC imageTargetRenderbufferStorageOES;
+
+        GLuint framebuffer { 0 };
+    } m_renderer;
+
+    struct Buffer;
+    void destroyBuffer(Buffer*);
+
+    struct {
+        Buffer* current { nullptr };
+        struct wl_list list;
+    } m_buffer;
 };
 
 } } // namespace WS::EGLClient

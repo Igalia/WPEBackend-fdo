@@ -51,6 +51,9 @@ public:
     virtual void exportBuffer(struct wl_resource* bufferResource, struct wl_shm_buffer* shmBuffer) = 0;
     virtual void exportEGLStreamProducer(struct wl_resource *bufferResource) = 0;
 
+    virtual struct wpe_dmabuf_pool_entry* createDmabufPoolEntry() = 0;
+    virtual void commitDmabufPoolEntry(struct wpe_dmabuf_pool_entry*) = 0;
+
     void* data;
     ViewBackend* viewBackend;
     uint32_t initialWidth;
@@ -68,6 +71,9 @@ public:
     void exportLinuxDmabuf(const struct linux_dmabuf_buffer *dmabuf_buffer) override;
     void exportShmBuffer(struct wl_resource* bufferResource, struct wl_shm_buffer* shmBuffer) override;
     void exportEGLStreamProducer(struct wl_resource*) override;
+
+    struct wpe_dmabuf_pool_entry* createDmabufPoolEntry() override;
+    void commitDmabufPoolEntry(struct wpe_dmabuf_pool_entry*) override;
 
     void bridgeConnectionLost(uint32_t id) override
     {
@@ -112,6 +118,13 @@ struct wpe_view_backend_private {
 
 struct wpe_view_backend_exportable_fdo : wpe_view_backend_private {
     wpe_view_backend_exportable_fdo(std::unique_ptr<ClientBundle>&& clientBundle, struct wpe_view_backend* backend)
+        : wpe_view_backend_private(std::move(clientBundle), backend)
+    {
+    }
+};
+
+struct wpe_view_backend_dmabuf_pool_fdo : wpe_view_backend_private {
+    wpe_view_backend_dmabuf_pool_fdo(std::unique_ptr<ClientBundle>&& clientBundle, struct wpe_view_backend* backend)
         : wpe_view_backend_private(std::move(clientBundle), backend)
     {
     }

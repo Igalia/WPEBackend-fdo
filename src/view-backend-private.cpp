@@ -92,6 +92,16 @@ void ViewBackend::exportEGLStreamProducer(struct wl_resource* bufferResource)
     m_clientBundle->exportEGLStreamProducer(bufferResource);
 }
 
+struct wpe_dmabuf_pool_entry* ViewBackend::createDmabufPoolEntry()
+{
+    return m_clientBundle->createDmabufPoolEntry();
+}
+
+void ViewBackend::commitDmabufPoolEntry(struct wpe_dmabuf_pool_entry* entry)
+{
+    m_clientBundle->commitDmabufPoolEntry(entry);
+}
+
 void ViewBackend::dispatchFrameCallbacks()
 {
     if (G_LIKELY(!m_bridgeIds.empty())) {

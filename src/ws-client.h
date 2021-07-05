@@ -26,6 +26,7 @@
 #pragma once
 
 #include "wpe-bridge-client-protocol.h"
+#include "wpe-dmabuf-pool-client-protocol.h"
 #include "ipc.h"
 #include "ws-types.h"
 #include <glib.h>
@@ -63,7 +64,10 @@ public:
         virtual void dispatchFrameComplete() = 0;
     };
 
+    struct wl_display* display() const { return m_backend->display(); }
+    struct wl_event_queue* eventQueue() const { return m_wl.eventQueue; }
     struct wl_surface* surface() const { return m_wl.surface; }
+    struct wpe_dmabuf_pool* wpeDmabufPool() const { return m_wl.wpeDmabufPool; }
 
     void requestFrame();
 
@@ -82,6 +86,7 @@ private:
     static const struct wpe_bridge_listener s_bridgeListener;
 
     Impl& m_impl;
+    BaseBackend* m_backend { nullptr };
 
     struct {
         std::unique_ptr<FdoIPC::Connection> socket;
@@ -92,9 +97,11 @@ private:
         struct wl_event_queue* eventQueue { nullptr };
         struct wl_compositor* compositor { nullptr };
         struct wpe_bridge* wpeBridge { nullptr };
-        uint32_t wpeBridgeId { 0 };
+        struct wpe_dmabuf_pool_manager* wpeDmabufPoolManager { nullptr };
 
+        uint32_t wpeBridgeId { 0 };
         struct wl_surface* surface { nullptr };
+        struct wpe_dmabuf_pool* wpeDmabufPool { nullptr };
         struct wl_callback* frameCallback { nullptr };
     } m_wl;
 };
