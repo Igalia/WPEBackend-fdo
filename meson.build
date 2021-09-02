@@ -254,13 +254,15 @@ add_project_arguments(
 	language: 'c'
 )
 
+wpe_dep = dependency('wpe-1.0', version: '>=1.6.0', fallback: ['libwpe', 'libwpe_dep'])
+
 deps = [
 	dependency('epoxy'),
 	dependency('gio-2.0'),
 	dependency('gobject-2.0'),
 	dependency('wayland-client'),
 	dependency('wayland-server'),
-	dependency('wpe-1.0', version: '>=1.6.0', fallback: ['libwpe', 'libwpe_dep']),
+        wpe_dep,
 ]
 
 # Will be set to the library dependency which provides the wl_egl_* functions.
@@ -348,8 +350,7 @@ import('pkgconfig').generate(
 	description: 'The WPEBackend-fdo library',
 	name: 'wpebackend-fdo-' + api_version,
 	subdirs: 'wpe-fdo-' + api_version,
-	libraries: lib,
-	version: meson.project_version(),
+	libraries: [lib, wpe_dep],
 )
 
 if get_option('build_docs')
