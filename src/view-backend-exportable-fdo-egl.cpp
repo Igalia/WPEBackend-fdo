@@ -267,9 +267,11 @@ public:
 private:
     struct wpe_fdo_egl_exported_image* findImage(struct wl_resource* bufferResource)
     {
-        if (auto* listener = wl_resource_get_destroy_listener(bufferResource, bufferDestroyListenerCallback)) {
-            struct wpe_fdo_egl_exported_image* image;
-            return wl_container_of(listener, image, bufferDestroyListener);
+        if (bufferResource) {
+            if (auto* listener = wl_resource_get_destroy_listener(bufferResource, bufferDestroyListenerCallback)) {
+                struct wpe_fdo_egl_exported_image* image;
+                return wl_container_of(listener, image, bufferDestroyListener);
+            }
         }
 
         return nullptr;
