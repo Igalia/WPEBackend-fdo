@@ -247,8 +247,6 @@ public:
 
     void releaseImage(struct wpe_fdo_egl_exported_image* image)
     {
-        image->exported = false;
-
         if (image->bufferResource)
             viewBackend->releaseBuffer(image->bufferResource);
         else
@@ -297,9 +295,6 @@ private:
         image = wl_container_of(listener, image, bufferDestroyListener);
 
         image->bufferResource = nullptr;
-
-        if (!image->exported)
-            deleteImage(image);
     }
 };
 
