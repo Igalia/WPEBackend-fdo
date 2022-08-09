@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Igalia S.L.
+ * Copyright (C) 2021-2022 Igalia S.L.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,6 +28,6 @@
 
 #define WPE_FDO_MAJOR_VERSION 1
 #define WPE_FDO_MINOR_VERSION 12
-#define WPE_FDO_MICRO_VERSION 0
+#define WPE_FDO_MICRO_VERSION 1
 
 #endif /* !WPEBACKEND_FDO_VERSION_H */
