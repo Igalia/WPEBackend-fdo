@@ -294,7 +294,7 @@ void ImplEGL::foreachDmaBufModifier(std::function<void (int format, uint64_t mod
         uint64_t modifiers[64];
         EGLint numModifiers;
         if (!s_eglQueryDmaBufModifiersEXT(m_egl.display, formats[i], 64, modifiers, NULL, &numModifiers))
-            assert(!"Linux-dmabuf: Failed to query modifiers of a format");
+            numModifiers = 0;
 
         /* Send DRM_FORMAT_MOD_INVALID token when no modifiers are supported
          * for this format.
