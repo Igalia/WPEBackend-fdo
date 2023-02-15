@@ -659,7 +659,7 @@ void Instance::unregisterSurface(Surface* surface)
     }
 }
 
-void Instance::dispatchFrameCallbacks(uint32_t bridgeId)
+bool Instance::dispatchFrameCallbacks(uint32_t bridgeId)
 {
     auto it = m_viewBackendMap.find(bridgeId);
     if (it == m_viewBackendMap.end()) {
@@ -667,9 +667,10 @@ void Instance::dispatchFrameCallbacks(uint32_t bridgeId)
                   "Cannot find surface with bridgeId %" PRIu32 " in view "
                   "backend map. Probably the associated surface is gone "
                   "due to a premature exit in the client side", bridgeId);
-    } else {
-        it->second->dispatchFrameCallbacks();
+        return false;
     }
+
+    return it->second->dispatchFrameCallbacks();
 }
 
 } // namespace WS
