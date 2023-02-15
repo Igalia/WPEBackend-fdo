@@ -105,8 +105,8 @@ void ViewBackend::commitDmabufPoolEntry(struct wpe_dmabuf_pool_entry* entry)
 void ViewBackend::dispatchFrameCallbacks()
 {
     if (G_LIKELY(!m_bridgeIds.empty())) {
-        WS::Instance::singleton().dispatchFrameCallbacks(m_bridgeIds.back());
-        wpe_view_backend_dispatch_frame_displayed(m_backend);
+        if (WS::Instance::singleton().dispatchFrameCallbacks(m_bridgeIds.back()))
+            wpe_view_backend_dispatch_frame_displayed(m_backend);
     }
 }
 
@@ -130,6 +130,9 @@ void ViewBackend::unregisterSurface(uint32_t bridgeId)
 
     m_bridgeIds.erase(it);
     WS::Instance::singleton().unregisterViewBackend(bridgeId);
+    // Dispatch frame callbacks in case there's any pending callback from previous bridge.
+    if (!m_bridgeIds.empty())
+        dispatchFrameCallbacks();
 }
 
 void ViewBackend::didReceiveMessage(uint32_t messageId, uint32_t messageBody)
