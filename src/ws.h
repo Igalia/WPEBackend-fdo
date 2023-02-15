@@ -94,7 +94,7 @@ struct Surface {
         wl_list_insert(m_pendingFrameCallbacks.prev, wl_resource_get_link(resource));
     }
 
-    void dispatchFrameCallbacks()
+    bool dispatchFrameCallbacks()
     {
         struct wl_resource* resource;
         struct wl_resource* tmp;
@@ -107,8 +107,11 @@ struct Surface {
             wl_resource_destroy(resource);
         }
 
-        if (client)
-            wl_client_flush(client);
+        if (!client)
+            return false;
+
+        wl_client_flush(client);
+        return true;
     }
 
 private:
@@ -151,7 +154,7 @@ public:
     void unregisterSurface(Surface*);
     void registerViewBackend(uint32_t, APIClient&);
     void unregisterViewBackend(uint32_t);
-    void dispatchFrameCallbacks(uint32_t);
+    bool dispatchFrameCallbacks(uint32_t);
 
     using VideoPlaneDisplayDmaBufCallback = std::function<void(struct wpe_video_plane_display_dmabuf_export*, uint32_t, int, int32_t, int32_t, int32_t, int32_t, uint32_t)>;
     using VideoPlaneDisplayDmaBufEndOfStreamCallback = std::function<void(uint32_t)>;
