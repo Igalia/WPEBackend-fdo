@@ -1,3 +1,12 @@
+======================
+1.14.1 - March 4, 2023
+======================
+
+- Fix WebKit no longer repainting after provisional navigation with
+  PSON enabled.
+- Fix graphics buffer leaks by always freeing them in buffer destroy
+  listener callbacks.
+
 ===========================
 1.14.0 - September 20, 2022
 ===========================
