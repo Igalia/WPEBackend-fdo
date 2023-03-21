@@ -1,3 +1,12 @@
+=======================
+1.14.2 - March 22, 2023
+=======================
+
+- Reverted a change introduced in 1.14.1 which introduced crashes both
+  with WebKitGTK and WPE running under Wayland in some configurations.
+- Fix a crash caused by wrong assertion, which was typically triggered in
+  debug builds when using the NVidia drivers.
+
 ======================
 1.14.1 - March 4, 2023
 ======================
