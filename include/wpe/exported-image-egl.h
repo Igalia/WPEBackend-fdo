@@ -85,6 +85,9 @@ wpe_fdo_egl_exported_image_get_height(struct wpe_fdo_egl_exported_image *image);
 EGLImageKHR
 wpe_fdo_egl_exported_image_get_egl_image(struct wpe_fdo_egl_exported_image *image);
 
+uint32_t
+wpe_fdo_egl_exported_image_get_damage_regions(struct wpe_fdo_egl_exported_image*, const int32_t**);
+
 #ifdef __cplusplus
 }
 #endif

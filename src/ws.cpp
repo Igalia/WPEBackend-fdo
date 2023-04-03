@@ -96,6 +96,7 @@ static const struct wl_surface_interface s_surfaceInterface = {
     [](struct wl_client*, struct wl_resource* surfaceResource, struct wl_resource* bufferResource, int32_t, int32_t)
     {
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
+        WS::Instance::singleton().clearPendingBufferDamage(surface.bufferResource);
         Instance::singleton().impl().surfaceAttach(surface, bufferResource);
     },
     // damage
@@ -128,7 +129,9 @@ static const struct wl_surface_interface s_surfaceInterface = {
     {
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
         surface.commit();
+        auto* bufferResource = surface.bufferResource;
         WS::Instance::singleton().impl().surfaceCommit(surface);
+        WS::Instance::singleton().clearPendingBufferDamage(bufferResource);
     },
     // set_buffer_transform
     [](struct wl_client*, struct wl_resource*, int32_t) { },
@@ -136,7 +139,10 @@ static const struct wl_surface_interface s_surfaceInterface = {
     [](struct wl_client*, struct wl_resource*, int32_t) { },
 #if (WAYLAND_VERSION_MAJOR > 1) || (WAYLAND_VERSION_MAJOR == 1 && WAYLAND_VERSION_MINOR >= 10)
     // damage_buffer
-    [](struct wl_client*, struct wl_resource*, int32_t, int32_t, int32_t, int32_t) { },
+    [](struct wl_client*, struct wl_resource* surfaceResource, int32_t x, int32_t y, int32_t width, int32_t height) {
+        auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
+        WS::Instance::singleton().addBufferDamageRegion(surface.bufferResource, x, y, width, height);
+    },
 #endif
 };
 
@@ -416,7 +422,7 @@ Instance::Instance(std::unique_ptr<Impl>&& impl)
 {
     m_impl->setInstance(*this);
 
-    m_compositor = wl_global_create(m_display, &wl_compositor_interface, 3, this,
+    m_compositor = wl_global_create(m_display, &wl_compositor_interface, 4, this,
         [](struct wl_client* client, void*, uint32_t version, uint32_t id)
         {
             struct wl_resource* resource = wl_resource_create(client, &wl_compositor_interface, version, id);
@@ -671,6 +677,46 @@ bool Instance::dispatchFrameCallbacks(uint32_t bridgeId)
     }
 
     return it->second->dispatchFrameCallbacks();
+}
+
+void Instance::addBufferDamageRegion(struct wl_resource *surfaceResource, int32_t x, int32_t y, int32_t width, int32_t height)
+{
+    if (!surfaceResource)
+        return;
+
+    auto key = surfaceResource;
+    std::array<int32_t, 4> region = {x, y, width, height};
+    auto it = m_damageRegions.find(key);
+
+    if (it == m_damageRegions.end()) {
+        std::vector<std::array<int32_t, 4>> vec = {};
+        m_damageRegions.insert(std::make_pair(key, vec));
+        it = m_damageRegions.find(key);
+    }
+
+    auto& vec = it->second;
+    vec.push_back(region);
+}
+
+void Instance::clearPendingBufferDamage(struct wl_resource* bufferResource)
+{
+    m_damageRegions.erase(bufferResource);
+}
+
+uint32_t Instance::exportDamageRegions(struct wl_resource* bufferResource, const int32_t** target)
+{
+    if (!bufferResource) {
+        *target = nullptr;
+        return 0;
+    }
+
+    auto it = m_damageRegions.find(bufferResource);
+    if (it == m_damageRegions.cend() || it->second.empty() || !it->second.data()) {
+        *target = nullptr;
+        return 0;
+    }
+    *target = reinterpret_cast<int32_t*>(it->second.data());
+    return it->second.size();
 }
 
 } // namespace WS
