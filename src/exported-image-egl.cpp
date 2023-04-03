@@ -52,4 +52,11 @@ wpe_fdo_egl_exported_image_get_egl_image(struct wpe_fdo_egl_exported_image* imag
     return image->eglImage;
 }
 
+__attribute__((visibility("default")))
+uint32_t
+wpe_fdo_egl_exported_image_get_damage_regions(struct wpe_fdo_egl_exported_image* image, const int32_t** target)
+{
+    return WS::Instance::singleton().exportDamageRegions(image->bufferResource, target);
+}
+
 }

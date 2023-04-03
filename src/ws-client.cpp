@@ -260,7 +260,7 @@ const struct wl_registry_listener BaseTarget::s_registryListener = {
         auto& target = *reinterpret_cast<BaseTarget*>(data);
 
         if (!std::strcmp(interface, "wl_compositor"))
-            target.m_wl.compositor = static_cast<struct wl_compositor*>(wl_registry_bind(registry, name, &wl_compositor_interface, 1));
+            target.m_wl.compositor = static_cast<struct wl_compositor*>(wl_registry_bind(registry, name, &wl_compositor_interface, 4));
         if (!std::strcmp(interface, "wpe_bridge"))
             target.m_wl.wpeBridge = static_cast<struct wpe_bridge*>(wl_registry_bind(registry, name, &wpe_bridge_interface, 1));
         if (!std::strcmp(interface, "wpe_dmabuf_pool_manager"))
