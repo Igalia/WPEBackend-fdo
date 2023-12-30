@@ -33,7 +33,7 @@ struct wpe_fdo_egl_exported_image {
     EGLImageKHR eglImage { nullptr };
     uint32_t width { 0 };
     uint32_t height { 0 };
-    bool exported { false };
+    bool released { false };
     struct wl_resource* bufferResource { nullptr };
     struct wl_listener bufferDestroyListener;
 };

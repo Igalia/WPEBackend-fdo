@@ -178,11 +178,6 @@ public:
 
     void exportBuffer(struct wl_resource* bufferResource) override
     {
-        if (auto* image = findImage(bufferResource)) {
-            exportImage(image);
-            return;
-        }
-
         EGLImageKHR eglImage = WS::instanceImpl<WS::ImplEGL>().createImage(bufferResource);
         if (!eglImage)
             return;
@@ -200,11 +195,6 @@ public:
 
     void exportBuffer(const struct linux_dmabuf_buffer* dmabufBuffer) override
     {
-        if (auto* image = findImage(dmabufBuffer->buffer_resource)) {
-            exportImage(image);
-            return;
-        }
-
         EGLImageKHR eglImage = WS::instanceImpl<WS::ImplEGL>().createImage(dmabufBuffer);
         if (!eglImage)
             return;
@@ -247,6 +237,7 @@ public:
 
     void releaseImage(struct wpe_fdo_egl_exported_image* image)
     {
+        image->released = true;
         if (image->bufferResource)
             viewBackend->releaseBuffer(image->bufferResource);
         else
@@ -263,21 +254,8 @@ public:
     const struct wpe_view_backend_exportable_fdo_egl_client* client;
 
 private:
-    struct wpe_fdo_egl_exported_image* findImage(struct wl_resource* bufferResource)
-    {
-        if (bufferResource) {
-            if (auto* listener = wl_resource_get_destroy_listener(bufferResource, bufferDestroyListenerCallback)) {
-                struct wpe_fdo_egl_exported_image* image;
-                return wl_container_of(listener, image, bufferDestroyListener);
-            }
-        }
-
-        return nullptr;
-    }
-
     void exportImage(struct wpe_fdo_egl_exported_image* image)
     {
-        image->exported = true;
         client->export_fdo_egl_image(data, image);
     }
 
@@ -295,6 +273,9 @@ private:
         image = wl_container_of(listener, image, bufferDestroyListener);
 
         image->bufferResource = nullptr;
+
+        if (image->released)
+            deleteImage(image);
     }
 };
 
