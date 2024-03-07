@@ -255,14 +255,22 @@ add_project_arguments(
 )
 
 wpe_dep = dependency('wpe-1.0', version: '>=1.6.0', fallback: ['libwpe', 'libwpe_dep'])
+wl_server_dep = dependency('wayland-server')
+
+assert(cxx.has_header_symbol('wayland-server.h', 'WL_SURFACE_DAMAGE_BUFFER_SINCE_VERSION', dependencies: wl_server_dep),
+    'Including <wayland-server.h> does not define WL_SURFACE_DAMAGE_BUFFER_SINCE_VERSION')
+assert(cxx.has_member('struct wl_surface_interface', 'damage_buffer',
+    prefix: '#include <wayland-server.h>',
+    dependencies: wl_server_dep),
+    'struct member wl_surface_interface::damage_buffer is not defined')
 
 deps = [
-	dependency('epoxy'),
-	dependency('gio-2.0'),
-	dependency('gobject-2.0'),
-	dependency('wayland-client'),
-	dependency('wayland-server'),
-        wpe_dep,
+    dependency('epoxy'),
+    dependency('gio-2.0'),
+    dependency('gobject-2.0'),
+    dependency('wayland-client'),
+    wl_server_dep,
+    wpe_dep,
 ]
 
 # Will be set to the library dependency which provides the wl_egl_* functions.

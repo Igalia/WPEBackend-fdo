@@ -137,14 +137,15 @@ static const struct wl_surface_interface s_surfaceInterface = {
     [](struct wl_client*, struct wl_resource*, int32_t) { },
     // set_buffer_scale
     [](struct wl_client*, struct wl_resource*, int32_t) { },
-#if (WAYLAND_VERSION_MAJOR > 1) || (WAYLAND_VERSION_MAJOR == 1 && WAYLAND_VERSION_MINOR >= 10)
     // damage_buffer
     [](struct wl_client*, struct wl_resource* surfaceResource, int32_t x, int32_t y, int32_t width, int32_t height) {
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
         WS::Instance::singleton().addBufferDamageRegion(surface.bufferResource, x, y, width, height);
     },
-#endif
 };
+
+G_STATIC_ASSERT(WL_SURFACE_DAMAGE_BUFFER_SINCE_VERSION >= WL_SURFACE_SET_BUFFER_TRANSFORM_SINCE_VERSION);
+G_STATIC_ASSERT(WL_SURFACE_DAMAGE_BUFFER_SINCE_VERSION >= WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION);
 
 static const struct wl_compositor_interface s_compositorInterface = {
     // create_surface
@@ -422,7 +423,7 @@ Instance::Instance(std::unique_ptr<Impl>&& impl)
 {
     m_impl->setInstance(*this);
 
-    m_compositor = wl_global_create(m_display, &wl_compositor_interface, 4, this,
+    m_compositor = wl_global_create(m_display, &wl_compositor_interface, WL_SURFACE_DAMAGE_BUFFER_SINCE_VERSION, this,
         [](struct wl_client* client, void*, uint32_t version, uint32_t id)
         {
             struct wl_resource* resource = wl_resource_create(client, &wl_compositor_interface, version, id);
