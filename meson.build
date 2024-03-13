@@ -1,5 +1,5 @@
 project('wpebackend-fdo', ['c', 'cpp'],
-	meson_version: '>=0.49',
+	meson_version: '>=0.52.1',
 	default_options: [
 		'b_ndebug=if-release',
 		'c_std=c99',
@@ -368,8 +368,6 @@ if get_option('build_docs')
 		c_smart_index: true,
 		c_sources: api_headers,
 		c_include_directories: ['include', meson.current_build_dir()],
-		# The space here is relevant, see
-		# https://github.com/mesonbuild/meson/issues/5800#issuecomment-552198354
-		extra_c_flags: [' -DWPE_FDO_COMPILATION=1'],
+		extra_c_flags: ['-DWPE_FDO_COMPILATION=1'],
 	)
 endif
