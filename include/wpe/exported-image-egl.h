@@ -30,6 +30,18 @@
 #ifndef __exported_image_egl_h__
 #define __exported_image_egl_h__
 
+/**
+ * SECTION:egl_exported_image
+ * @short_description: EGL exported images.
+ * @include wpe/fdo-egl.h
+ *
+ * Represents an EGL exported image with some associated attributes.
+ *
+ * An `wpe_fdo_egl_exported_image` represents an `EGLImageKHR` object,
+ * which may be retrieved using wpe_fdo_egl_exported_image_get_egl_image(),
+ * and provides additional information about it.
+ */
+
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -40,14 +52,38 @@ typedef void* EGLImageKHR;
 
 struct wpe_fdo_egl_exported_image;
 
+/**
+ * wpe_fdo_egl_exported_image_get_width:
+ * @image: (transfer none): An exported EGL image.
+ *
+ * Gets the width of an exported @image.
+ *
+ * Returns: Image width.
+ */
 uint32_t
-wpe_fdo_egl_exported_image_get_width(struct wpe_fdo_egl_exported_image*);
+wpe_fdo_egl_exported_image_get_width(struct wpe_fdo_egl_exported_image *image);
 
+/**
+ * wpe_fdo_egl_exported_image_get_height:
+ * @image: (transfer none): An exported EGL image.
+ *
+ * Gets the height of an exported @image.
+ *
+ * Returns: Image height.
+ */
 uint32_t
-wpe_fdo_egl_exported_image_get_height(struct wpe_fdo_egl_exported_image*);
+wpe_fdo_egl_exported_image_get_height(struct wpe_fdo_egl_exported_image *image);
 
+/**
+ * wpe_fdo_egl_exported_image_get_egl_image:
+ * @image: (transfer none): An exported EGL image.
+ *
+ * Gets the `EGLImage` for en exported @image.
+ *
+ * Returns: (transfer none): An `EGLImage` handle.
+ */
 EGLImageKHR
-wpe_fdo_egl_exported_image_get_egl_image(struct wpe_fdo_egl_exported_image*);
+wpe_fdo_egl_exported_image_get_egl_image(struct wpe_fdo_egl_exported_image *image);
 
 #ifdef __cplusplus
 }
