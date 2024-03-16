@@ -91,7 +91,10 @@ GSourceFuncs ServerSource::s_sourceFuncs = {
 
 static const struct wl_surface_interface s_surfaceInterface = {
     // destroy
-    [](struct wl_client*, struct wl_resource*) { },
+    [](struct wl_client*, struct wl_resource *surfaceResource) {
+        auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
+        Instance::singleton().clearPendingBufferDamage(surface.bufferResource);
+    },
     // attach
     [](struct wl_client*, struct wl_resource* surfaceResource, struct wl_resource* bufferResource, int32_t, int32_t)
     {
