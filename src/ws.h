@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "../include/wpe/exported-image-egl.h"
 #include "ws-types.h"
 #include <functional>
 #include <glib.h>
@@ -153,9 +154,9 @@ public:
 
     void registerSurface(uint32_t, Surface*);
     void unregisterSurface(Surface*);
-    void addBufferDamageRegion(struct wl_resource*, int32_t x, int32_t y, int32_t width, int32_t height);
+    void addBufferDamageRegion(struct wl_resource*, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
     void clearPendingBufferDamage(struct wl_resource*);
-    uint32_t exportDamageRegions(struct wl_resource*, const int32_t** target);
+    const std::vector<struct wpe_fdo_rect>* getDamageRegions(struct wl_resource* bufferResource);
     void registerViewBackend(uint32_t, APIClient&);
     void unregisterViewBackend(uint32_t);
     bool dispatchFrameCallbacks(uint32_t);
@@ -192,7 +193,7 @@ private:
     struct wl_global* m_wpeBridge { nullptr };
     struct wl_global* m_wpeDmabufPoolManager { nullptr };
     GSource* m_source { nullptr };
-    std::unordered_map<struct wl_resource*, std::vector<std::array<int32_t, 4>>> m_damageRegions;
+    std::unordered_map<struct wl_resource*, std::vector<struct wpe_fdo_rect>> m_damageRegions;
 
     // (bridgeId -> Surface)
     std::unordered_map<uint32_t, Surface*> m_viewBackendMap;

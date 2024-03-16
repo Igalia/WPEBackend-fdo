@@ -53,10 +53,19 @@ wpe_fdo_egl_exported_image_get_egl_image(struct wpe_fdo_egl_exported_image* imag
 }
 
 __attribute__((visibility("default")))
-uint32_t
-wpe_fdo_egl_exported_image_get_damage_regions(struct wpe_fdo_egl_exported_image* image, const int32_t** target)
+const struct wpe_fdo_rect*
+wpe_fdo_egl_exported_image_get_damage_regions(struct wpe_fdo_egl_exported_image *image, uint32_t *n_rectangles)
 {
-    return WS::Instance::singleton().exportDamageRegions(image->bufferResource, target);
+    g_return_val_if_fail(n_rectangles, nullptr);
+
+    const auto* regions = WS::Instance::singleton().getDamageRegions(image->bufferResource);
+    if (regions && regions->size()) {
+        *n_rectangles = regions->size();
+        return regions->data();
+    } else {
+        *n_rectangles = 0;
+        return nullptr;
+    }
 }
 
 }

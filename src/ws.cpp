@@ -693,23 +693,19 @@ bool Instance::dispatchFrameCallbacks(uint32_t bridgeId)
     return it->second->dispatchFrameCallbacks();
 }
 
-void Instance::addBufferDamageRegion(struct wl_resource *surfaceResource, int32_t x, int32_t y, int32_t width, int32_t height)
+void Instance::addBufferDamageRegion(struct wl_resource *surfaceResource, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
 {
     if (!surfaceResource)
         return;
 
-    auto key = surfaceResource;
-    std::array<int32_t, 4> region = {x, y, width, height};
-    auto it = m_damageRegions.find(key);
-
+    wpe_fdo_rect rect {x, y, width, height};
+    auto it = m_damageRegions.find(surfaceResource);
     if (it == m_damageRegions.end()) {
-        std::vector<std::array<int32_t, 4>> vec = {};
-        m_damageRegions.insert(std::make_pair(key, vec));
-        it = m_damageRegions.find(key);
+        std::vector<struct wpe_fdo_rect> regions = { std::move(rect) };
+        m_damageRegions.emplace(surfaceResource, std::move(regions));
+    } else {
+        it->second.emplace_back(std::move(rect));
     }
-
-    auto& vec = it->second;
-    vec.push_back(region);
 }
 
 void Instance::clearPendingBufferDamage(struct wl_resource* bufferResource)
@@ -717,20 +713,16 @@ void Instance::clearPendingBufferDamage(struct wl_resource* bufferResource)
     m_damageRegions.erase(bufferResource);
 }
 
-uint32_t Instance::exportDamageRegions(struct wl_resource* bufferResource, const int32_t** target)
+const std::vector<struct wpe_fdo_rect>* Instance::getDamageRegions(struct wl_resource* bufferResource)
 {
-    if (!bufferResource) {
-        *target = nullptr;
-        return 0;
-    }
+    if (!bufferResource)
+        return nullptr;
 
     auto it = m_damageRegions.find(bufferResource);
-    if (it == m_damageRegions.cend() || it->second.empty() || !it->second.data()) {
-        *target = nullptr;
-        return 0;
-    }
-    *target = reinterpret_cast<int32_t*>(it->second.data());
-    return it->second.size();
+    if (it == m_damageRegions.cend())
+        return nullptr;
+
+    return &it->second;
 }
 
 } // namespace WS

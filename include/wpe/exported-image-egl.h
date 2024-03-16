@@ -53,6 +53,22 @@ typedef void* EGLImageKHR;
 struct wpe_fdo_egl_exported_image;
 
 /**
+ * wpe_fdo_rect:
+ * @x: Horizontal position.
+ * @y: Vertical position.
+ * @width: Rectange width.
+ * @height: Rectangle height.
+ *
+ * Describes the position and size of a rectangle.
+ *
+ * This is used to report damaged regions for exported images.
+ * The origin of coordinates is at the top-left corner of the image.
+ */
+struct wpe_fdo_rect {
+    uint32_t x, y, width, height;
+};
+
+/**
  * wpe_fdo_egl_exported_image_get_width:
  * @image: (transfer none): An exported EGL image.
  *
@@ -85,8 +101,49 @@ wpe_fdo_egl_exported_image_get_height(struct wpe_fdo_egl_exported_image *image);
 EGLImageKHR
 wpe_fdo_egl_exported_image_get_egl_image(struct wpe_fdo_egl_exported_image *image);
 
-uint32_t
-wpe_fdo_egl_exported_image_get_damage_regions(struct wpe_fdo_egl_exported_image*, const int32_t**);
+/**
+ * wpe_fdo_egl_exported_image_get_damage_regions:
+ * @image: (transfer none): An exported EGL image.
+ * @n_rectangles: (transfer none) (out) (not nullable): Location where to store the number of rectangles.
+ *
+ * Gets rectangles describing the damage regions for an @image.
+ *
+ * Images may indicate which parts have changed since the previous exported
+ * image. If the set of damaged regions cannot be determined, then `NULL` is
+ * returned and @n_regions set to zero. This may be the case if:
+ *
+ * - The image contains many changes compared to the previous exported image
+ *   and it is considered that it is not worth it using damage regions.
+ * - Some component in the graphics stack is not able to handle damage
+ *   regions.
+ *
+ * When the set of regions is empty, the whole image **must** be considered
+ * to be changed.
+ *
+ * **Important:** Damage regions are only meaningful when an image is used
+ * to be displayed right after the one exported immediately before it! In
+ * particular, if an exported image is kept around to be displayed later,
+ * and not at the moment when it has been exported, damage information *must
+ * not* be used.
+ *
+ * Note that the layout of the `wpe_fdo_rect` type is designed in such a way
+ * that the result from this function may be passed directly to EGL for
+ * swapping buffers:
+ *
+ * ```c
+ * struct wpe_fdo_egl_exported_image *image = get_image();
+ *
+ * uint32_t n_regions;
+ * const struct wpe_fdo_rect *regions =
+ *     wpe_fdo_egl_exported_image_get_damage_regions(image, &n_regions);
+ *
+ * eglSwapBuffersWithDamageEXT(eglDisplay, eglSurface, (EGLint*) regions, n_regions);
+ * ```
+ *
+ * Returns: (transfer none) (nullable): Pointer to an array of regions.
+ */
+const struct wpe_fdo_rect*
+wpe_fdo_egl_exported_image_get_damage_regions(struct wpe_fdo_egl_exported_image*, uint32_t *n_rectangles);
 
 #ifdef __cplusplus
 }
