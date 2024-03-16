@@ -100,7 +100,9 @@ static const struct wl_surface_interface s_surfaceInterface = {
         Instance::singleton().impl().surfaceAttach(surface, bufferResource);
     },
     // damage
-    [](struct wl_client*, struct wl_resource*, int32_t, int32_t, int32_t, int32_t) { },
+    [](struct wl_client*, struct wl_resource*, int32_t, int32_t, int32_t, int32_t) {
+        g_warning_once("%s:%u: wl_surface_interface::set_buffer_transform is a no-op", __FILE__, __LINE__);
+    },
     // frame
     [](struct wl_client* client, struct wl_resource* surfaceResource, uint32_t callback)
     {
@@ -121,9 +123,13 @@ static const struct wl_surface_interface s_surfaceInterface = {
         surface.addFrameCallback(callbackResource);
     },
     // set_opaque_region
-    [](struct wl_client*, struct wl_resource*, struct wl_resource*) { },
+    [](struct wl_client*, struct wl_resource*, struct wl_resource*) {
+        g_warning_once("%s:%u: wl_surface_interface::set_buffer_transform is a no-op", __FILE__, __LINE__);
+    },
     // set_input_region
-    [](struct wl_client*, struct wl_resource*, struct wl_resource*) { },
+    [](struct wl_client*, struct wl_resource*, struct wl_resource*) {
+        g_warning_once("%s:%u: wl_surface_interface::set_buffer_transform is a no-op", __FILE__, __LINE__);
+    },
     // commit
     [](struct wl_client*, struct wl_resource* surfaceResource)
     {
@@ -134,9 +140,13 @@ static const struct wl_surface_interface s_surfaceInterface = {
         WS::Instance::singleton().clearPendingBufferDamage(bufferResource);
     },
     // set_buffer_transform
-    [](struct wl_client*, struct wl_resource*, int32_t) { },
+    [](struct wl_client*, struct wl_resource*, int32_t) {
+        g_warning_once("%s:%u: wl_surface_interface::set_buffer_transform is a no-op", __FILE__, __LINE__);
+    },
     // set_buffer_scale
-    [](struct wl_client*, struct wl_resource*, int32_t) { },
+    [](struct wl_client*, struct wl_resource*, int32_t) {
+        g_warning_once("%s:%u: wl_surface_interface::set_buffer_scale is a no-op", __FILE__, __LINE__);
+    },
     // damage_buffer
     [](struct wl_client*, struct wl_resource* surfaceResource, int32_t x, int32_t y, int32_t width, int32_t height) {
         auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
