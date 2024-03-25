@@ -249,6 +249,8 @@ public:
     {
         if (image->bufferResource)
             viewBackend->releaseBuffer(image->bufferResource);
+        else
+            deleteImage(image);
     }
 
     void releaseShmBuffer(struct wpe_fdo_shm_exported_buffer* buffer)
@@ -275,6 +277,7 @@ private:
 
     void exportImage(struct wpe_fdo_egl_exported_image* image)
     {
+        image->exported = true;
         client->export_fdo_egl_image(data, image);
     }
 
@@ -292,8 +295,6 @@ private:
         image = wl_container_of(listener, image, bufferDestroyListener);
 
         image->bufferResource = nullptr;
-
-        deleteImage(image);
     }
 };
 
