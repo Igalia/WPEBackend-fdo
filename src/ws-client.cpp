@@ -187,6 +187,7 @@ BaseTarget::~BaseTarget()
 
     g_clear_pointer(&m_wl.frameCallback, wl_callback_destroy);
     g_clear_pointer(&m_wl.surface, wl_surface_destroy);
+    g_clear_pointer(&m_wl.wpeDmabufPool, wpe_dmabuf_pool_destroy);
 
     g_clear_pointer(&m_wl.wpeDmabufPoolManager, wpe_dmabuf_pool_manager_destroy);
     g_clear_pointer(&m_wl.wpeBridge, wpe_bridge_destroy);
