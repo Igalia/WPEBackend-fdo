@@ -247,9 +247,13 @@ public:
 
     void releaseImage(struct wpe_fdo_egl_exported_image* image)
     {
-        if (image->bufferResource)
-            viewBackend->releaseBuffer(image->bufferResource);
-        else
+        if (!image)
+            return;
+        if (image->exported) {
+            image->exported = false;
+            if (image->bufferResource)
+                viewBackend->releaseBuffer(image->bufferResource);
+        } else
             deleteImage(image);
     }
 
@@ -285,7 +289,6 @@ private:
     {
         assert(image->eglImage);
         WS::instanceImpl<WS::ImplEGL>().destroyImage(image->eglImage);
-
         delete image;
     }
 
@@ -293,8 +296,13 @@ private:
     {
         struct wpe_fdo_egl_exported_image* image;
         image = wl_container_of(listener, image, bufferDestroyListener);
-
-        image->bufferResource = nullptr;
+        // The image object is inmediately destroyed here only if it's not currently
+        // exported, otherwise it's destroyed when the client releases/returns it.
+        if (image->exported) {
+            image->exported = false;
+            image->bufferResource = nullptr;
+        } else
+            deleteImage(image);
     }
 };
 
