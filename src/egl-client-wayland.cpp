@@ -63,7 +63,7 @@ TargetWayland::~TargetWayland()
 
 EGLNativeWindowType TargetWayland::nativeWindow() const
 {
-    return m_egl.window;
+    return (EGLNativeWindowType) m_egl.window;
 }
 
 void TargetWayland::resize(uint32_t width, uint32_t height)
