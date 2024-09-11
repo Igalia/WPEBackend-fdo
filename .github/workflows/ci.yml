@@ -6,7 +6,7 @@ on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -15,11 +15,11 @@ jobs:
           sudo apt update
           sudo apt install -y flex libjson-glib-dev libxkbcommon-dev \
             libegl1-mesa-dev libxml2-dev libxslt1-dev libyaml-dev llvm-dev \
-            libclang-dev libglib2.0-dev libepoxy-dev ninja-build
+            libclang-dev libglib2.0-dev libepoxy-dev libwayland-dev ninja-build
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
-          python-version: 3.5
+          python-version: 3.7
       - name: Python Package Cache
         uses: actions/cache@v1
         with:
@@ -29,7 +29,7 @@ jobs:
       - name: Install Python Packages
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          HOTDOC_BUILD_C_EXTENSION=enabled pip install hotdoc meson==0.49
+          HOTDOC_BUILD_C_EXTENSION=enabled pip install hotdoc meson==0.55
       - name: Fetch libwpe
         run: |
           if [[ -d ~/libwpe/.git ]] ; then
@@ -55,7 +55,7 @@ jobs:
         run: |
           DESTDIR="$(pwd)/_work/files" ninja -C _work/build install
       - name: Archive Artifacts
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           name: build
           path: _work
