@@ -8,7 +8,7 @@ project('wpebackend-fdo', ['c', 'cpp'],
 		'cpp_std=c++11',
 	],
 	license: 'BSD-2-Clause',
-	version: run_command(join_paths('scripts', 'version.py')).stdout().strip(),
+	version: run_command(join_paths('scripts', 'version.py'), check: true).stdout().strip(),
 )
 
 # This refers to the API level provided. This is modified only with major,
@@ -109,10 +109,7 @@ endif
 
 wayland_scanner = find_program(wayland_scanner_candidates, native: true)
 
-r = run_command(wayland_scanner, '--version')
-assert(r.returncode() == 0,
-	'''Cannot execute wayland-scanner:
-	''' + r.stderr())
+r = run_command(wayland_scanner, '--version', check: true)
 wayland_scanner_version = r.stderr().split()
 if not (wayland_scanner_version.length() == 2)
 	wayland_scanner_version = r.stdout().split()
