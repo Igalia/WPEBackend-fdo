@@ -1,3 +1,12 @@
+===========================
+1.14.3 - September 13, 2024
+===========================
+
+- Fix build issues in some configurations that require en explicit cast
+  to EGLNativeWindowType.
+- Fix memory leak when the view backend wl_resource is destroyed.
+- Fix wpe_dmabuf_pool object leak.
+
 =======================
 1.14.2 - March 22, 2023
 =======================
