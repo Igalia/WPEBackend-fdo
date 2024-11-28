@@ -26,6 +26,7 @@
 #pragma once
 
 #include <gio/gio.h>
+#include <stdint.h>
 #include <memory>
 
 namespace FdoIPC {
