@@ -6,31 +6,46 @@ on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Debian Packages
         run: |
           sudo apt update
-          sudo apt install -y flex libjson-glib-dev libxkbcommon-dev \
-            libegl1-mesa-dev libxml2-dev libxslt1-dev libyaml-dev \
-            libwayland-dev llvm-dev libclang-dev libglib2.0-dev \
-            libepoxy-dev ninja-build
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.6'
+          sudo apt install -y \
+            cmake \
+            flex \
+            libclang-dev \
+            libegl1-mesa-dev \
+            libepoxy-dev \
+            libglib2.0-dev \
+            libjson-glib-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            libxml2-dev \
+            libxslt1-dev \
+            libyaml-dev \
+            llvm-dev \
+            ninja-build \
+            python3-dev
       - name: Python Package Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
+        id: cache
         with:
-          path: ~/.cache/pip
+          path: |
+            ~/.cache/pip/
+            .venv/
           key: ${{ runner.os }}-pip-${{ hashFiles('.github/workflows/ci.yml') }}
           restore-keys: ${{ runner.os }}-pip-
       - name: Install Python Packages
+        if: steps.cache.outputs.cache-hit != 'true'
+        env:
+          HOTDOC_BUILD_C_EXTENSION: enabled
         run: |
-          python -m pip install --upgrade pip setuptools wheel
-          HOTDOC_BUILD_C_EXTENSION=enabled pip install hotdoc meson==0.55
+          python3 -m venv --upgrade-deps .venv
+          . .venv/bin/activate
+          pip install meson==0.55 hotdoc scan-build
       - name: Fetch libwpe
         run: |
           if [[ -d ~/libwpe/.git ]] ; then
@@ -49,11 +64,13 @@ jobs:
           ln -s ~/libwpe subprojects/
       - name: Configure
         run: |
+          . .venv/bin/activate
           mkdir -p _work && meson _work/build --prefix /usr -Dbuild_docs=true
       - name: Build
         run: TERM=dumb ninja -C _work/build
       - name: Install
         run: |
+          . .venv/bin/activate
           DESTDIR="$(pwd)/_work/files" ninja -C _work/build install
       - name: Archive Artifacts
         uses: actions/upload-artifact@v3
@@ -61,10 +78,10 @@ jobs:
           name: build
           path: _work
   analyze:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Tools
         run: |
           curl -sL https://apt.llvm.org/llvm-snapshot.gpg.key | \
@@ -74,20 +91,23 @@ jobs:
           sudo apt update
           sudo apt install -y libxkbcommon-dev libegl1-mesa-dev libyaml-dev \
             libwayland-dev clang libglib2.0-dev libepoxy-dev ninja-build
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
       - name: Python Package Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
+        id: cache
         with:
-          path: ~/.cache/pip
+          path: |
+            ~/.cache/pip/
+            .venv/
           key: ${{ runner.os }}-pip-${{ hashFiles('.github/workflows/ci.yml') }}
           restore-keys: ${{ runner.os }}-pip-
       - name: Install Python Packages
+        if: steps.cache.outputs.cache-hit != 'true'
+        env:
+          HOTDOC_BUILD_C_EXTENSION: enabled
         run: |
-          python -m pip install --upgrade pip setuptools wheel
-          pip install scan-build meson==0.55
+          python3 -m venv --upgrade-deps .venv
+          . .venv/bin/activate
+          pip install meson==0.55 hotdoc scan-build
       - name: Fetch libwpe
         run: |
           if [[ -d ~/libwpe/.git ]] ; then
@@ -106,9 +126,11 @@ jobs:
           ln -s ~/libwpe subprojects/
       - name: Configure
         run: |
+          . .venv/bin/activate
           meson _work --prefix /usr -Dbuild_docs=false
       - name: Analyze
         run: |
+          . .venv/bin/activate
           TERM=dumb ninja -C _work
           analyze-build \
             --enable-checker nullability.NullablePassedToNonnull \
