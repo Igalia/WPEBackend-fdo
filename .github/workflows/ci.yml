@@ -89,8 +89,23 @@ jobs:
           sudo add-apt-repository \
             'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-14 main'
           sudo apt update
-          sudo apt install -y libxkbcommon-dev libegl1-mesa-dev libyaml-dev \
-            libwayland-dev clang libglib2.0-dev libepoxy-dev ninja-build
+          sudo apt install -y \
+            clang \
+            cmake \
+            flex \
+            libclang-dev \
+            libegl1-mesa-dev \
+            libepoxy-dev \
+            libglib2.0-dev \
+            libjson-glib-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            libxml2-dev \
+            libxslt1-dev \
+            libyaml-dev \
+            llvm-dev \
+            ninja-build \
+            python3-dev
       - name: Python Package Cache
         uses: actions/cache@v4
         id: cache
