@@ -119,7 +119,8 @@ GSourceFuncs TargetSource::s_sourceFuncs = {
 
 BaseBackend::BaseBackend(int hostFD)
 {
-    m_wl.display = wl_display_connect_to_fd(hostFD);
+    if (!(m_wl.display = wl_display_connect_to_fd(hostFD)))
+        g_error("wl_display_connect_to_fd(%d) failed: %s", hostFD, strerror(errno));
 
     struct wl_registry* registry = wl_display_get_registry(m_wl.display);
     wl_registry_add_listener(registry, &s_registryListener, this);
