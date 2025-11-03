@@ -62,7 +62,6 @@ sources = [
 	'src/extensions/video-plane-display-dmabuf.cpp',
 	'src/extensions/video-plane-display-dmabuf-receiver.cpp',
 	'src/linux-dmabuf/linux-dmabuf.cpp',
-	'src/linux-dmabuf/linux-dmabuf-protocol.c',
 ]
 
 api_headers = [
@@ -222,6 +221,20 @@ wpe_dmabuf_pool_proto_source = custom_target(
 	command: [wayland_scanner, wayland_scanner_code, '@INPUT@', '@OUTPUT@'],
 )
 
+# Wayland extension: linux-dmabuf
+wpe_linux_dmabuf_server_proto_header = custom_target(
+        'linux-dmabuf-server-proto-header',
+        input: 'src/linux-dmabuf/linux-dmabuf-unstable-v1.xml',
+        output: '@BASENAME@-server-protocol.h',
+        command: [wayland_scanner, 'server-header', '@INPUT@', '@OUTPUT@'],
+)
+wpe_linux_dmabuf_proto_source = custom_target(
+       'linux-dmabuf-proto-source',
+       input: 'src/linux-dmabuf/linux-dmabuf-unstable-v1.xml',
+       output: '@BASENAME@-protocol.c',
+       command: [wayland_scanner, wayland_scanner_code, '@INPUT@', '@OUTPUT@'],
+)
+
 cxx = meson.get_compiler('cpp')
 
 # Switch to the 'cpp_eh=none' default option when updating to Meson 0.51 or newer, see
@@ -316,6 +329,8 @@ generated_sources = [
 	wpe_dmabuf_pool_client_proto_header,
 	wpe_dmabuf_pool_server_proto_header,
 	wpe_dmabuf_pool_proto_source,
+        wpe_linux_dmabuf_server_proto_header,
+        wpe_linux_dmabuf_proto_source,
 ]
 
 lib = shared_library('WPEBackend-fdo-' + api_version,
