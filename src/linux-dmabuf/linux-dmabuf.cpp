@@ -351,9 +351,64 @@ err_out:
     wl_resource_post_no_memory(linux_dmabuf_resource);
 }
 
+static void
+dmabuf_feedback_resource_destroy(struct wl_resource *resource)
+{
+    wl_list_remove(wl_resource_get_link(resource));
+}
+
+static void
+dmabuf_feedback_destroy(struct wl_client *client, struct wl_resource *resource)
+{
+    wl_resource_destroy(resource);
+}
+
+static const struct zwp_linux_dmabuf_feedback_v1_interface
+zwp_linux_dmabuf_feedback_implementation = {
+    dmabuf_feedback_destroy
+};
+
+static void
+linux_dmabuf_get_default_feedback(struct wl_client *client,
+                                  struct wl_resource *dmabuf_resource,
+                                  uint32_t dmabuf_feedback_id)
+{
+    uint32_t version = wl_resource_get_version(dmabuf_resource);
+    struct wl_resource *feedback_resource = wl_resource_create(client, &zwp_linux_dmabuf_feedback_v1_interface, version, dmabuf_feedback_id);
+    if (!feedback_resource) {
+        wl_resource_post_no_memory(dmabuf_resource);
+        return;
+    }
+
+    wl_list_init(wl_resource_get_link(feedback_resource));
+    wl_resource_set_implementation(feedback_resource, &zwp_linux_dmabuf_feedback_implementation, nullptr, dmabuf_feedback_resource_destroy);
+
+    auto& egl = WS::instanceImpl<WS::ImplEGL>();
+    zwp_linux_dmabuf_feedback_v1_send_format_table(feedback_resource, egl.dmabufFormatTableFD(), egl.dmabufFormatTableSize());
+    zwp_linux_dmabuf_feedback_v1_send_main_device(feedback_resource, egl.dmabufMainDevice());
+
+    zwp_linux_dmabuf_feedback_v1_send_tranche_target_device(feedback_resource, egl.dmabufMainDevice());
+    zwp_linux_dmabuf_feedback_v1_send_tranche_flags(feedback_resource, 0);
+    zwp_linux_dmabuf_feedback_v1_send_tranche_formats(feedback_resource, egl.dmabufFormatTableIndices());
+    zwp_linux_dmabuf_feedback_v1_send_tranche_done(feedback_resource);
+
+    zwp_linux_dmabuf_feedback_v1_send_done(feedback_resource);
+}
+
+static void
+linux_dmabuf_get_surface_feedback(struct wl_client*,
+                                  struct wl_resource*,
+                                  uint32_t /* dmabuf_feedback_id */,
+                                  struct wl_resource*)
+{
+    // We don't support per surface feedback, but since we claim to support version 4 we need to provide an implementation.
+}
+
 static const struct zwp_linux_dmabuf_v1_interface linux_dmabuf_implementation = {
     .destroy = linux_dmabuf_destroy,
     .create_params = linux_dmabuf_create_params,
+    .get_default_feedback = linux_dmabuf_get_default_feedback,
+    .get_surface_feedback = linux_dmabuf_get_surface_feedback
 };
 
 static void
@@ -394,7 +449,8 @@ linux_dmabuf_setup(struct wl_display *wl_display)
     assert(wl_display);
 
     return wl_global_create(wl_display,
-                            &zwp_linux_dmabuf_v1_interface, 3,
+                            &zwp_linux_dmabuf_v1_interface,
+                            ZWP_LINUX_DMABUF_V1_GET_DEFAULT_FEEDBACK_SINCE_VERSION,
                             NULL, bind_linux_dmabuf);
 }
 
