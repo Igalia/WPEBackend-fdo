@@ -27,8 +27,12 @@
 
 #include "linux-dmabuf/linux-dmabuf.h"
 #include <epoxy/egl.h>
+#include <fcntl.h>
 #include <cassert>
 #include <cstring>
+#include <vector>
+#include <sys/mman.h>
+#include <sys/stat.h>
 
 #ifndef EGL_WL_bind_wayland_display
 #define EGL_WAYLAND_BUFFER_WL 0x31D5
@@ -42,6 +46,11 @@ static PFNEGLCREATEIMAGEKHRPROC s_eglCreateImageKHR;
 static PFNEGLDESTROYIMAGEKHRPROC s_eglDestroyImageKHR;
 static PFNEGLQUERYDMABUFFORMATSEXTPROC s_eglQueryDmaBufFormatsEXT;
 static PFNEGLQUERYDMABUFMODIFIERSEXTPROC s_eglQueryDmaBufModifiersEXT;
+
+// Fallback to no flag when missing the definition.
+#ifndef MFD_NOEXEC_SEAL
+#define MFD_NOEXEC_SEAL 0
+#endif
 
 namespace WS {
 
@@ -64,6 +73,14 @@ ImplEGL::~ImplEGL()
             linux_dmabuf_buffer_destroy(buffer);
         }
         wl_global_destroy(m_dmabuf.global);
+
+        wl_array_release(&m_dmabuf.mainDevice);
+    }
+
+    if (m_dmabuf.formatTable.fd != -1) {
+        wl_array_release(&m_dmabuf.formatTable.indices);
+        munmap(m_dmabuf.formatTable.data, m_dmabuf.formatTable.size);
+        close(m_dmabuf.formatTable.fd);
     }
 }
 
@@ -148,6 +165,9 @@ bool ImplEGL::initialize(EGLDisplay eglDisplay)
     if (m_egl.extensions.EXT_image_dma_buf_import && m_egl.extensions.EXT_image_dma_buf_import_modifiers) {
         if (m_dmabuf.global)
             assert(!"Linux-dmabuf has already been initialized");
+
+        initMainDevice();
+        initFormatTable();
         m_dmabuf.global = linux_dmabuf_setup(display());
     }
 
@@ -307,6 +327,99 @@ void ImplEGL::foreachDmaBufModifier(std::function<void (int format, uint64_t mod
         for (int j = 0; j < numModifiers; j++)
             callback(formats[i], modifiers[j]);
     }
+}
+
+void ImplEGL::initMainDevice()
+{
+    wl_array_init(&m_dmabuf.mainDevice);
+
+    if (m_egl.display == EGL_NO_DISPLAY)
+        return;
+
+    if (!epoxy_has_egl_extension(m_egl.display, "EGL_EXT_device_query"))
+        return;
+
+    EGLDeviceEXT eglDevice;
+    if (!eglQueryDisplayAttribEXT(m_egl.display, EGL_DEVICE_EXT, reinterpret_cast<EGLAttrib*>(&eglDevice)))
+        return;
+
+    if (!epoxy_extension_in_string(eglQueryDeviceStringEXT(eglDevice, EGL_EXTENSIONS), "EGL_EXT_device_drm"))
+        return;
+
+    const char* deviceFile = eglQueryDeviceStringEXT(eglDevice, EGL_DRM_DEVICE_FILE_EXT);
+    if (!deviceFile || !*deviceFile)
+        return;
+
+    struct stat devStat;
+    if (stat(deviceFile, &devStat) != 0)
+        return;
+
+    dev_t* dev;
+    dev = static_cast<dev_t*>(wl_array_add(&m_dmabuf.mainDevice, sizeof(*dev)));
+    *dev = devStat.st_rdev;
+}
+
+#define WL_ARRAY_FOR_EACH(pos, array, type) \
+    for (pos = (type)(array)->data; \
+         (const char *) pos < ((const char *) (array)->data + (array)->size); \
+         (pos)++)
+
+void ImplEGL::initFormatTable()
+{
+    errno = 0;
+    int fd = memfd_create("wpe-fdo-shared", MFD_CLOEXEC | MFD_ALLOW_SEALING | MFD_NOEXEC_SEAL);
+    if (fd < 0 && errno == EINVAL && MFD_NOEXEC_SEAL != 0)
+        fd = memfd_create("wpe-fdo-shared", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+
+    if (fd < 0)
+        return;
+
+    // We can add this seal before calling ftruncate(), as the file is currently zero-sized anyway.
+    // There is also no need to check for the return value, we couldn't do anything with it anyway.
+    fcntl(fd, F_ADD_SEALS, F_SEAL_SHRINK);
+
+    struct FormatData {
+        uint32_t format { 0 };
+        uint32_t padding { 0 };
+        uint64_t modifier { 0 };
+    };
+    std::vector<FormatData> formats;
+    foreachDmaBufModifier([&](int format, uint64_t modifier) {
+        FormatData data;
+        data.format = format;
+        data.modifier = modifier;
+        formats.push_back(std::move(data));
+    });
+
+    uint32_t size = formats.size() * sizeof(FormatData);
+    int ret = 0;
+    do {
+        ret = ftruncate(fd, size);
+    } while (ret < 0 && errno == EINTR);
+
+    if (ret < 0) {
+        close(fd);
+        return;
+    }
+
+    auto* data = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (data == MAP_FAILED) {
+        close(fd);
+        return;
+    }
+
+    m_dmabuf.formatTable.size = size;
+    m_dmabuf.formatTable.fd = fd;
+    m_dmabuf.formatTable.data = data;
+
+    uint16_t index = 0;
+    wl_array_init(&m_dmabuf.formatTable.indices);
+    wl_array_add(&m_dmabuf.formatTable.indices, formats.size() * sizeof(index));
+    uint16_t* indexPtr = nullptr;
+    WL_ARRAY_FOR_EACH(indexPtr, &m_dmabuf.formatTable.indices, uint16_t*)
+        *indexPtr = index++;
+
+    memcpy(m_dmabuf.formatTable.data, formats.data(), m_dmabuf.formatTable.size);
 }
 
 } // namespace WS

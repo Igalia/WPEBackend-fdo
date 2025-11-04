@@ -57,7 +57,15 @@ public:
     const struct linux_dmabuf_buffer* getDmaBufBuffer(struct wl_resource*) const;
     void foreachDmaBufModifier(std::function<void (int format, uint64_t modifier)>);
 
+    struct wl_array* dmabufMainDevice() const { return const_cast<struct wl_array*>(&m_dmabuf.mainDevice); }
+    int dmabufFormatTableFD() const { return m_dmabuf.formatTable.fd; }
+    size_t dmabufFormatTableSize() const { return m_dmabuf.formatTable.size; }
+    struct wl_array* dmabufFormatTableIndices() const { return const_cast<struct wl_array*>(&m_dmabuf.formatTable.indices); }
+
 private:
+    void initMainDevice();
+    void initFormatTable();
+
     bool m_initialized { false };
 
     struct {
@@ -74,6 +82,14 @@ private:
     struct {
         struct wl_global* global { nullptr };
         struct wl_list buffers;
+        struct wl_array mainDevice;
+
+        struct {
+            size_t size { 0 };
+            int fd { -1 };
+            void* data { nullptr };
+            struct wl_array indices;
+        } formatTable;
     } m_dmabuf;
 };
 
