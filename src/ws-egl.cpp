@@ -33,6 +33,7 @@
 #include <vector>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #ifndef EGL_WL_bind_wayland_display
 #define EGL_WAYLAND_BUFFER_WL 0x31D5
