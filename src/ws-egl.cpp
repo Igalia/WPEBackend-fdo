@@ -103,10 +103,20 @@ void ImplEGL::surfaceCommit(Surface& surface)
     struct wl_resource* bufferResource = surface.bufferResource;
     surface.bufferResource = nullptr;
 
-    if (surface.dmabufBuffer)
-        surface.apiClient->exportLinuxDmabuf(surface.dmabufBuffer);
-    else if (surface.shmBuffer)
-        surface.apiClient->exportShmBuffer(bufferResource, surface.shmBuffer);
+    // Consume the buffer state (see ws-shm.cpp): stale dmabuf/shm pointers
+    // must never be re-exported on a commit without a fresh attach.
+    const struct linux_dmabuf_buffer* dmabufBuffer = surface.dmabufBuffer;
+    surface.dmabufBuffer = nullptr;
+    struct wl_shm_buffer* shmBuffer = surface.shmBuffer;
+    surface.shmBuffer = nullptr;
+
+    if (!bufferResource)
+        return;
+
+    if (dmabufBuffer)
+        surface.apiClient->exportLinuxDmabuf(dmabufBuffer);
+    else if (shmBuffer)
+        surface.apiClient->exportShmBuffer(bufferResource, shmBuffer);
     else
         surface.apiClient->exportBufferResource(bufferResource);
 }
