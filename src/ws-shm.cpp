@@ -47,8 +47,19 @@ void ImplSHM::surfaceCommit(Surface& surface)
     struct wl_resource* bufferResource = surface.bufferResource;
     surface.bufferResource = nullptr;
 
-    if (surface.shmBuffer)
-        surface.apiClient->exportShmBuffer(bufferResource, surface.shmBuffer);
+    // Consume the buffer state: it belongs to the buffer attached for THIS
+    // commit. Leaving it set would re-export a stale - and, once the client
+    // destroyed the released buffer, dangling - pointer on a commit that
+    // did not attach a new buffer (e.g. a commit issued only for
+    // frame-callback pacing), handing the embedder garbage metadata.
+    struct wl_shm_buffer* shmBuffer = surface.shmBuffer;
+    surface.shmBuffer = nullptr;
+
+    if (!bufferResource)
+        return;
+
+    if (shmBuffer)
+        surface.apiClient->exportShmBuffer(bufferResource, shmBuffer);
     else
         surface.apiClient->exportBufferResource(bufferResource);
 }
