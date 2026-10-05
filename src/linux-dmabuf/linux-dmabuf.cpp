@@ -369,9 +369,9 @@ zwp_linux_dmabuf_feedback_implementation = {
 };
 
 static void
-linux_dmabuf_get_default_feedback(struct wl_client *client,
-                                  struct wl_resource *dmabuf_resource,
-                                  uint32_t dmabuf_feedback_id)
+linux_dmabuf_send_feedback(struct wl_client *client,
+                           struct wl_resource *dmabuf_resource,
+                           uint32_t dmabuf_feedback_id)
 {
     uint32_t version = wl_resource_get_version(dmabuf_resource);
     struct wl_resource *feedback_resource = wl_resource_create(client, &zwp_linux_dmabuf_feedback_v1_interface, version, dmabuf_feedback_id);
@@ -396,12 +396,23 @@ linux_dmabuf_get_default_feedback(struct wl_client *client,
 }
 
 static void
-linux_dmabuf_get_surface_feedback(struct wl_client*,
-                                  struct wl_resource*,
-                                  uint32_t /* dmabuf_feedback_id */,
+linux_dmabuf_get_default_feedback(struct wl_client *client,
+                                  struct wl_resource *dmabuf_resource,
+                                  uint32_t dmabuf_feedback_id)
+{
+    linux_dmabuf_send_feedback(client, dmabuf_resource, dmabuf_feedback_id);
+}
+
+static void
+linux_dmabuf_get_surface_feedback(struct wl_client *client,
+                                  struct wl_resource *dmabuf_resource,
+                                  uint32_t dmabuf_feedback_id,
                                   struct wl_resource*)
 {
-    // We don't support per surface feedback, but since we claim to support version 4 we need to provide an implementation.
+    // There are no per-surface preferences, so a surface gets the default feedback. The
+    // object must still be created: clients destroy it along with the surface, and a destroy
+    // for an object the server never created is a protocol error that disconnects the client.
+    linux_dmabuf_send_feedback(client, dmabuf_resource, dmabuf_feedback_id);
 }
 
 static const struct zwp_linux_dmabuf_v1_interface linux_dmabuf_implementation = {
